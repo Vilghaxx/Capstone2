@@ -94,9 +94,9 @@ function PatientCard({
             navigate("patient-profile", { id: patient.id });
           }
         }}
-        className="cursor-pointer transition-all hover:border-primary/40 hover:shadow-md focus:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+        className="cursor-pointer p-3 transition-all hover:border-primary/40 hover:shadow-md focus:outline-none focus-visible:ring-2 focus-visible:ring-ring xs:p-4 lg:p-5"
       >
-        <CardContent className="flex items-start gap-4">
+        <CardContent className="flex items-start gap-4 px-0">
           <Avatar className="h-12 w-12 shrink-0">
             <AvatarFallback className="bg-primary/10 text-sm font-semibold text-primary">
               {getInitials(patient.name) || "?"}
@@ -128,8 +128,8 @@ function PatientCard({
 
 function PatientCardSkeleton() {
   return (
-    <Card>
-      <CardContent className="flex items-start gap-4">
+    <Card className="p-3 xs:p-4 lg:p-5">
+      <CardContent className="flex items-start gap-4 px-0">
         <Skeleton className="h-12 w-12 rounded-full" />
         <div className="flex-1 space-y-2">
           <Skeleton className="h-4 w-2/3" />
@@ -332,7 +332,7 @@ export default function PatientsView() {
   const total = data?.total ?? 0;
 
   return (
-    <div className="space-y-6">
+    <div className="mx-auto max-w-7xl space-y-6 2xl:max-w-[1400px]">
       {/* Header */}
       <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
         <div>
@@ -360,7 +360,7 @@ export default function PatientsView() {
       )}
 
       {/* Search */}
-      <div className="relative">
+      <div className="relative w-full sm:w-64 lg:w-80">
         <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
         <Input
           className="pl-9"
@@ -373,7 +373,7 @@ export default function PatientsView() {
 
       {/* Body */}
       {isLoading ? (
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="grid grid-cols-1 gap-4 xs:grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4">
           {Array.from({ length: 6 }).map((_, i) => (
             <PatientCardSkeleton key={i} />
           ))}
@@ -408,7 +408,7 @@ export default function PatientsView() {
             {total === 1 ? "" : "s"}
             {search ? ` matching “${search}”` : ""}
           </p>
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          <div className="grid grid-cols-1 gap-4 xs:grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4">
             {patients.map((p, i) => (
               <PatientCard key={p.id} patient={p} index={i} />
             ))}

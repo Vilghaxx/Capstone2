@@ -4,6 +4,22 @@
 @custom-variant dark (&:is(.dark *));
 
 @theme inline {
+  /* ===== SOTA breakpoints — cover every screen size ===== */
+  /* xs:  480px  — small phones (iPhone SE, older Androids)      */
+  /* sm:  640px  — large phones (iPhone Pro, Galaxy S)            */
+  /* md:  768px  — small tablets (iPad mini, portrait)            */
+  /* lg:  1024px — tablets / small laptops (iPad landscape)       */
+  /* xl:  1280px — desktops / laptops                             */
+  /* 2xl: 1536px — large desktops                                 */
+  /* 3xl: 1920px — extra-large / 4K monitors                      */
+  --breakpoint-xs: 30rem;
+  --breakpoint-sm: 40rem;
+  --breakpoint-md: 48rem;
+  --breakpoint-lg: 64rem;
+  --breakpoint-xl: 80rem;
+  --breakpoint-2xl: 96rem;
+  --breakpoint-3xl: 120rem;
+
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --font-sans: var(--font-geist-sans);

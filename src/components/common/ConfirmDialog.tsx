@@ -10,6 +10,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { useState } from "react";
 
 interface Props {
   open: boolean;
@@ -33,6 +34,24 @@ export function ConfirmDialog({
   destructive,
   onConfirm,
 }: Props) {
+  const [pending, setPending] = useState(false);
+
+  const handleConfirm = async (e: React.MouseEvent) => {
+    // Prevent AlertDialogAction from auto-closing before the async
+    // operation completes. We close manually via onOpenChange afterwards.
+    e.preventDefault();
+    setPending(true);
+    try {
+      await onConfirm();
+      onOpenChange(false);
+    } catch {
+      // Error handling is done by the caller via toast; keep dialog open
+      // so the user can retry.
+    } finally {
+      setPending(false);
+    }
+  };
+
   return (
     <AlertDialog open={open} onOpenChange={onOpenChange}>
       <AlertDialogContent>
@@ -41,16 +60,17 @@ export function ConfirmDialog({
           <AlertDialogDescription>{message}</AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
-          <AlertDialogCancel>{cancelLabel}</AlertDialogCancel>
+          <AlertDialogCancel disabled={pending}>{cancelLabel}</AlertDialogCancel>
           <AlertDialogAction
-            onClick={onConfirm}
+            onClick={handleConfirm}
+            disabled={pending}
             className={
               destructive
                 ? "bg-destructive text-destructive-foreground hover:bg-destructive/90"
                 : undefined
             }
           >
-            {confirmLabel}
+            {pending ? "…" : confirmLabel}
           </AlertDialogAction>
         </AlertDialogFooter>
       </AlertDialogContent>

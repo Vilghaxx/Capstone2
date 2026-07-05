@@ -1,0 +1,1030 @@
+     1→     1→"use client";
+     2→     2→
+     3→     3→import { useEffect, useMemo, useState } from "react";
+     4→     4→import { useForm, type Control } from "react-hook-form";
+     5→     5→import { zodResolver } from "@hookform/resolvers/zod";
+     6→     6→import { z } from "zod";
+     7→     7→import {
+     8→     8→  ArrowLeft,
+     9→     9→  Calendar,
+    10→    10→  Lock,
+    11→    11→  Mail,
+    12→    12→  MapPin,
+    13→    13→  Pencil,
+    14→    14→  Phone,
+    15→    15→  Plus,
+    16→    16→  StickyNote,
+    17→    17→  Trash2,
+    18→    18→} from "lucide-react";
+    19→    19→import { toast } from "sonner";
+    20→    20→
+    21→    21→import { useIsCashier, useIsDentist } from "@/lib/auth-store";
+    22→    22→import { useNav } from "@/lib/nav";
+    23→    23→import {
+    24→    24→  useCreateTreatment,
+    25→    25→  useDeletePatient,
+    26→    26→  usePatient,
+    27→    27→  useTeeth,
+    28→    28→  useTreatments,
+    29→    29→  useToothTreatments,
+    30→    30→  useUpdatePatient,
+    31→    31→  useUpdateTooth,
+    32→    32→} from "@/hooks/queries";
+    33→    33→import {
+    34→    34→  patientFormSchema,
+    35→    35→} from "@/lib/schemas/patient-schema";
+    36→    36→import {
+    37→    37→  treatmentFormSchema,
+    38→    38→} from "@/lib/schemas/treatment-schema";
+    39→    39→import {
+    40→    40→  formatCurrency,
+    41→    41→  formatDate,
+    42→    42→  TOOTH_STATUS_META,
+    43→    43→  TOOTH_STATUSES,
+    44→    44→} from "@/lib/format";
+    45→    45→import { toastError } from "@/lib/api";
+    46→    46→import { cn } from "@/lib/utils";
+    47→    47→import type { Patient, Tooth, ToothStatus, Treatment } from "@/lib/types";
+    48→    48→
+    49→    49→type PatientFormInput = z.input<typeof patientFormSchema>;
+    50→    50→type PatientFormOutput = z.output<typeof patientFormSchema>;
+    51→    51→type TreatmentFormInput = z.input<typeof treatmentFormSchema>;
+    52→    52→type TreatmentFormOutput = z.output<typeof treatmentFormSchema>;
+    53→    53→
+    54→    54→import { Button } from "@/components/ui/button";
+    55→    55→import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+    56→    56→import { Input } from "@/components/ui/input";
+    57→    57→import { Textarea } from "@/components/ui/textarea";
+    58→    58→import { Badge } from "@/components/ui/badge";
+    59→    59→import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+    60→    60→import { Skeleton } from "@/components/ui/skeleton";
+    61→    61→import {
+    62→    62→  Dialog,
+    63→    63→  DialogContent,
+    64→    64→  DialogDescription,
+    65→    65→  DialogFooter,
+    66→    66→  DialogHeader,
+    67→    67→  DialogTitle,
+    68→    68→} from "@/components/ui/dialog";
+    69→    69→import {
+    70→    70→  Select,
+    71→    71→  SelectContent,
+    72→    72→  SelectItem,
+    73→    73→  SelectTrigger,
+    74→    74→  SelectValue,
+    75→    75→} from "@/components/ui/select";
+    76→    76→import {
+    77→    77→  Form,
+    78→    78→  FormControl,
+    79→    79→  FormField,
+    80→    80→  FormItem,
+    81→    81→  FormLabel,
+    82→    82→  FormMessage,
+    83→    83→} from "@/components/ui/form";
+    84→    84→import { LoadingSpinner } from "@/components/common/LoadingSpinner";
+    85→    85→import { EmptyState } from "@/components/common/EmptyState";
+    86→    86→import { ConfirmDialog } from "@/components/common/ConfirmDialog";
+    87→    87→import { OralCavityChart } from "@/components/common/OralCavityChart";
+    88→    88→
+    89→    89→// ---------------------------------------------------------------------------
+    90→    90→// Helpers
+    91→    91→// ---------------------------------------------------------------------------
+    92→    92→
+    93→    93→const TOOTH_STATUS_VALUES = Object.values(TOOTH_STATUSES) as ToothStatus[];
+    94→    94→
+    95→    95→function getInitials(name: string): string {
+    96→    96→  return name
+    97→    97→    .split(" ")
+    98→    98→    .filter(Boolean)
+    99→    99→    .map((p) => p[0])
+   100→   100→    .slice(0, 2)
+   101→   101→    .join("")
+   102→   102→    .toUpperCase();
+   103→   103→}
+   104→   104→
+   105→   105→// ---------------------------------------------------------------------------
+   106→   106→// Patient form fields (shared by Add + Edit dialogs)
+   107→   107→// ---------------------------------------------------------------------------
+   108→   108→
+   109→   109→function PatientFormFields({
+   110→   110→  control,
+   111→   111→}: {
+   112→   112→  control: Control<PatientFormInput, any, PatientFormOutput>;
+   113→   113→}) {
+   114→   114→  return (
+   115→   115→    <>
+   116→   116→      <FormField
+   117→   117→        control={control}
+   118→   118→        name="name"
+   119→   119→        render={({ field }) => (
+   120→   120→          <FormItem>
+   121→   121→            <FormLabel>Full Name</FormLabel>
+   122→   122→            <FormControl>
+   123→   123→              <Input placeholder="Juan Dela Cruz" {...field} />
+   124→   124→            </FormControl>
+   125→   125→            <FormMessage />
+   126→   126→          </FormItem>
+   127→   127→        )}
+   128→   128→      />
+   129→   129→      <div className="grid gap-4 sm:grid-cols-2">
+   130→   130→        <FormField
+   131→   131→          control={control}
+   132→   132→          name="phone"
+   133→   133→          render={({ field }) => (
+   134→   134→            <FormItem>
+   135→   135→              <FormLabel>Phone</FormLabel>
+   136→   136→              <FormControl>
+   137→   137→                <Input placeholder="+63 917 123 4567" {...field} />
+   138→   138→              </FormControl>
+   139→   139→              <FormMessage />
+   140→   140→            </FormItem>
+   141→   141→          )}
+   142→   142→        />
+   143→   143→        <FormField
+   144→   144→          control={control}
+   145→   145→          name="email"
+   146→   146→          render={({ field }) => (
+   147→   147→            <FormItem>
+   148→   148→              <FormLabel>Email</FormLabel>
+   149→   149→              <FormControl>
+   150→   150→                <Input type="email" placeholder="juan@example.com" {...field} />
+   151→   151→              </FormControl>
+   152→   152→              <FormMessage />
+   153→   153→            </FormItem>
+   154→   154→          )}
+   155→   155→        />
+   156→   156→      </div>
+   157→   157→      <FormField
+   158→   158→        control={control}
+   159→   159→        name="dateOfBirth"
+   160→   160→        render={({ field }) => (
+   161→   161→          <FormItem>
+   162→   162→            <FormLabel>Date of Birth</FormLabel>
+   163→   163→            <FormControl>
+   164→   164→              <Input type="date" {...field} />
+   165→   165→            </FormControl>
+   166→   166→            <FormMessage />
+   167→   167→          </FormItem>
+   168→   168→        )}
+   169→   169→      />
+   170→   170→      <FormField
+   171→   171→        control={control}
+   172→   172→        name="address"
+   173→   173→        render={({ field }) => (
+   174→   174→          <FormItem>
+   175→   175→            <FormLabel>Address (optional)</FormLabel>
+   176→   176→            <FormControl>
+   177→   177→              <Input placeholder="123 Main St, Quezon City" {...field} />
+   178→   178→            </FormControl>
+   179→   179→            <FormMessage />
+   180→   180→          </FormItem>
+   181→   181→        )}
+   182→   182→      />
+   183→   183→      <FormField
+   184→   184→        control={control}
+   185→   185→        name="notes"
+   186→   186→        render={({ field }) => (
+   187→   187→          <FormItem>
+   188→   188→            <FormLabel>Notes (optional)</FormLabel>
+   189→   189→            <FormControl>
+   190→   190→              <Textarea
+   191→   191→                placeholder="Allergies, medical conditions, etc."
+   192→   192→                className="min-h-[80px]"
+   193→   193→                {...field}
+   194→   194→              />
+   195→   195→            </FormControl>
+   196→   196→            <FormMessage />
+   197→   197→          </FormItem>
+   198→   198→        )}
+   199→   199→      />
+   200→   200→    </>
+   201→   201→  );
+   202→   202→}
+   203→   203→
+   204→   204→// ---------------------------------------------------------------------------
+   205→   205→// Edit patient dialog
+   206→   206→// ---------------------------------------------------------------------------
+   207→   207→
+   208→   208→function EditPatientDialog({
+   209→   209→  patient,
+   210→   210→  open,
+   211→   211→  onOpenChange,
+   212→   212→}: {
+   213→   213→  patient: Patient;
+   214→   214→  open: boolean;
+   215→   215→  onOpenChange: (open: boolean) => void;
+   216→   216→}) {
+   217→   217→  const updatePatient = useUpdatePatient();
+   218→   218→  const form = useForm<PatientFormInput, any, PatientFormOutput>({
+   219→   219→    resolver: zodResolver(patientFormSchema),
+   220→   220→    defaultValues: {
+   221→   221→      name: patient.name,
+   222→   222→      phone: patient.phone,
+   223→   223→      email: patient.email,
+   224→   224→      dateOfBirth: patient.dateOfBirth,
+   225→   225→      address: patient.address ?? "",
+   226→   226→      notes: patient.notes ?? "",
+   227→   227→    },
+   228→   228→  });
+   229→   229→
+   230→   230→  // Re-sync defaults if the patient record changes.
+   231→   231→  useEffect(() => {
+   232→   232→    if (open) {
+   233→   233→      form.reset({
+   234→   234→        name: patient.name,
+   235→   235→        phone: patient.phone,
+   236→   236→        email: patient.email,
+   237→   237→        dateOfBirth: patient.dateOfBirth,
+   238→   238→        address: patient.address ?? "",
+   239→   239→        notes: patient.notes ?? "",
+   240→   240→      });
+   241→   241→    }
+   242→   242→  }, [open, patient, form]);
+   243→   243→
+   244→   244→  async function onSubmit(values: PatientFormOutput) {
+   245→   245→    try {
+   246→   246→      await updatePatient.mutateAsync({
+   247→   247→        id: patient.id,
+   248→   248→        data: values as Record<string, unknown>,
+   249→   249→      });
+   250→   250→      toast.success("Patient updated");
+   251→   251→      onOpenChange(false);
+   252→   252→    } catch (err) {
+   253→   253→      toastError(err, "Failed to update patient");
+   254→   254→    }
+   255→   255→  }
+   256→   256→
+   257→   257→  return (
+   258→   258→    <Dialog open={open} onOpenChange={onOpenChange}>
+   259→   259→      <DialogContent className="sm:max-w-[520px]">
+   260→   260→        <DialogHeader>
+   261→   261→          <DialogTitle>Edit Patient</DialogTitle>
+   262→   262→          <DialogDescription>
+   263→   263→            Update the patient&apos;s contact and clinical information.
+   264→   264→          </DialogDescription>
+   265→   265→        </DialogHeader>
+   266→   266→        <Form {...form}>
+   267→   267→          <form
+   268→   268→            onSubmit={form.handleSubmit(onSubmit)}
+   269→   269→            className="space-y-4"
+   270→   270→          >
+   271→   271→            <PatientFormFields control={form.control} />
+   272→   272→            <DialogFooter>
+   273→   273→              <Button
+   274→   274→                type="button"
+   275→   275→                variant="outline"
+   276→   276→                onClick={() => onOpenChange(false)}
+   277→   277→                disabled={updatePatient.isPending}
+   278→   278→              >
+   279→   279→                Cancel
+   280→   280→              </Button>
+   281→   281→              <Button type="submit" disabled={updatePatient.isPending}>
+   282→   282→                {updatePatient.isPending ? "Saving…" : "Save Changes"}
+   283→   283→              </Button>
+   284→   284→            </DialogFooter>
+   285→   285→          </form>
+   286→   286→        </Form>
+   287→   287→      </DialogContent>
+   288→   288→    </Dialog>
+   289→   289→  );
+   290→   290→}
+   291→   291→
+   292→   292→// ---------------------------------------------------------------------------
+   293→   293→// Tooth modal — status editor + treatment timeline + add treatment
+   294→   294→// ---------------------------------------------------------------------------
+   295→   295→
+   296→   296→function ToothModal({
+   297→   297→  patientId,
+   298→   298→  toothNumber,
+   299→   299→  open,
+   300→   300→  onOpenChange,
+   301→   301→}: {
+   302→   302→  patientId: string;
+   303→   303→  toothNumber: number | null;
+   304→   304→  open: boolean;
+   305→   305→  onOpenChange: (open: boolean) => void;
+   306→   306→}) {
+   307→   307→  const isDentist = useIsDentist();
+   308→   308→  const isCashier = useIsCashier();
+   309→   309→  const teethQuery = useTeeth(patientId);
+   310→   310→  const toothTreatmentsQuery = useToothTreatments(
+   311→   311→    patientId,
+   312→   312→    toothNumber
+   313→   313→  );
+   314→   314→  const updateTooth = useUpdateTooth();
+   315→   315→  const createTreatment = useCreateTreatment();
+   316→   316→
+   317→   317→  const teeth = teethQuery.data ?? [];
+   318→   318→  const tooth = useMemo(
+   319→   319→    () =>
+   320→   320→      toothNumber == null
+   321→   321→        ? null
+   322→   322→        : teeth.find((t) => t.toothNumber === toothNumber) ?? null,
+   323→   323→    [teeth, toothNumber]
+   324→   324→  );
+   325→   325→  const treatments = toothTreatmentsQuery.data ?? [];
+   326→   326→
+   327→   327→  // Status editor local state (synced to the loaded tooth). We use the
+   328→   328→  // "previous value" pattern so the drafts reset whenever the underlying
+   329→   329→  // tooth data changes OR the dialog re-opens, without needing a setState
+   330→   330→  // inside an effect.
+   331→   331→  const [statusDraft, setStatusDraft] = useState<ToothStatus>(
+   332→   332→    tooth?.status ?? "healthy"
+   333→   333→  );
+   334→   334→  const [prevStatus, setPrevStatus] = useState<ToothStatus | undefined>(
+   335→   335→    tooth?.status
+   336→   336→  );
+   337→   337→  const [notesDraft, setNotesDraft] = useState<string>(tooth?.notes ?? "");
+   338→   338→  const [prevNotes, setPrevNotes] = useState<string | null | undefined>(
+   339→   339→    tooth?.notes
+   340→   340→  );
+   341→   341→  const [wasOpen, setWasOpen] = useState(false);
+   342→   342→
+   343→   343→  if (open !== wasOpen) {
+   344→   344→    setWasOpen(open);
+   345→   345→    if (open) {
+   346→   346→      // Reset drafts to the underlying tooth when the modal opens.
+   347→   347→      setStatusDraft(tooth?.status ?? "healthy");
+   348→   348→      setNotesDraft(tooth?.notes ?? "");
+   349→   349→      setPrevStatus(tooth?.status);
+   350→   350→      setPrevNotes(tooth?.notes);
+   351→   351→    }
+   352→   352→  } else if (tooth?.status !== prevStatus || tooth?.notes !== prevNotes) {
+   353→   353→    // Underlying tooth data changed while open — resync.
+   354→   354→    setPrevStatus(tooth?.status);
+   355→   355→    setPrevNotes(tooth?.notes);
+   356→   356→    setStatusDraft(tooth?.status ?? "healthy");
+   357→   357→    setNotesDraft(tooth?.notes ?? "");
+   358→   358→  }
+   359→   359→
+   360→   360→  // Add-treatment form. patientId/toothNumber are hidden fixed values.
+   361→   361→  const treatmentForm = useForm<TreatmentFormInput, any, TreatmentFormOutput>({
+   362→   362→    resolver: zodResolver(treatmentFormSchema),
+   363→   363→    defaultValues: {
+   364→   364→      patientId,
+   365→   365→      toothNumber: toothNumber ?? 1,
+   366→   366→      procedure: "",
+   367→   367→      notes: "",
+   368→   368→      cost: 0,
+   369→   369→      followUpDate: null,
+   370→   370→    },
+   371→   371→  });
+   372→   372→
+   373→   373→  useEffect(() => {
+   374→   374→    if (open) {
+   375→   375→      treatmentForm.reset({
+   376→   376→        patientId,
+   377→   377→        toothNumber: toothNumber ?? 1,
+   378→   378→        procedure: "",
+   379→   379→        notes: "",
+   380→   380→        cost: 0,
+   381→   381→        followUpDate: null,
+   382→   382→      });
+   383→   383→    }
+   384→   384→  }, [open, patientId, toothNumber, treatmentForm]);
+   385→   385→
+   386→   386→  async function onSaveStatus() {
+   387→   387→    if (toothNumber == null) return;
+   388→   388→    try {
+   389→   389→      await updateTooth.mutateAsync({
+   390→   390→        patientId,
+   391→   391→        toothNumber,
+   392→   392→        data: {
+   393→   393→          status: statusDraft,
+   394→   394→          notes: notesDraft.trim() ? notesDraft : null,
+   395→   395→        },
+   396→   396→      });
+   397→   397→      toast.success(`Tooth #${toothNumber} updated`);
+   398→   398→    } catch (err) {
+   399→   399→      toastError(err, "Failed to update tooth");
+   400→   400→    }
+   401→   401→  }
+   402→   402→
+   403→   403→  async function onAddTreatment(values: TreatmentFormOutput) {
+   404→   404→    try {
+   405→   405→      await createTreatment.mutateAsync({
+   406→   406→        patientId,
+   407→   407→        toothNumber: toothNumber ?? 1,
+   408→   408→        procedure: values.procedure,
+   409→   409→        notes: values.notes ?? "",
+   410→   410→        cost: values.cost,
+   411→   411→        followUpDate: values.followUpDate ?? null,
+   412→   412→      });
+   413→   413→      toast.success("Treatment recorded");
+   414→   414→      treatmentForm.reset({
+   415→   415→        patientId,
+   416→   416→        toothNumber: toothNumber ?? 1,
+   417→   417→        procedure: "",
+   418→   418→        notes: "",
+   419→   419→        cost: 0,
+   420→   420→        followUpDate: null,
+   421→   421→      });
+   422→   422→    } catch (err) {
+   423→   423→      toastError(err, "Failed to record treatment");
+   424→   424→    }
+   425→   425→  }
+   426→   426→
+   427→   427→  const statusMeta = tooth
+   428→   428→    ? TOOTH_STATUS_META[tooth.status]
+   429→   429→    : TOOTH_STATUS_META.healthy;
+   430→   430→
+   431→   431→  return (
+   432→   432→    <Dialog open={open} onOpenChange={onOpenChange}>
+   433→   433→      <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-[600px]">
+   434→   434→        <DialogHeader>
+   435→   435→          <DialogTitle className="flex flex-wrap items-center gap-2">
+   436→   436→            <span>Tooth #{toothNumber ?? "—"}</span>
+   437→   437→            <Badge
+   438→   438→              className={cn("text-white", statusMeta.color)}
+   439→   439→              variant="default"
+   440→   440→            >
+   441→   441→              {statusMeta.label}
+   442→   442→            </Badge>
+   443→   443→          </DialogTitle>
+   444→   444→          <DialogDescription>
+   445→   445→            {tooth?.lastTreatment
+   446→   446→              ? `Last treatment: ${tooth.lastTreatment}${
+   447→   447→                  tooth.lastTreatmentDate
+   448→   448→                    ? ` • ${formatDate(tooth.lastTreatmentDate)}`
+   449→   449→                    : ""
+   450→   450→                }`
+   451→   451→              : "No procedures recorded for this tooth yet."}
+   452→   452→            {tooth?.notes ? (
+   453→   453→              <span className="mt-1 block text-foreground">
+   454→   454→                Notes: {tooth.notes}
+   455→   455→              </span>
+   456→   456→            ) : null}
+   457→   457→          </DialogDescription>
+   458→   458→        </DialogHeader>
+   459→   459→
+   460→   460→        <div className="space-y-5">
+   461→   461→          {/* Read-only banner — cashier only */}
+   462→   462→          {isCashier && (
+   463→   463→            <div className="flex items-start gap-2.5 rounded-md border border-amber-200/70 bg-amber-50/70 px-3 py-2 text-xs text-amber-800 dark:border-amber-900/40 dark:bg-amber-950/20 dark:text-amber-300">
+   464→   464→              <Lock className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+   465→   465→              <span>
+   466→   466→                Read-only — clinical edits restricted to dentists.
+   467→   467→              </span>
+   468→   468→            </div>
+   469→   469→          )}
+   470→   470→
+   471→   471→          {/* Status editor — dentist only */}
+   472→   472→          {isDentist && toothNumber != null && (
+   473→   473→            <div className="space-y-3 rounded-md border p-3">
+   474→   474→              <div className="flex items-center justify-between">
+   475→   475→                <h4 className="text-sm font-semibold">Update Status</h4>
+   476→   476→                <span className="text-xs text-muted-foreground">
+   477→   477→                  Dentist only
+   478→   478→                </span>
+   479→   479→              </div>
+   480→   480→              <div className="grid gap-3 sm:grid-cols-2">
+   481→   481→                <div className="space-y-1.5">
+   482→   482→                  <label className="text-xs font-medium text-muted-foreground">
+   483→   483→                    Status
+   484→   484→                  </label>
+   485→   485→                  <Select
+   486→   486→                    value={statusDraft}
+   487→   487→                    onValueChange={(v) => setStatusDraft(v as ToothStatus)}
+   488→   488→                  >
+   489→   489→                    <SelectTrigger className="w-full">
+   490→   490→                      <SelectValue />
+   491→   491→                    </SelectTrigger>
+   492→   492→                    <SelectContent>
+   493→   493→                      {TOOTH_STATUS_VALUES.map((s) => (
+   494→   494→                        <SelectItem key={s} value={s}>
+   495→   495→                          <span className="flex items-center gap-2">
+   496→   496→                            <span
+   497→   497→                              className={cn(
+   498→   498→                                "h-2.5 w-2.5 rounded-full",
+   499→   499→                                TOOTH_STATUS_META[s].color
+   500→   500→                              )}
+   501→   501→                            />
+   502→   502→                            {TOOTH_STATUS_META[s].label}
+   503→   503→                          </span>
+   504→   504→                        </SelectItem>
+   505→   505→                      ))}
+   506→   506→                    </SelectContent>
+   507→   507→                  </Select>
+   508→   508→                </div>
+   509→   509→                <div className="space-y-1.5">
+   510→   510→                  <label className="text-xs font-medium text-muted-foreground">
+   511→   511→                    Clinical notes
+   512→   512→                  </label>
+   513→   513→                  <Textarea
+   514→   514→                    value={notesDraft}
+   515→   515→                    onChange={(e) => setNotesDraft(e.target.value)}
+   516→   516→                    placeholder="Add clinical notes…"
+   517→   517→                    className="min-h-[60px]"
+   518→   518→                  />
+   519→   519→                </div>
+   520→   520→              </div>
+   521→   521→              <Button
+   522→   522→                size="sm"
+   523→   523→                onClick={onSaveStatus}
+   524→   524→                disabled={updateTooth.isPending}
+   525→   525→              >
+   526→   526→                {updateTooth.isPending ? "Saving…" : "Save Status"}
+   527→   527→              </Button>
+   528→   528→            </div>
+   529→   529→          )}
+   530→   530→
+   531→   531→          {/* Treatment timeline */}
+   532→   532→          <div className="space-y-2">
+   533→   533→            <h4 className="text-sm font-semibold">Treatment Timeline</h4>
+   534→   534→            {toothTreatmentsQuery.isLoading ? (
+   535→   535→              <LoadingSpinner size="sm" />
+   536→   536→            ) : treatments.length === 0 ? (
+   537→   537→              <p className="rounded-md border border-dashed px-4 py-6 text-center text-sm text-muted-foreground">
+   538→   538→                No treatments recorded for this tooth yet.
+   539→   539→              </p>
+   540→   540→            ) : (
+   541→   541→              <ul className="space-y-2">
+   542→   542→                {treatments.map((t) => (
+   543→   543→                  <li
+   544→   544→                    key={t.id}
+   545→   545→                    className="rounded-md border p-3 text-sm"
+   546→   546→                  >
+   547→   547→                    <div className="flex items-start justify-between gap-3">
+   548→   548→                      <div className="min-w-0">
+   549→   549→                        <p className="font-medium">{t.procedure}</p>
+   550→   550→                        <p className="mt-0.5 text-xs text-muted-foreground">
+   551→   551→                          {formatDate(t.date)} • {t.dentistName}
+   552→   552→                        </p>
+   553→   553→                        {t.notes ? (
+   554→   554→                          <p className="mt-1 text-xs text-muted-foreground">
+   555→   555→                            {t.notes}
+   556→   556→                          </p>
+   557→   557→                        ) : null}
+   558→   558→                        {t.followUpDate ? (
+   559→   559→                          <p className="mt-1 text-xs text-amber-600 dark:text-amber-400">
+   560→   560→                            Follow-up: {formatDate(t.followUpDate)}
+   561→   561→                          </p>
+   562→   562→                        ) : null}
+   563→   563→                      </div>
+   564→   564→                      <div className="flex shrink-0 flex-col items-end gap-1">
+   565→   565→                        <span className="font-semibold">
+   566→   566→                          {formatCurrency(t.cost)}
+   567→   567→                        </span>
+   568→   568→                        <Badge
+   569→   569→                          variant={t.paid ? "default" : "outline"}
+   570→   570→                          className={
+   571→   571→                            t.paid
+   572→   572→                              ? "bg-emerald-600 text-white hover:bg-emerald-600"
+   573→   573→                              : "text-amber-700 dark:text-amber-400"
+   574→   574→                          }
+   575→   575→                        >
+   576→   576→                          {t.paid ? "Paid" : "Unpaid"}
+   577→   577→                        </Badge>
+   578→   578→                      </div>
+   579→   579→                    </div>
+   580→   580→                  </li>
+   581→   581→                ))}
+   582→   582→              </ul>
+   583→   583→            )}
+   584→   584→          </div>
+   585→   585→
+   586→   586→          {/* Add treatment — dentist only */}
+   587→   587→          {isDentist && toothNumber != null && (
+   588→   588→            <div className="space-y-3 rounded-md border p-3">
+   589→   589→              <div className="flex items-center justify-between">
+   590→   590→                <h4 className="text-sm font-semibold">Add Treatment</h4>
+   591→   591→                <span className="text-xs text-muted-foreground">
+   592→   592→                  Auto-marks tooth as “Treated”
+   593→   593→                </span>
+   594→   594→              </div>
+   595→   595→              <Form {...treatmentForm}>
+   596→   596→                <form
+   597→   597→                  onSubmit={treatmentForm.handleSubmit(onAddTreatment)}
+   598→   598→                  className="space-y-3"
+   599→   599→                >
+   600→   600→                  <FormField
+   601→   601→                    control={treatmentForm.control}
+   602→   602→                    name="procedure"
+   603→   603→                    render={({ field }) => (
+   604→   604→                      <FormItem>
+   605→   605→                        <FormLabel>Procedure</FormLabel>
+   606→   606→                        <FormControl>
+   607→   607→                          <Input
+   608→   608→                            placeholder="e.g. Filling, Extraction, Root canal…"
+   609→   609→                            {...field}
+   610→   610→                          />
+   611→   611→                        </FormControl>
+   612→   612→                        <FormMessage />
+   613→   613→                      </FormItem>
+   614→   614→                    )}
+   615→   615→                  />
+   616→   616→                  <div className="grid gap-3 sm:grid-cols-2">
+   617→   617→                    <FormField
+   618→   618→                      control={treatmentForm.control}
+   619→   619→                      name="cost"
+   620→   620→                      render={({ field }) => (
+   621→   621→                        <FormItem>
+   622→   622→                          <FormLabel>Cost (₱)</FormLabel>
+   623→   623→                          <FormControl>
+   624→   624→                            <Input
+   625→   625→                              type="number"
+   626→   626→                              step="0.01"
+   627→   627→                              min="0"
+   628→   628→                              {...field}
+   629→   629→                              value={
+   630→   630→                                typeof field.value === "number"
+   631→   631→                                  ? field.value
+   632→   632→                                  : 0
+   633→   633→                              }
+   634→   634→                              onChange={(e) =>
+   635→   635→                                field.onChange(
+   636→   636→                                  e.target.value === ""
+   637→   637→                                    ? 0
+   638→   638→                                    : parseFloat(e.target.value)
+   639→   639→                                )
+   640→   640→                              }
+   641→   641→                            />
+   642→   642→                          </FormControl>
+   643→   643→                          <FormMessage />
+   644→   644→                        </FormItem>
+   645→   645→                      )}
+   646→   646→                    />
+   647→   647→                    <FormField
+   648→   648→                      control={treatmentForm.control}
+   649→   649→                      name="followUpDate"
+   650→   650→                      render={({ field }) => (
+   651→   651→                        <FormItem>
+   652→   652→                          <FormLabel>Follow-up (optional)</FormLabel>
+   653→   653→                          <FormControl>
+   654→   654→                            <Input
+   655→   655→                              type="date"
+   656→   656→                              value={field.value ?? ""}
+   657→   657→                              onChange={(e) =>
+   658→   658→                                field.onChange(e.target.value || null)
+   659→   659→                              }
+   660→   660→                            />
+   661→   661→                          </FormControl>
+   662→   662→                          <FormMessage />
+   663→   663→                        </FormItem>
+   664→   664→                      )}
+   665→   665→                    />
+   666→   666→                  </div>
+   667→   667→                  <FormField
+   668→   668→                    control={treatmentForm.control}
+   669→   669→                    name="notes"
+   670→   670→                    render={({ field }) => (
+   671→   671→                      <FormItem>
+   672→   672→                        <FormLabel>Notes (optional)</FormLabel>
+   673→   673→                        <FormControl>
+   674→   674→                          <Textarea
+   675→   675→                            placeholder="Clinical notes about this procedure…"
+   676→   676→                            className="min-h-[70px]"
+   677→   677→                            {...field}
+   678→   678→                          />
+   679→   679→                        </FormControl>
+   680→   680→                        <FormMessage />
+   681→   681→                      </FormItem>
+   682→   682→                    )}
+   683→   683→                  />
+   684→   684→                  <Button
+   685→   685→                    type="submit"
+   686→   686→                    disabled={createTreatment.isPending}
+   687→   687→                    className="w-full sm:w-auto"
+   688→   688→                  >
+   689→   689→                    <Plus className="h-4 w-4" />
+   690→   690→                    {createTreatment.isPending
+   691→   691→                      ? "Recording…"
+   692→   692→                      : "Record Treatment"}
+   693→   693→                  </Button>
+   694→   694→                </form>
+   695→   695→              </Form>
+   696→   696→            </div>
+   697→   697→          )}
+   698→   698→        </div>
+   699→   699→      </DialogContent>
+   700→   700→    </Dialog>
+   701→   701→  );
+   702→   702→}
+   703→   703→
+   704→   704→// ---------------------------------------------------------------------------
+   705→   705→// Treatment history table
+   706→   706→// ---------------------------------------------------------------------------
+   707→   707→
+   708→   708→function TreatmentHistory({
+   709→   709→  treatments,
+   710→   710→  isLoading,
+   711→   711→}: {
+   712→   712→  treatments: Treatment[];
+   713→   713→  isLoading: boolean;
+   714→   714→}) {
+   715→   715→  const sorted = useMemo(
+   716→   716→    () =>
+   717→   717→      [...treatments].sort(
+   718→   718→        (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()
+   719→   719→      ),
+   720→   720→    [treatments]
+   721→   721→  );
+   722→   722→
+   723→   723→  if (isLoading) {
+   724→   724→    return <LoadingSpinner size="sm" />;
+   725→   725→  }
+   726→   726→
+   727→   727→  if (sorted.length === 0) {
+   728→   728→    return (
+   729→   729→      <p className="rounded-md border border-dashed px-4 py-6 text-center text-sm text-muted-foreground">
+   730→   730→        No treatments recorded yet.
+   731→   731→      </p>
+   732→   732→    );
+   733→   733→  }
+   734→   734→
+   735→   735→  return (
+   736→   736→    <div className="overflow-x-auto">
+   737→   737→      <table className="w-full text-sm">
+   738→   738→        <thead>
+   739→   739→          <tr className="border-b text-left text-xs text-muted-foreground">
+   740→   740→            <th className="py-2 pr-3 font-medium">Tooth</th>
+   741→   741→            <th className="py-2 pr-3 font-medium">Procedure</th>
+   742→   742→            <th className="py-2 pr-3 font-medium">Date</th>
+   743→   743→            <th className="py-2 pr-3 font-medium">Dentist</th>
+   744→   744→            <th className="py-2 pr-3 text-right font-medium">Cost</th>
+   745→   745→            <th className="py-2 pl-3 text-right font-medium">Status</th>
+   746→   746→          </tr>
+   747→   747→        </thead>
+   748→   748→        <tbody>
+   749→   749→          {sorted.map((t) => (
+   750→   750→            <tr
+   751→   751→              key={t.id}
+   752→   752→              className="border-b last:border-0 hover:bg-muted/40"
+   753→   753→            >
+   754→   754→              <td className="py-2 pr-3">
+   755→   755→                <Badge variant="outline">#{t.toothNumber}</Badge>
+   756→   756→              </td>
+   757→   757→              <td className="py-2 pr-3 font-medium">{t.procedure}</td>
+   758→   758→              <td className="py-2 pr-3 text-muted-foreground">
+   759→   759→                {formatDate(t.date)}
+   760→   760→              </td>
+   761→   761→              <td className="py-2 pr-3 text-muted-foreground">
+   762→   762→                {t.dentistName}
+   763→   763→              </td>
+   764→   764→              <td className="py-2 pr-3 text-right font-medium">
+   765→   765→                {formatCurrency(t.cost)}
+   766→   766→              </td>
+   767→   767→              <td className="py-2 pl-3 text-right">
+   768→   768→                <Badge
+   769→   769→                  variant={t.paid ? "default" : "outline"}
+   770→   770→                  className={
+   771→   771→                    t.paid
+   772→   772→                      ? "bg-emerald-600 text-white hover:bg-emerald-600"
+   773→   773→                      : "text-amber-700 dark:text-amber-400"
+   774→   774→                  }
+   775→   775→                >
+   776→   776→                  {t.paid ? "Paid" : "Unpaid"}
+   777→   777→                </Badge>
+   778→   778→              </td>
+   779→   779→            </tr>
+   780→   780→          ))}
+   781→   781→        </tbody>
+   782→   782→      </table>
+   783→   783→    </div>
+   784→   784→  );
+   785→   785→}
+   786→   786→
+   787→   787→// ---------------------------------------------------------------------------
+   788→   788→// Patient profile (main view)
+   789→   789→// ---------------------------------------------------------------------------
+   790→   790→
+   791→   791→export default function PatientProfileView() {
+   792→   792→  const params = useNav((s) => s.params);
+   793→   793→  const navigate = useNav((s) => s.navigate);
+   794→   794→  const isDentist = useIsDentist();
+   795→   795→  const patientId = params.id ?? null;
+   796→   796→
+   797→   797→  const patientQuery = usePatient(patientId);
+   798→   798→  const teethQuery = useTeeth(patientId);
+   799→   799→  const treatmentsQuery = useTreatments(patientId);
+   800→   800→
+   801→   801→  const [editOpen, setEditOpen] = useState(false);
+   802→   802→  const [deleteOpen, setDeleteOpen] = useState(false);
+   803→   803→  const [modalTooth, setModalTooth] = useState<number | null>(null);
+   804→   804→
+   805→   805→  const deletePatient = useDeletePatient();
+   806→   806→
+   807→   807→  if (!patientId) {
+   808→   808→    return (
+   809→   809→      <EmptyState
+   810→   810→        title="No patient selected"
+   811→   811→        message="Pick a patient from the list to view their profile and dental chart."
+   812→   812→        action={
+   813→   813→          <Button onClick={() => navigate("patients")}>
+   814→   814→            <ArrowLeft className="h-4 w-4" />
+   815→   815→            Back to Patients
+   816→   816→          </Button>
+   817→   817→        }
+   818→   818→      />
+   819→   819→    );
+   820→   820→  }
+   821→   821→
+   822→   822→  if (patientQuery.isLoading) {
+   823→   823→    return (
+   824→   824→      <div className="space-y-6">
+   825→   825→        <Skeleton className="h-9 w-40" />
+   826→   826→        <Skeleton className="h-32 w-full rounded-xl" />
+   827→   827→        <Skeleton className="h-72 w-full rounded-xl" />
+   828→   828→      </div>
+   829→   829→    );
+   830→   830→  }
+   831→   831→
+   832→   832→  if (patientQuery.isError || !patientQuery.data) {
+   833→   833→    return (
+   834→   834→      <EmptyState
+   835→   835→        title="Patient not found"
+   836→   836→        message="This patient record may have been deleted or you don't have access."
+   837→   837→        action={
+   838→   838→          <Button onClick={() => navigate("patients")}>
+   839→   839→            <ArrowLeft className="h-4 w-4" />
+   840→   840→            Back to Patients
+   841→   841→          </Button>
+   842→   842→        }
+   843→   843→      />
+   844→   844→    );
+   845→   845→  }
+   846→   846→
+   847→   847→  const patient = patientQuery.data;
+   848→   848→  const teeth = teethQuery.data ?? [];
+   849→   849→  const treatments = treatmentsQuery.data ?? [];
+   850→   850→
+   851→   851→  async function onConfirmDelete() {
+   852→   852→    if (!patientId) return;
+   853→   853→    try {
+   854→   854→      await deletePatient.mutateAsync(patientId);
+   855→   855→      toast.success("Patient deleted");
+   856→   856→      navigate("patients");
+   857→   857→    } catch (err) {
+   858→   858→      toastError(err, "Failed to delete patient");
+   859→   859→    } finally {
+   860→   860→      setDeleteOpen(false);
+   861→   861→    }
+   862→   862→  }
+   863→   863→
+   864→   864→  return (
+   865→   865→    <div className="space-y-6">
+   866→   866→      {/* Back button */}
+   867→   867→      <Button
+   868→   868→        variant="ghost"
+   869→   869→        size="sm"
+   870→   870→        onClick={() => navigate("patients")}
+   871→   871→        className="-ml-2 text-muted-foreground hover:text-foreground"
+   872→   872→      >
+   873→   873→        <ArrowLeft className="h-4 w-4" />
+   874→   874→        Back to Patients
+   875→   875→      </Button>
+   876→   876→
+   877→   877→      {/* Patient info */}
+   878→   878→      <Card>
+   879→   879→        <CardHeader className="flex-row items-start justify-between gap-4">
+   880→   880→          <div className="flex items-start gap-4">
+   881→   881→            <Avatar className="h-14 w-14 shrink-0">
+   882→   882→              <AvatarFallback className="bg-primary/10 text-base font-semibold text-primary">
+   883→   883→                {getInitials(patient.name) || "?"}
+   884→   884→              </AvatarFallback>
+   885→   885→            </Avatar>
+   886→   886→            <div className="min-w-0">
+   887→   887→              <CardTitle className="text-xl">{patient.name}</CardTitle>
+   888→   888→              <p className="mt-1 text-xs text-muted-foreground">
+   889→   889→                Patient since {formatDate(patient.createdAt)}
+   890→   890→              </p>
+   891→   891→            </div>
+   892→   892→          </div>
+   893→   893→          {isDentist && (
+   894→   894→            <div className="flex shrink-0 gap-2">
+   895→   895→              <Button
+   896→   896→                variant="outline"
+   897→   897→                size="sm"
+   898→   898→                onClick={() => setEditOpen(true)}
+   899→   899→              >
+   900→   900→                <Pencil className="h-4 w-4" />
+   901→   901→                Edit
+   902→   902→              </Button>
+   903→   903→              <Button
+   904→   904→                variant="outline"
+   905→   905→                size="sm"
+   906→   906→                onClick={() => setDeleteOpen(true)}
+   907→   907→                className="text-destructive hover:bg-destructive/10 hover:text-destructive"
+   908→   908→              >
+   909→   909→                <Trash2 className="h-4 w-4" />
+   910→   910→                Delete
+   911→   911→              </Button>
+   912→   912→            </div>
+   913→   913→          )}
+   914→   914→        </CardHeader>
+   915→   915→        <CardContent>
+   916→   916→          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+   917→   917→            <div className="space-y-1">
+   918→   918→              <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
+   919→   919→                Contact
+   920→   920→              </p>
+   921→   921→              <p className="flex items-center gap-2 text-sm">
+   922→   922→                <Phone className="h-4 w-4 text-muted-foreground" />
+   923→   923→                {patient.phone}
+   924→   924→              </p>
+   925→   925→              <p className="flex items-center gap-2 text-sm">
+   926→   926→                <Mail className="h-4 w-4 text-muted-foreground" />
+   927→   927→                <span className="truncate">{patient.email}</span>
+   928→   928→              </p>
+   929→   929→            </div>
+   930→   930→            <div className="space-y-1">
+   931→   931→              <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
+   932→   932→                Demographics
+   933→   933→              </p>
+   934→   934→              <p className="flex items-center gap-2 text-sm">
+   935→   935→                <Calendar className="h-4 w-4 text-muted-foreground" />
+   936→   936→                Born {formatDate(patient.dateOfBirth)}
+   937→   937→              </p>
+   938→   938→              {patient.address ? (
+   939→   939→                <p className="flex items-start gap-2 text-sm">
+   940→   940→                  <MapPin className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" />
+   941→   941→                  <span>{patient.address}</span>
+   942→   942→                </p>
+   943→   943→              ) : null}
+   944→   944→            </div>
+   945→   945→            {patient.notes ? (
+   946→   946→              <div className="space-y-1 sm:col-span-2 lg:col-span-1">
+   947→   947→                <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
+   948→   948→                  Notes
+   949→   949→                </p>
+   950→   950→                <p className="flex items-start gap-2 text-sm">
+   951→   951→                  <StickyNote className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" />
+   952→   952→                  <span>{patient.notes}</span>
+   953→   953→                </p>
+   954→   954→              </div>
+   955→   955→            ) : null}
+   956→   956→          </div>
+   957→   957→        </CardContent>
+   958→   958→      </Card>
+   959→   959→
+   960→   960→      {/* Dental chart */}
+   961→   961→      <Card>
+   962→   962→        <CardHeader>
+   963→   963→          <CardTitle>Dental Chart</CardTitle>
+   964→   964→          <p className="text-sm text-muted-foreground">
+   965→   965→            {isDentist
+   966→   966→              ? "Click any tooth to view its timeline or update its status."
+   967→   967→              : "Click any tooth to view its treatment timeline."}
+   968→   968→          </p>
+   969→   969→        </CardHeader>
+   970→   970→        <CardContent>
+   971→   971→          {teethQuery.isLoading ? (
+   972→   972→            <LoadingSpinner text="Loading dental chart…" />
+   973→   973→          ) : teethQuery.isError ? (
+   974→   974→            <EmptyState
+   975→   975→              title="Could not load dental chart"
+   976→   976→              message="Please try again later."
+   977→   977→            />
+   978→   978→          ) : (
+   979→   979→            <OralCavityChart
+   980→   980→              teeth={teeth}
+   981→   981→              onSelectTooth={(n) => setModalTooth(n)}
+   982→   982→              selectedTooth={modalTooth}
+   983→   983→            />
+   984→   984→          )}
+   985→   985→        </CardContent>
+   986→   986→      </Card>
+   987→   987→
+   988→   988→      {/* Treatment history */}
+   989→   989→      <Card>
+   990→   990→        <CardHeader>
+   991→   991→          <CardTitle>Treatment History</CardTitle>
+   992→   992→          <p className="text-sm text-muted-foreground">
+   993→   993→            All procedures for this patient, newest first.
+   994→   994→          </p>
+   995→   995→        </CardHeader>
+   996→   996→        <CardContent>
+   997→   997→          <TreatmentHistory
+   998→   998→            treatments={treatments}
+   999→   999→            isLoading={treatmentsQuery.isLoading}
+  1000→  1000→          />
+  1001→  1001→        </CardContent>
+  1002→  1002→      </Card>
+  1003→  1003→
+  1004→  1004→      {/* Dialogs */}
+  1005→  1005→      <EditPatientDialog
+  1006→  1006→        patient={patient}
+  1007→  1007→        open={editOpen}
+  1008→  1008→        onOpenChange={setEditOpen}
+  1009→  1009→      />
+  1010→  1010→      <ConfirmDialog
+  1011→  1011→        open={deleteOpen}
+  1012→  1012→        onOpenChange={setDeleteOpen}
+  1013→  1013→        title="Delete patient?"
+  1014→  1014→        message={`This will permanently remove ${patient.name} and all related teeth, treatments, and appointments. This cannot be undone.`}
+  1015→  1015→        confirmLabel="Delete patient"
+  1016→  1016→        destructive
+  1017→  1017→        onConfirm={onConfirmDelete}
+  1018→  1018→      />
+  1019→  1019→      <ToothModal
+  1020→  1020→        patientId={patientId}
+  1021→  1021→        toothNumber={modalTooth}
+  1022→  1022→        open={modalTooth !== null}
+  1023→  1023→        onOpenChange={(v) => {
+  1024→  1024→          if (!v) setModalTooth(null);
+  1025→  1025→        }}
+  1026→  1026→      />
+  1027→  1027→    </div>
+  1028→  1028→  );
+  1029→  1029→}
+  1030→  1030→

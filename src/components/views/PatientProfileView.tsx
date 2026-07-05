@@ -430,7 +430,7 @@ function ToothModal({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-[600px]">
+      <DialogContent className="max-h-[90vh] max-w-[90vw] overflow-y-auto sm:max-w-[600px]">
         <DialogHeader>
           <DialogTitle className="flex flex-wrap items-center gap-2">
             <span>Tooth #{toothNumber ?? "—"}</span>
@@ -734,7 +734,7 @@ function TreatmentHistory({
 
   return (
     <div className="overflow-x-auto">
-      <table className="w-full text-sm">
+      <table className="w-full text-xs xs:text-sm">
         <thead>
           <tr className="border-b text-left text-xs text-muted-foreground">
             <th className="py-2 pr-3 font-medium">Tooth</th>
@@ -862,7 +862,7 @@ export default function PatientProfileView() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="mx-auto max-w-7xl space-y-6 2xl:max-w-[1400px]">
       {/* Back button */}
       <Button
         variant="ghost"
@@ -913,7 +913,7 @@ export default function PatientProfileView() {
           )}
         </CardHeader>
         <CardContent>
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
             <div className="space-y-1">
               <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
                 Contact
@@ -976,11 +976,13 @@ export default function PatientProfileView() {
               message="Please try again later."
             />
           ) : (
-            <OralCavityChart
-              teeth={teeth}
-              onSelectTooth={(n) => setModalTooth(n)}
-              selectedTooth={modalTooth}
-            />
+            <div className="mx-auto max-w-[400px] xs:max-w-[480px] sm:max-w-[520px]">
+              <OralCavityChart
+                teeth={teeth}
+                onSelectTooth={(n) => setModalTooth(n)}
+                selectedTooth={modalTooth}
+              />
+            </div>
           )}
         </CardContent>
       </Card>

@@ -128,7 +128,7 @@ function UserCard() {
 
   return (
     <div className="flex items-center gap-3 rounded-md border border-border bg-muted/40 p-3">
-      <Avatar className="h-9 w-9">
+      <Avatar className="h-9 w-9 shrink-0">
         <AvatarFallback className="bg-primary/10 text-primary text-xs font-semibold">
           {initials(user.name)}
         </AvatarFallback>
@@ -139,7 +139,7 @@ function UserCard() {
           {roleLabel(user.role)}
         </p>
       </div>
-      <div className="flex items-center gap-1">
+      <div className="flex shrink-0 items-center gap-1">
         <ThemeToggle className="h-8 w-8 text-muted-foreground" />
         <Button
           variant="ghost"
@@ -165,7 +165,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     <div className="flex min-h-screen flex-col bg-background text-foreground">
       <div className="flex flex-1">
         {/* Desktop sidebar */}
-        <aside className="hidden w-64 shrink-0 flex-col border-r border-border bg-card p-4 lg:flex">
+        <aside className="hidden w-64 shrink-0 flex-col border-r border-border bg-card p-4 lg:flex 2xl:w-72">
           <div className="mb-6 flex items-center gap-2 px-2">
             <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary text-primary-foreground">
               <Stethoscope className="h-5 w-5" />
@@ -212,7 +212,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             <ThemeToggle className="h-8 w-8" />
           </header>
 
-          <main className="flex-1 p-4 sm:p-6 lg:p-8">{children}</main>
+          <main className="flex-1 p-4 sm:p-6 lg:p-8 2xl:p-10">{children}</main>
         </div>
       </div>
     </div>

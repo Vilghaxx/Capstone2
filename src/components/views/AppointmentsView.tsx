@@ -170,7 +170,7 @@ export default function AppointmentsView() {
       : null;
 
   return (
-    <div className="mx-auto flex w-full max-w-6xl flex-col gap-6 px-4 py-6 sm:px-6 lg:py-8">
+    <div className="mx-auto flex w-full max-w-7xl flex-col gap-6 px-4 py-6 sm:px-6 lg:py-8 2xl:max-w-[1400px]">
       <header className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex flex-col gap-1.5">
           <div className="flex items-center gap-2">
@@ -197,7 +197,7 @@ export default function AppointmentsView() {
       </header>
 
       <Tabs defaultValue="list" className="w-full">
-        <TabsList className="grid w-full grid-cols-3 sm:w-auto">
+        <TabsList className="flex w-full overflow-x-auto sm:w-auto">
           <TabsTrigger value="list" className="gap-1.5">
             <ClipboardList className="h-4 w-4" /> List
           </TabsTrigger>
@@ -419,12 +419,12 @@ function AppointmentRow({
         </div>
       </div>
 
-      <div className="flex items-center gap-2">
+      <div className="flex flex-wrap items-center justify-end gap-2">
         <Select
           value={appt.status}
           onValueChange={(v) => onStatusChange(appt.id, v as AppointmentStatus)}
         >
-          <SelectTrigger size="sm" className="w-[150px]">
+          <SelectTrigger size="sm" className="w-full sm:w-[150px]">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
@@ -466,11 +466,16 @@ function ScheduleTab({
   const { data, isLoading } = useAppointments({ date: selectedYMD });
 
   // Map time → appointments; collect off-grid appointments separately.
+  // Only show appointments that belong on the schedule (scheduled or
+  // completed). Pending requests, cancelled, and no-shows are excluded so
+  // the calendar reflects the confirmed day's agenda.
   const { byTime, otherTimes } = useMemo(() => {
     const map = new Map<string, Appointment[]>();
     const others: Appointment[] = [];
     const slotSet = new Set(TIME_SLOTS);
+    const visibleStatuses = new Set(["scheduled", "completed"]);
     for (const a of data ?? []) {
+      if (!visibleStatuses.has(a.status)) continue;
       const t = a.time || "";
       if (slotSet.has(t)) {
         const arr = map.get(t) ?? [];
@@ -519,7 +524,7 @@ function ScheduleTab({
               return (
                 <div
                   key={time}
-                  className="flex gap-3 rounded-lg border border-border bg-card/30 p-3"
+                  className="flex gap-3 rounded-lg border border-border bg-card/30 p-2 xs:p-3 lg:p-4"
                 >
                   <div className="w-16 shrink-0 pt-0.5 text-sm font-medium text-muted-foreground">
                     {time}
@@ -770,7 +775,7 @@ function NewAppointmentDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent>
+      <DialogContent className="max-w-[90vw] sm:max-w-[500px]">
         <DialogHeader>
           <DialogTitle>New Appointment</DialogTitle>
           <DialogDescription>

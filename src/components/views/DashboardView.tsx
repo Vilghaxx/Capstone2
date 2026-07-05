@@ -167,21 +167,21 @@ function StatCard({
           }
         }}
         className={cn(
-          "gap-0 py-5 transition-shadow",
+          "gap-0 py-5 transition-shadow 2xl:py-6",
           clickable &&
             "cursor-pointer hover:shadow-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
         )}
       >
-        <CardContent className="flex items-start gap-4">
+        <CardContent className="flex items-start gap-4 2xl:gap-5">
           <motion.div
             className={cn(
-              "flex h-11 w-11 shrink-0 items-center justify-center rounded-xl text-white",
+              "flex h-11 w-11 shrink-0 items-center justify-center rounded-xl text-white 2xl:h-12 2xl:w-12",
               accent
             )}
             whileHover={{ rotate: -8, scale: 1.08 }}
             transition={{ type: "spring", stiffness: 300, damping: 15 }}
           >
-            <Icon className="h-5 w-5" />
+            <Icon className="h-5 w-5 2xl:h-6 2xl:w-6" />
           </motion.div>
           <div className="min-w-0 flex-1">
             <p className="truncate text-sm text-muted-foreground">{label}</p>
@@ -189,7 +189,7 @@ function StatCard({
               <Skeleton className="mt-1 h-7 w-20" />
             ) : (
               <motion.p
-                className="truncate text-2xl font-semibold tracking-tight"
+                className="truncate text-xl font-semibold tracking-tight xs:text-2xl 2xl:text-3xl"
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 transition={{ delay: 0.1 }}
@@ -221,7 +221,7 @@ function AppointmentRow({
   patientName?: string;
 }) {
   return (
-    <div className="flex items-center justify-between gap-4 rounded-lg border bg-card px-4 py-3 transition-colors hover:bg-accent/40">
+    <div className="flex items-center justify-between gap-3 xs:gap-4 rounded-lg border bg-card p-3 xs:p-4 transition-colors hover:bg-accent/40">
       <div className="min-w-0 flex-1">
         <div className="flex items-center gap-2">
           <p className="truncate text-sm font-medium">
@@ -374,7 +374,7 @@ function QuickActions({
       <h2 className="text-sm font-semibold text-muted-foreground">
         Quick Actions
       </h2>
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 xs:gap-4 lg:gap-5">
         {actions.map((a) => (
           <QuickActionCard key={a.title} {...a} />
         ))}
@@ -433,7 +433,7 @@ function DentistDashboard() {
   return (
     <div className="space-y-6">
       {/* Stats row */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 xs:gap-4 lg:gap-5">
         <StatCard
           label="Total Patients"
           value={totalPatients}
@@ -526,7 +526,7 @@ function DentistDashboard() {
 
 function UnpaidBillRow({ bill }: { bill: BillingRecord }) {
   return (
-    <div className="flex items-center justify-between gap-4 rounded-lg border bg-card px-4 py-3 transition-colors hover:bg-accent/40">
+    <div className="flex items-center justify-between gap-3 xs:gap-4 rounded-lg border bg-card p-3 xs:p-4 transition-colors hover:bg-accent/40">
       <div className="min-w-0 flex-1">
         <p className="truncate text-sm font-medium">
           {bill.patientName || "Patient"}
@@ -590,7 +590,7 @@ function CashierDashboard() {
   return (
     <div className="space-y-6">
       {/* Stats row */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 xs:gap-4 lg:gap-5">
         <StatCard
           label="Today's Appointments"
           value={todays.length}
@@ -659,7 +659,7 @@ function CashierDashboard() {
       />
 
       {/* Today's appointments + recent unpaid bills */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 xs:gap-5 lg:gap-6">
         <AppointmentListCard
           title="Today's Appointments"
           description={
@@ -788,7 +788,7 @@ function PatientDashboard() {
       </Card>
 
       {/* Stats */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 xs:gap-4 lg:gap-5">
         <StatCard
           label="Upcoming Appointments"
           value={upcomingCount}
@@ -848,9 +848,9 @@ export default function DashboardView() {
   const isPatient = user?.role === "patient";
 
   return (
-    <div className="space-y-6">
+    <div className="mx-auto w-full max-w-7xl space-y-6 2xl:max-w-[1400px]">
       {/* Header */}
-      <header className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+      <header className="flex flex-col gap-3 xs:flex-row xs:items-center xs:justify-between">
         <div className="space-y-1">
           <div className="flex items-center gap-2">
             <h1 className="text-2xl font-semibold tracking-tight">

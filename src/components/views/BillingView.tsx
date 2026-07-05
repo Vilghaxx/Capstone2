@@ -213,7 +213,7 @@ export default function BillingView() {
   ];
 
   return (
-    <div className="space-y-6 p-4 sm:p-6">
+    <div className="mx-auto max-w-7xl 2xl:max-w-[1400px] space-y-6 p-4 sm:p-6">
       {/* Header */}
       <div>
         <h1 className="text-2xl font-semibold tracking-tight">Billing</h1>
@@ -221,7 +221,7 @@ export default function BillingView() {
       </div>
 
       {/* Summary cards */}
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="grid grid-cols-1 gap-4 xs:grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 2xl:gap-5">
         {summaryCards.map((c, index) => {
           const Icon = c.icon;
           const styles = COLOR_STYLES[c.color];
@@ -250,7 +250,7 @@ export default function BillingView() {
                   {summaryQuery.isLoading ? (
                     <div className="h-7 w-24 animate-pulse rounded bg-muted" />
                   ) : (
-                    <p className={`text-2xl font-semibold ${styles.value}`}>
+                    <p className={`text-lg xs:text-2xl font-semibold ${styles.value}`}>
                       {c.value}
                     </p>
                   )}
@@ -263,7 +263,7 @@ export default function BillingView() {
 
       {/* Filters bar */}
       <Card>
-        <CardContent className="flex flex-col gap-3 sm:flex-row sm:items-end">
+        <CardContent className="flex flex-col gap-2 sm:flex-row sm:items-end sm:gap-3">
           <div className="flex flex-col gap-1.5">
             <label className="text-xs font-medium text-muted-foreground">
               Status
@@ -323,8 +323,8 @@ export default function BillingView() {
               message="Treatments will appear here once they are created."
             />
           ) : (
-            <div className="overflow-x-auto">
-              <Table>
+            <div className="overflow-x-auto text-xs xs:text-sm">
+              <Table className="min-w-[640px]">
                 <TableHeader>
                   <TableRow>
                     <TableHead>Patient</TableHead>
@@ -413,7 +413,7 @@ export default function BillingView() {
           if (!o) closePaymentModal();
         }}
       >
-        <DialogContent>
+        <DialogContent className="max-w-[90vw] sm:max-w-[450px]">
           <DialogHeader>
             <DialogTitle>Record payment</DialogTitle>
             <DialogDescription>

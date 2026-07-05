@@ -64,8 +64,8 @@ function AppointmentCard({ appointment }: { appointment: Appointment }) {
     : "";
 
   return (
-    <Card className={cn("py-4", accentClass)}>
-      <CardContent className="space-y-2">
+    <Card className={cn("p-3 xs:p-4", accentClass)}>
+      <CardContent className="space-y-2 px-0">
         <div className="flex flex-wrap items-center justify-between gap-2">
           <h3 className="text-base font-semibold text-foreground">
             {APPOINTMENT_TYPE_META[appointment.type] ?? appointment.type}
@@ -123,7 +123,7 @@ export default function MyAppointmentsView() {
   }, [appointments]);
 
   return (
-    <div className="mx-auto max-w-3xl px-4 py-8">
+    <div className="mx-auto max-w-4xl px-4 py-8">
       <header className="mb-6 flex flex-wrap items-center justify-between gap-3">
         <div className="space-y-1">
           <h1 className="text-2xl font-semibold tracking-tight text-emerald-700 dark:text-emerald-300">
@@ -177,7 +177,7 @@ export default function MyAppointmentsView() {
                 }
               />
             ) : (
-              <div className="space-y-3">
+              <div className="grid grid-cols-1 gap-3 lg:grid-cols-2">
                 {upcoming.map((a) => (
                   <AppointmentCard key={a.id} appointment={a} />
                 ))}
@@ -200,7 +200,7 @@ export default function MyAppointmentsView() {
                 message="Your past appointments will appear here."
               />
             ) : (
-              <div className="space-y-3">
+              <div className="grid grid-cols-1 gap-3 lg:grid-cols-2">
                 {history.map((a) => (
                   <AppointmentCard key={a.id} appointment={a} />
                 ))}

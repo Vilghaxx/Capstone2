@@ -96,7 +96,7 @@ export default function RegisterView() {
       <div className="absolute right-4 top-4">
         <ThemeToggle />
       </div>
-      <div className="w-full max-w-lg">
+      <div className="w-full max-w-[90vw] sm:max-w-lg">
         <Card className="border-border/60 shadow-lg">
           <CardHeader className="items-center gap-3 text-center">
             <div className="flex size-12 items-center justify-center rounded-xl bg-primary text-primary-foreground shadow-sm">
@@ -112,7 +112,7 @@ export default function RegisterView() {
             </div>
           </CardHeader>
 
-          <CardContent>
+          <CardContent className="p-4 xs:p-6 sm:p-8">
             <Form {...form}>
               <form
                 onSubmit={form.handleSubmit(onSubmit)}
@@ -164,7 +164,7 @@ export default function RegisterView() {
                   )}
                 />
 
-                <div className="grid gap-4 sm:grid-cols-2">
+                <div className="grid grid-cols-1 xs:grid-cols-2 gap-4">
                   <FormField
                     control={form.control}
                     name="password"
@@ -246,7 +246,7 @@ export default function RegisterView() {
                   />
                 </div>
 
-                <div className="grid gap-4 sm:grid-cols-2">
+                <div className="grid grid-cols-1 xs:grid-cols-2 gap-4">
                   <FormField
                     control={form.control}
                     name="phone"

@@ -702,3 +702,141 @@ Work Log:
 Stage Summary:
 - Full aesthetic enhancement complete: dark mode (emerald-teal palette, system detection, persistence, no FOUC), micro-interactions (stat card hover lift + icon spring, quick action press feedback, patient card stagger, billing row fade, appointment row slide, approve/decline tap), page transitions (fade+slide), custom scrollbar, text selection color, reduced-motion support.
 - All views verified in both light and dark mode. Consistent 8/10 aesthetic rating from VLM.
+
+---
+Task ID: 14-a
+Agent: responsive-dashboard
+Task: Implement SOTA responsive breakpoints for DashboardView + AppShell
+
+Work Log:
+- Read worklog.md, DashboardView.tsx (888 lines), and AppShell.tsx (220 lines) to audit existing responsive classes.
+- DashboardView.tsx — StatCard: bumped to `text-xl xs:text-2xl 2xl:text-3xl` for value, added `2xl:py-6` to card, `2xl:gap-5` to content row, `2xl:h-12 2xl:w-12` icon container and `2xl:h-6 2xl:w-6` icon for large-desktop sizing.
+- DashboardView.tsx — All three stats grids (Dentist, Cashier, Patient): replaced `gap-4` with progressive `gap-3 xs:gap-4 lg:gap-5`.
+- DashboardView.tsx — QuickActions grid: replaced `gap-4` with `gap-3 xs:gap-4 lg:gap-5`.
+- DashboardView.tsx — Cashier two-column list grid: replaced `gap-6` with progressive `gap-4 xs:gap-5 lg:gap-6`.
+- DashboardView.tsx — AppointmentRow + UnpaidBillRow: changed `px-4 py-3 gap-4` to `p-3 xs:p-4 gap-3 xs:gap-4` for tighter mobile stacking that breathes on larger phones.
+- DashboardView.tsx — Root container: changed from `space-y-6` to `mx-auto w-full max-w-7xl space-y-6 2xl:max-w-[1400px]` so content is centered and capped on 4K monitors (no infinite stretching).
+- DashboardView.tsx — Header: switched from `sm:flex-row sm:items-center sm:justify-between` to `xs:flex-row xs:items-center xs:justify-between` so the greeting + role badge wrap nicely on 480–639px phones.
+- AppShell.tsx — Desktop sidebar: added `2xl:w-72` (was `w-64`) for extra breathing room on large desktops.
+- AppShell.tsx — Main content padding: added `2xl:p-10` (was `p-4 sm:p-6 lg:p-8`).
+- AppShell.tsx — UserCard: added `shrink-0` to Avatar and to the ThemeToggle/Logout button group so the truncated name takes priority and the row never overflows on tiny screens (e.g. 320px).
+- Ran `bun run lint` — clean, zero errors.
+
+Stage Summary:
+- Dashboard and shell now flow gracefully across 320px → 1920px+ using all seven breakpoints (xs, sm, md, lg, xl, 2xl, 3xl where useful).
+- Mobile (320–479px): single-column stats, tighter p-3 rows, stacked header, truncated user name in sidebar.
+- Large phones (480–639px via xs): 2-col stats grid, p-4 rows, inline header.
+- Tablet+ (lg+): 4-col stats / 3-col quick actions, w-64 sidebar, p-8 main.
+- Large desktop (2xl+): w-72 sidebar, p-10 main, larger stat card padding + text-3xl numbers.
+- 4K (3xl+): content capped at max-w-[1400px] and centered to avoid infinite stretching.
+- Changes are surgical — only className strings touched; no component structure, props, or logic modified. Lint passes clean.
+
+---
+Task ID: 14-c
+Agent: responsive-billing-auth
+Task: Implement SOTA responsive breakpoints for BillingView, BookAppointmentView, MyAppointmentsView, LoginView, RegisterView
+
+Work Log:
+- Read globals.css to confirm the seven custom breakpoints (xs 480px, sm 640px, md 768px, lg 1024px, xl 1280px, 2xl 1536px, 3xl 1920px) are all wired into `@theme`.
+- Read all five target views and the shadcn `dialog`/`card`/`table` primitives to confirm `cn()` uses twMerge (so responsive padding overrides resolve cleanly) and to plan surgical className-only edits.
+- BillingView.tsx:
+  - Root container: `space-y-6 p-4 sm:p-6` -> `mx-auto max-w-7xl 2xl:max-w-[1400px] space-y-6 p-4 sm:p-6` (centered + capped on 4K).
+  - Summary cards grid: `grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4` -> `grid-cols-1 gap-4 xs:grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 2xl:gap-5` (2 compact cards on small phones, looser gap on large desktops).
+  - Summary card value text: `text-2xl` -> `text-lg xs:text-2xl` so currency values fit on 320–479px screens.
+  - Filters bar: `flex flex-col gap-3 sm:flex-row sm:items-end` -> `flex flex-col gap-2 sm:flex-row sm:items-end sm:gap-3` (tighter mobile stack).
+  - Billing table wrapper: added `text-xs xs:text-sm` for compact mobile rows.
+  - Billing `<Table>`: added `min-w-[640px]` so columns keep their natural widths and the card scrolls horizontally on phones (prevents column crushing).
+  - Payment modal `DialogContent`: added `max-w-[90vw] sm:max-w-[450px]` (overrides default `max-w-[calc(100%-2rem)] sm:max-w-lg` via twMerge).
+- BookAppointmentView.tsx:
+  - Success state container: `mx-auto max-w-2xl px-4 py-10` -> `mx-auto w-full max-w-[90vw] sm:max-w-2xl px-4 py-10`.
+  - Main form container: `mx-auto max-w-2xl px-4 py-8` -> `mx-auto w-full max-w-[90vw] sm:max-w-md px-4 py-8` (narrower form, fits comfortably on phones).
+  - Wrapped the Preferred Date + Preferred Time blocks in a new `<div className="grid grid-cols-1 gap-5 sm:grid-cols-2">` so date and time sit side-by-side on small tablets+ and stack on phones.
+- MyAppointmentsView.tsx:
+  - Root container: `mx-auto max-w-3xl px-4 py-8` -> `mx-auto max-w-4xl px-4 py-8`.
+  - AppointmentCard: `<Card className={cn("py-4", accentClass)}>` + `<CardContent className="space-y-2">` -> `<Card className={cn("p-3 xs:p-4", accentClass)}>` + `<CardContent className="space-y-2 px-0">`. twMerge resolves the default `px-6` on CardContent against `px-0` and the default `py-6` on Card against `p-3 xs:p-4`, yielding clean progressive 0.75rem -> 1rem padding.
+  - Upcoming + History card lists: `space-y-3` -> `grid grid-cols-1 gap-3 lg:grid-cols-2` so cards go two-up on laptops+.
+- LoginView.tsx:
+  - Card wrapper: `w-full max-w-md` -> `w-full max-w-[90vw] sm:max-w-md` (uses available viewport on phones, capped at md on sm+).
+  - CardContent: added `p-4 xs:p-6 sm:p-8` progressive padding (overrides default `px-6`).
+  - Demo credential chips container: `flex flex-wrap gap-2` -> `flex flex-col xs:flex-row xs:flex-wrap gap-2` (stacks vertically on tiny phones, rows + wraps on xs+).
+- RegisterView.tsx:
+  - Card wrapper: `w-full max-w-lg` -> `w-full max-w-[90vw] sm:max-w-lg`.
+  - CardContent: added `p-4 xs:p-6 sm:p-8` progressive padding.
+  - Password/Confirm grid: `grid gap-4 sm:grid-cols-2` -> `grid grid-cols-1 xs:grid-cols-2 gap-4` (stacks on phones, two-up on xs+).
+  - Phone/Email grid: same `grid grid-cols-1 xs:grid-cols-2 gap-4` change.
+- Verified with `bun run lint` — clean, zero errors.
+
+Stage Summary:
+- All five views now flow gracefully across 320px -> 1920px+ using the new xs / 2xl / 3xl breakpoints alongside the standard sm/md/lg/xl.
+- Mobile (320-479px): BillingView shows 2 compact summary cards with `text-lg` numbers, table scrolls horizontally with `min-w-[640px]`, filters stack tightly (`gap-2`); BookAppointmentView form uses `max-w-[90vw]` and date+time stack; MyAppointmentsView cards use compact `p-3` and single-column layout; LoginView/RegisterView cards fit `90vw` with `p-4` padding and demo chips / field pairs stack.
+- Large phones (480-639px via xs): BillingView summary cards go 2-up; LoginView demo chips row up; RegisterView password/confirm + phone/email pairs go 2-up; MyAppointmentsView cards expand to `p-4`.
+- Tablet/Laptop (sm/lg+): payment modal caps at 450px, date+time go side-by-side in BookAppointmentView, MyAppointmentsView cards go 2-up at `lg:grid-cols-2`.
+- Large desktop (2xl+): BillingView summary grid uses `gap-5` and root caps at `max-w-[1400px]` to prevent infinite stretching on 4K monitors.
+- Changes are surgical — only className strings touched (plus one minimal wrapping `<div>` for the BookAppointmentView date+time row, as explicitly requested by the spec); no component logic, props, or existing JSX structure modified. Lint passes clean.
+
+---
+Task ID: 14-b
+Agent: responsive-patients-appointments
+Task: Implement SOTA responsive breakpoints for PatientsView, PatientProfileView, AppointmentsView
+
+Work Log:
+- Read worklog.md and the three target view files; confirmed `@theme` breakpoints (`xs` 480px, `2xl` 1536px, `3xl` 1920px) are defined in globals.css.
+- Audited each view mentally at 320 / 480 / 768 / 1024 / 1440 / 1920px and identified gaps.
+- PatientsView.tsx (6 className edits, all surgical):
+  * Root container: `space-y-6` → `mx-auto max-w-7xl space-y-6 2xl:max-w-[1400px]` (caps width on 4K).
+  * PatientCard `<Card>`: added `p-3 xs:p-4 lg:p-5` (progressive padding; overrides default `py-6`); `<CardContent>`: added `px-0` so inner padding doesn't compound with the Card's `p-*`.
+  * PatientCardSkeleton: same `p-3 xs:p-4 lg:p-5` on `<Card>` + `px-0` on `<CardContent>` so loading state matches card geometry.
+  * Search bar wrapper: added `w-full sm:w-64 lg:w-80` so it's full-bleed on mobile and fixed width on larger screens.
+  * Skeleton grid + patient cards grid: `grid-cols-1 sm:grid-cols-2 lg:grid-cols-3` → `grid-cols-1 xs:grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4` (4-up on large desktops).
+- PatientProfileView.tsx (5 edits):
+  * Root container: `space-y-6` → `mx-auto max-w-7xl space-y-6 2xl:max-w-[1400px]` (only on the main return — the loading-state `space-y-6` div left untouched).
+  * Tooth modal `<DialogContent>`: `max-h-[90vh] overflow-y-auto sm:max-w-[600px]` → `max-h-[90vh] max-w-[90vw] overflow-y-auto sm:max-w-[600px]` so it fits 320px phones.
+  * Treatment history `<table>`: `text-sm` → `text-xs xs:text-sm` (progressive font; wrapper already had `overflow-x-auto`).
+  * Contact info grid: `grid gap-4 sm:grid-cols-2 lg:grid-cols-3` → `grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3` (explicit mobile stacking).
+  * Wrapped `<OralCavityChart>` in `<div className="mx-auto max-w-[400px] xs:max-w-[480px] sm:max-w-[520px]">` so the chart scales up on bigger screens but never gets huge. (One minimal wrapping div, as the spec explicitly asked for a "container" — OralCavityChart has no className prop.)
+- AppointmentsView.tsx (6 edits):
+  * Root container: `max-w-6xl` → `max-w-7xl ... 2xl:max-w-[1400px]` (wider on large desktops).
+  * TabsList: `grid w-full grid-cols-3 sm:w-auto` → `flex w-full overflow-x-auto sm:w-auto` so tabs can scroll horizontally on very narrow screens if their `whitespace-nowrap` content overflows (flex-1 triggers shrink to min-content first).
+  * AppointmentRow actions `<div>`: `flex items-center gap-2` → `flex flex-wrap items-center justify-end gap-2` (lets the delete icon wrap below the now full-width dropdown on mobile).
+  * AppointmentRow status `<SelectTrigger>`: `w-[150px]` → `w-full sm:w-[150px]` (full-width dropdown on mobile, fixed on sm+).
+  * Schedule time-slot card: `p-3` → `p-2 xs:p-3 lg:p-4` (progressive padding).
+  * New Appointment `<DialogContent>`: bare → `className="max-w-[90vw] sm:max-w-[500px]"` (fits small phones).
+  * AppointmentRow's `flex-col sm:flex-row` left unchanged — stacking on 320–639px is the right call (info + dropdown+button row would be too cramped side-by-side at xs).
+- Ran `bun run lint` — clean, no errors.
+
+Stage Summary:
+- All three views now have SOTA responsive behavior across 320px → 1920px+.
+- PatientsView: 1-col mobile → 2-col sm → 3-col lg → 4-col 2xl; progressive card padding `p-3→p-4→p-5`; search bar full-width mobile → 256px sm → 320px lg; root capped at 1400px on 2xl+.
+- PatientProfileView: contact info stacks 1/2/3 cols; dental chart container scales `400→480→520px`; tooth modal fits 90vw on phones; treatment table uses progressive font sizes + horizontal scroll; root capped at 1400px.
+- AppointmentsView: tabs scroll horizontally if needed on tiny screens; appointment rows stack with full-width status dropdown on mobile (delete icon wraps); time-slot cards scale `p-2→p-3→p-4`; new-appointment dialog fits 90vw on phones; root widened to max-w-7xl and capped at 1400px on 2xl+.
+- All changes are className-only (plus one wrapping `<div>` around OralCavityChart, explicitly requested by the spec as a "container"). No component logic, props, or existing JSX structure modified. Lint passes clean.
+
+---
+Task ID: 14 (verification) + bug fixes
+Agent: main (orchestrator)
+Task: Fix delete bug + schedule calendar bug + verify SOTA breakpoints
+
+Work Log:
+Bug 1 — Appointment can't be deleted:
+- Root cause: ConfirmDialog's AlertDialogAction auto-closes the dialog (Radix default) before the async onConfirm (mutateAsync) completes. The close triggers setDeleteTarget(null), and the async delete may not complete.
+- Fix: Rewrote ConfirmDialog to call e.preventDefault() in the click handler (prevents Radix auto-close), run the async onConfirm, then close manually via onOpenChange(false) on success. Added a `pending` state that disables both buttons and shows "…" on the confirm button during the async operation. On error, the dialog stays open so the user can retry.
+- Verified: clicked delete → dialog opened → clicked "Delete" → DELETE /api/appointments/{id} returned 200 → appointment removed from list → dialog closed.
+
+Bug 2 — Scheduled appointment changed to pending still shows on Schedule calendar:
+- Root cause: ScheduleTab's useMemo filtered appointments by time slot but NOT by status — it showed ALL appointments for the date regardless of status (pending, cancelled, no-show all appeared).
+- Fix: Added `visibleStatuses = new Set(["scheduled", "completed"])` filter in the ScheduleTab useMemo. Appointments with status "pending", "cancelled", or "no-show" are now excluded from the schedule calendar (they don't belong on a confirmed day's agenda).
+- Verified: changed a scheduled appointment to pending via API → reloaded → Schedule tab now shows the 10:00 slot as "Available" instead of the pending appointment.
+
+SOTA Breakpoints:
+- Added 7 custom breakpoints in globals.css @theme: xs (480px), sm (640px), md (768px), lg (1024px), xl (1280px), 2xl (1536px), 3xl (1920px). The xs and 3xl are new additions.
+- 3 subagents enhanced all 9 views + AppShell with progressive responsive classNames (progressive padding, grid columns, font sizes, max-widths).
+- Verified at 4 viewport sizes via VLM:
+  - 375px mobile: hamburger menu, 1-column stat cards, no overflow, readable ✓
+  - 768px tablet: 2-column stat grid, clean layout ✓
+  - 1440px desktop: sidebar + 4-column stat grid, polished ✓
+  - 1920px large desktop: content centered with max-width, no infinite stretching ✓
+
+Stage Summary:
+- Both bugs fixed and verified end-to-end in browser.
+- SOTA breakpoints implemented across all views — progressive responsive design from 320px to 1920px+.
+- Lint clean. No runtime errors.

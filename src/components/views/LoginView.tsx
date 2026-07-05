@@ -81,7 +81,7 @@ export default function LoginView() {
       <div className="absolute right-4 top-4">
         <ThemeToggle />
       </div>
-      <div className="w-full max-w-md">
+      <div className="w-full max-w-[90vw] sm:max-w-md">
         <Card className="border-border/60 shadow-lg">
           <CardHeader className="items-center gap-3 text-center">
             <div className="flex size-12 items-center justify-center rounded-xl bg-primary text-primary-foreground shadow-sm">
@@ -95,7 +95,7 @@ export default function LoginView() {
             </div>
           </CardHeader>
 
-          <CardContent>
+          <CardContent className="p-4 xs:p-6 sm:p-8">
             <Form {...form}>
               <form
                 onSubmit={form.handleSubmit(onSubmit)}
@@ -186,7 +186,7 @@ export default function LoginView() {
               <p className="mb-2 text-sm font-medium text-emerald-900 dark:text-emerald-100">
                 Demo credentials — click to autofill
               </p>
-              <div className="flex flex-wrap gap-2">
+              <div className="flex flex-col xs:flex-row xs:flex-wrap gap-2">
                 {DEMO_CREDS.map((c) => (
                   <button
                     key={c.username}

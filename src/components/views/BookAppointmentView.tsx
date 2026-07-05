@@ -122,7 +122,7 @@ export default function BookAppointmentView() {
 
   if (submitted) {
     return (
-      <div className="mx-auto max-w-2xl px-4 py-10">
+      <div className="mx-auto w-full max-w-[90vw] sm:max-w-2xl px-4 py-10">
         <Card className="border-emerald-200 bg-emerald-50/60 dark:border-emerald-900/50 dark:bg-emerald-950/30">
           <CardContent className="flex flex-col items-center gap-4 px-6 py-12 text-center">
             <div className="flex h-16 w-16 items-center justify-center rounded-full bg-emerald-100 text-emerald-600 dark:bg-emerald-900/60 dark:text-emerald-300">
@@ -161,7 +161,7 @@ export default function BookAppointmentView() {
   }
 
   return (
-    <div className="mx-auto max-w-2xl px-4 py-8">
+    <div className="mx-auto w-full max-w-[90vw] sm:max-w-md px-4 py-8">
       <header className="mb-6 space-y-1">
         <h1 className="text-2xl font-semibold tracking-tight text-emerald-700 dark:text-emerald-300">
           Book an Appointment
@@ -218,6 +218,8 @@ export default function BookAppointmentView() {
               )}
             </div>
 
+            {/* Preferred Date + Time */}
+            <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
             {/* Preferred Date */}
             <div className="space-y-2">
               <Label htmlFor="appt-date">Preferred Date</Label>
@@ -264,6 +266,7 @@ export default function BookAppointmentView() {
                   {errors.time.message}
                 </p>
               )}
+            </div>
             </div>
 
             {/* Notes */}
