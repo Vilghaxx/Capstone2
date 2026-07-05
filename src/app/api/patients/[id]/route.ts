@@ -32,12 +32,12 @@ export const GET = withErrors(async (req: NextRequest, ctx: RouteContext) => {
 
 /**
  * PUT /api/patients/:id
- * Dentist only.
+ * Dentist or cashier.
  */
 export const PUT = withErrors(async (req: NextRequest, ctx: RouteContext) => {
   const user = getUserFromRequest(req);
   if (!user) return unauthorized();
-  const roleCheck = requireRole(user, ROLES.DENTIST);
+  const roleCheck = requireRole(user, ROLES.DENTIST, ROLES.CASHIER);
   if (!roleCheck.ok) return forbidden();
 
   const { id } = await ctx.params;
@@ -69,13 +69,13 @@ export const PUT = withErrors(async (req: NextRequest, ctx: RouteContext) => {
 
 /**
  * DELETE /api/patients/:id
- * Dentist only. Cascades teeth, treatments, and appointments.
+ * Dentist or cashier. Cascades teeth, treatments, and appointments.
  */
 export const DELETE = withErrors(
   async (req: NextRequest, ctx: RouteContext) => {
     const user = getUserFromRequest(req);
     if (!user) return unauthorized();
-    const roleCheck = requireRole(user, ROLES.DENTIST);
+    const roleCheck = requireRole(user, ROLES.DENTIST, ROLES.CASHIER);
     if (!roleCheck.ok) return forbidden();
 
     const { id } = await ctx.params;

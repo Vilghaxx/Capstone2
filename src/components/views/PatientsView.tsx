@@ -7,7 +7,6 @@ import { z } from "zod";
 import {
   Calendar,
   ChevronRight,
-  Info,
   Mail,
   Phone,
   Search,
@@ -16,7 +15,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 
-import { useIsCashier, useIsDentist } from "@/lib/auth-store";
+import { useIsStaff } from "@/lib/auth-store";
 import { useNav } from "@/lib/nav";
 import {
   useCreatePatient,
@@ -312,8 +311,7 @@ function AddPatientDialog({ open, onOpenChange }: AddPatientDialogProps) {
 }
 
 export default function PatientsView() {
-  const isDentist = useIsDentist();
-  const isCashier = useIsCashier();
+  const canManage = useIsStaff();
   const [searchInput, setSearchInput] = useState("");
   const [page, setPage] = useState(1);
   const [addOpen, setAddOpen] = useState(false);
@@ -341,23 +339,13 @@ export default function PatientsView() {
             Manage patient records and dental charts
           </p>
         </div>
-        {isDentist && (
+        {canManage && (
           <Button onClick={() => setAddOpen(true)}>
             <UserPlus className="h-4 w-4" />
             Add Patient
           </Button>
         )}
       </div>
-
-      {/* Cashier view-only banner */}
-      {isCashier && (
-        <div className="flex items-start gap-2.5 rounded-lg border border-amber-200/70 bg-amber-50/70 px-4 py-2.5 text-sm text-amber-800 dark:border-amber-900/40 dark:bg-amber-950/20 dark:text-amber-300">
-          <Info className="mt-0.5 h-4 w-4 shrink-0" />
-          <span>
-            View-only access — patient records can be edited by dentists.
-          </span>
-        </div>
-      )}
 
       {/* Search */}
       <div className="relative w-full sm:w-64 lg:w-80">
@@ -393,7 +381,7 @@ export default function PatientsView() {
           }
           icon={<Users className="h-6 w-6" />}
           action={
-            isDentist ? (
+            canManage ? (
               <Button onClick={() => setAddOpen(true)}>
                 <UserPlus className="h-4 w-4" />
                 Add Patient

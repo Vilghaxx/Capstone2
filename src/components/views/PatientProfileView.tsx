@@ -18,7 +18,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 
-import { useIsCashier, useIsDentist } from "@/lib/auth-store";
+import { useIsCashier, useIsDentist, useIsStaff } from "@/lib/auth-store";
 import { useNav } from "@/lib/nav";
 import {
   useCreateTreatment,
@@ -792,6 +792,7 @@ export default function PatientProfileView() {
   const params = useNav((s) => s.params);
   const navigate = useNav((s) => s.navigate);
   const isDentist = useIsDentist();
+  const canManage = useIsStaff();
   const patientId = params.id ?? null;
 
   const patientQuery = usePatient(patientId);
@@ -890,7 +891,7 @@ export default function PatientProfileView() {
               </p>
             </div>
           </div>
-          {isDentist && (
+          {canManage && (
             <div className="flex shrink-0 gap-2">
               <Button
                 variant="outline"

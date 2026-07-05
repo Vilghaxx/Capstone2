@@ -861,3 +861,40 @@ Work Log:
 
 Stage Summary:
 - Registration bug fixed. The schema now correctly treats confirmPassword as a frontend-only optional field while preserving the password-match validation when it's present.
+
+---
+Task ID: 16
+Agent: main (orchestrator)
+Task: Add full patient management for cashier (create, edit, delete)
+
+Work Log:
+- API changes — allowed cashier for patient CRUD:
+  - src/app/api/patients/route.ts POST: requireRole(user, ROLES.DENTIST) → requireRole(user, ROLES.DENTIST, ROLES.CASHIER)
+  - src/app/api/patients/[id]/route.ts PUT: same change
+  - src/app/api/patients/[id]/route.ts DELETE: same change
+- Frontend PatientsView changes:
+  - Replaced useIsDentist/useIsCashier with useIsStaff() → canManage flag
+  - "Add Patient" button now shows for canManage (dentist OR cashier), was isDentist only
+  - Removed the "View-only access" amber banner for cashiers (no longer view-only)
+  - EmptyState action button also gated by canManage
+  - Removed unused Info icon import
+- Frontend PatientProfileView changes:
+  - Added useIsStaff() → canManage flag (kept isDentist for clinical actions)
+  - Edit + Delete buttons now gated by canManage (was isDentist only)
+  - Tooth modal clinical controls (Update Status, Add Treatment) remain isDentist-only
+  - Read-only banner in tooth modal remains for cashiers (clinical edits restricted)
+- Verified via API (cashier token):
+  - POST /api/patients → 201, patient created ✓
+  - PUT /api/patients/:id → 200, patient edited ✓
+  - DELETE /api/patients/:id → 200, patient deleted ✓
+- Verified in browser (cashier login):
+  - Patients list: "Add Patient" button visible, no view-only banner ✓
+  - Cashier-created patient appears in list ✓
+  - Patient profile: Edit + Delete buttons visible ✓
+  - Tooth modal: read-only (no Update Status / Add Treatment) — clinical actions stay dentist-only ✓
+- Lint clean.
+
+Stage Summary:
+- Cashier now has full patient management: create, edit, delete patient records.
+- Clinical actions (tooth status editing, treatment creation) remain dentist-only.
+- The permission boundary is: patient record CRUD = dentist + cashier; clinical edits = dentist only.

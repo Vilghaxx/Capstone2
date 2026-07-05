@@ -77,12 +77,12 @@ export const GET = withErrors(async (req: NextRequest) => {
 
 /**
  * POST /api/patients
- * Dentist only. Creates a patient and seeds 32 default Teeth rows.
+ * Dentist or cashier. Creates a patient and seeds 32 default Teeth rows.
  */
 export const POST = withErrors(async (req: NextRequest) => {
   const user = getUserFromRequest(req);
   if (!user) return unauthorized();
-  const roleCheck = requireRole(user, ROLES.DENTIST);
+  const roleCheck = requireRole(user, ROLES.DENTIST, ROLES.CASHIER);
   if (!roleCheck.ok) return forbidden();
 
   const body = await req.json().catch(() => null);
