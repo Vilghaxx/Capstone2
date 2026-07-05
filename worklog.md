@@ -840,3 +840,24 @@ Stage Summary:
 - Both bugs fixed and verified end-to-end in browser.
 - SOTA breakpoints implemented across all views — progressive responsive design from 320px to 1920px+.
 - Lint clean. No runtime errors.
+
+---
+Task ID: 15
+Agent: main (orchestrator)
+Task: Fix "Validation failed" bug on patient registration
+
+Work Log:
+- Reproduced: POST /api/auth/register with the frontend payload (which excludes confirmPassword) returned 400 "Validation failed: confirmPassword — expected string, received undefined".
+- Root cause: registerFormSchema had `confirmPassword: z.string()` (required), but the frontend correctly excludes confirmPassword from the API payload (it's a frontend-only field for the password-match check). The backend re-validated the full schema and rejected the missing field.
+- Fix: Made confirmPassword optional in the schema (`z.string().optional()`) and updated the refine() to skip the match check when confirmPassword is undefined: `data.confirmPassword === undefined || data.password === data.confirmPassword`. This way:
+  - Frontend form: confirmPassword is present → match check runs (password mismatch still rejected).
+  - Backend API: confirmPassword absent → match check skipped → registration succeeds.
+- Verified all 3 scenarios via curl:
+  1. With matching confirmPassword → SUCCESS ✓
+  2. With mismatched confirmPassword → "Passwords do not match" (frontend protection preserved) ✓
+  3. Without confirmPassword (the bug case) → SUCCESS ✓
+- Verified end-to-end in browser: filled the Register form → clicked "Create account" → POST /api/auth/register 200 → new patient "Jane Doe" logged in → patient dashboard rendered with Book Appointment / My Appointments nav. No console errors.
+- Lint clean.
+
+Stage Summary:
+- Registration bug fixed. The schema now correctly treats confirmPassword as a frontend-only optional field while preserving the password-match validation when it's present.
