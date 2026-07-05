@@ -33,33 +33,30 @@ const MOUTH_OPENING =
 
 /**
  * Inline mouth anatomy details — layered ON TOP of the base oral cavity
- * illustration to add missing features: lips, tongue, palatal rugae,
- * gum highlights, depth shadows, and lip shine.
+ * illustration. Only subtle enhancements: lip rim, tongue, palatal rugae,
+ * gum highlights, and depth vignette. All clipped to the inner mouth so
+ * nothing overlaps the teeth from the outside.
  */
 function MouthAnatomyDetails() {
   return (
     <>
       <defs>
-        {/* Upper lip gradient */}
-        <linearGradient id="upperLip" x1="50%" y1="0%" x2="50%" y2="100%">
-          <stop offset="0%" stopColor="#D86858" />
-          <stop offset="100%" stopColor="#B84A3E" />
-        </linearGradient>
-        {/* Lower lip gradient */}
-        <linearGradient id="lowerLip" x1="50%" y1="0%" x2="50%" y2="100%">
-          <stop offset="0%" stopColor="#B84A3E" />
-          <stop offset="100%" stopColor="#D86858" />
+        {/* Lip rim gradient (the ring of tissue between lips and mouth) */}
+        <linearGradient id="lipRim" x1="50%" y1="0%" x2="50%" y2="100%">
+          <stop offset="0%" stopColor="#D86858" stopOpacity="0.7" />
+          <stop offset="50%" stopColor="#C2584C" stopOpacity="0.5" />
+          <stop offset="100%" stopColor="#D86858" stopOpacity="0.7" />
         </linearGradient>
         {/* Tongue gradient */}
-        <radialGradient id="tongueGrad" cx="50%" cy="35%" r="58%">
+        <radialGradient id="tongueGrad" cx="50%" cy="35%" r="60%">
           <stop offset="0%" stopColor="#E88884" />
           <stop offset="55%" stopColor="#CC6460" />
           <stop offset="100%" stopColor="#9C4844" />
         </radialGradient>
-        {/* Inner mouth depth shadow */}
-        <radialGradient id="innerShadow" cx="50%" cy="50%" r="52%">
-          <stop offset="50%" stopColor="#000000" stopOpacity="0" />
-          <stop offset="100%" stopColor="#000000" stopOpacity="0.5" />
+        {/* Subtle inner vignette for depth */}
+        <radialGradient id="innerShadow" cx="50%" cy="50%" r="55%">
+          <stop offset="65%" stopColor="#000000" stopOpacity="0" />
+          <stop offset="100%" stopColor="#000000" stopOpacity="0.3" />
         </radialGradient>
         {/* Clip to the inner mouth opening */}
         <clipPath id="mouthClip">
@@ -67,136 +64,117 @@ function MouthAnatomyDetails() {
         </clipPath>
       </defs>
 
-      {/* ===== Lip shapes (outside the mouth clip, on top of base) ===== */}
-      {/* Upper lip (cupid's bow shape) */}
+      {/* ===== Lip rim (the ring between outer lip and inner mouth) ===== */}
+      {/* Uses evenodd fill rule: outer outline minus inner opening = ring.
+          This frames the mouth WITHOUT covering the teeth. */}
       <path
-        d="M60,140 Q60,80 130,55 Q170,38 195,42 Q200,35 204,42 Q210,38 230,42 Q275,38 320,55 Q370,80 350,140 Q300,120 250,115 Q220,112 204,110 Q188,112 155,115 Q100,120 60,140 Z"
-        fill="url(#upperLip)"
-        opacity={0.75}
-      />
-      {/* Lower lip (fuller, rounded) */}
-      <path
-        d="M55,260 Q60,340 130,365 Q175,378 204,372 Q235,378 280,365 Q350,340 350,260 Q300,285 250,290 Q220,293 204,295 Q188,293 155,290 Q100,285 55,260 Z"
-        fill="url(#lowerLip)"
-        opacity={0.75}
+        fillRule="evenodd"
+        clipRule="evenodd"
+        d={`${LIP_OUTLINE} ${MOUTH_OPENING}`}
+        fill="url(#lipRim)"
       />
 
       {/* ===== Details clipped to the inner mouth ===== */}
       <g clipPath="url(#mouthClip)">
-        {/* Dark inner cavity for depth (behind everything) */}
-        <path d={MOUTH_OPENING} fill="#5A1E1C" opacity={0.5} />
-
-        {/* Palatal rugae (ridges on the roof of the mouth) */}
+        {/* Palatal rugae (ridges on the roof of the mouth) — top area only */}
         <g
           stroke="#7C2E2A"
-          strokeWidth={1.5}
-          opacity={0.3}
+          strokeWidth={1.2}
+          opacity={0.25}
           fill="none"
           strokeLinecap="round"
         >
-          <path d="M148,52 Q150,74 148,96" />
-          <path d="M163,47 Q165,71 163,99" />
-          <path d="M178,45 Q180,70 178,101" />
-          <path d="M193,44 Q195,70 193,103" />
-          <path d="M208,44 Q210,70 208,103" />
-          <path d="M223,45 Q225,71 223,101" />
-          <path d="M238,47 Q240,73 238,99" />
-          <path d="M253,51 Q255,75 253,96" />
+          <path d="M155,52 Q157,72 155,90" />
+          <path d="M170,48 Q172,70 170,93" />
+          <path d="M185,46 Q187,69 185,95" />
+          <path d="M200,45 Q202,69 200,97" />
+          <path d="M215,45 Q213,69 215,97" />
+          <path d="M230,46 Q228,70 230,95" />
+          <path d="M245,48 Q243,71 245,93" />
+          <path d="M258,52 Q256,73 258,90" />
         </g>
 
-        {/* Upper gum highlight (glossy ridge) */}
+        {/* Upper gum highlight (glossy ridge along the upper arch) */}
         <path
-          d="M115,120 Q125,68 204,56 Q285,68 295,120"
+          d="M120,118 Q130,72 204,60 Q280,72 290,118"
           fill="none"
           stroke="#F4B0A8"
-          strokeWidth={5}
-          opacity={0.3}
+          strokeWidth={3.5}
+          opacity={0.25}
           strokeLinecap="round"
         />
 
         {/* Lower gum highlight */}
         <path
-          d="M115,280 Q125,332 204,345 Q285,332 295,280"
+          d="M120,282 Q130,328 204,340 Q280,328 290,282"
           fill="none"
           stroke="#F4B0A8"
-          strokeWidth={5}
-          opacity={0.3}
+          strokeWidth={3.5}
+          opacity={0.25}
           strokeLinecap="round"
         />
 
-        {/* Tongue (floor of mouth) — prominent */}
+        {/* Tongue (floor of mouth) — lower center only */}
         <ellipse
           cx={204}
-          cy={330}
-          rx={85}
-          ry={40}
+          cy={335}
+          rx={72}
+          ry={28}
           fill="url(#tongueGrad)"
-          opacity={0.88}
+          opacity={0.75}
         />
         {/* Tongue central groove */}
         <path
-          d="M162,324 Q204,336 246,324"
+          d="M172,330 Q204,340 236,330"
           fill="none"
           stroke="#883838"
-          strokeWidth={2}
-          opacity={0.45}
+          strokeWidth={1.5}
+          opacity={0.4}
           strokeLinecap="round"
         />
-        {/* Tongue papillae texture */}
-        <g fill="#883838" opacity={0.2}>
-          <circle cx={178} cy={318} r={3} />
-          <circle cx={192} cy={326} r={3} />
-          <circle cx={208} cy={328} r={3} />
-          <circle cx={224} cy={326} r={3} />
-          <circle cx={236} cy={318} r={3} />
-          <circle cx={186} cy={334} r={2.5} />
-          <circle cx={204} cy={340} r={2.5} />
-          <circle cx={222} cy={334} r={2.5} />
-        </g>
 
-        {/* Frenum attachments */}
+        {/* Frenum attachments (subtle tissue lines) */}
         <path
-          d="M204,102 Q204,122 204,138"
+          d="M204,108 L204,128"
           fill="none"
           stroke="#A84440"
-          strokeWidth={1.8}
-          opacity={0.5}
+          strokeWidth={1.2}
+          opacity={0.35}
         />
         <path
-          d="M204,298 Q204,282 204,264"
+          d="M204,292 L204,272"
           fill="none"
           stroke="#A84440"
-          strokeWidth={1.8}
-          opacity={0.5}
+          strokeWidth={1.2}
+          opacity={0.35}
         />
 
-        {/* Inner shadow (depth at mouth edges) */}
+        {/* Subtle inner vignette (depth at edges only) */}
         <ellipse
           cx={204}
           cy={200}
-          rx={134}
-          ry={172}
+          rx={130}
+          ry={165}
           fill="url(#innerShadow)"
         />
       </g>
 
-      {/* Lip highlights (shine) */}
-      <ellipse cx={204} cy={340} rx={56} ry={9} fill="#FFFFFF" opacity={0.15} />
+      {/* Lip shine (subtle, on the outer lip area only) */}
       <path
-        d="M172,24 Q204,15 236,24"
+        d="M170,28 Q204,20 238,28"
         fill="none"
         stroke="#FFFFFF"
-        strokeWidth={3}
-        opacity={0.2}
+        strokeWidth={2.5}
+        opacity={0.18}
         strokeLinecap="round"
       />
-      {/* Lip contour line (definition between lips) */}
-      <path
-        d="M60,200 Q130,195 204,200 Q280,195 350,200"
-        fill="none"
-        stroke="#8C3028"
-        strokeWidth={1}
-        opacity={0.2}
+      <ellipse
+        cx={204}
+        cy={345}
+        rx={48}
+        ry={6}
+        fill="#FFFFFF"
+        opacity={0.1}
       />
     </>
   );

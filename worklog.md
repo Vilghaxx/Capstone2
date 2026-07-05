@@ -615,3 +615,28 @@ Stage Summary:
   - Frenum attachments and lip shine
 - The SVG is loaded via fetch + dangerouslySetInnerHTML (not <image href>) so all CSS class styling renders correctly.
 - File: public/charts/oral-cavity-base.svg (178KB, 400 anatomy paths), src/components/common/OralCavityChart.tsx (fetch + inject + MouthAnatomyDetails).
+
+---
+Task ID: 11
+Agent: main (orchestrator)
+Task: Fix overlapping mouth shade — polish the SVG anatomy layering
+
+Work Log:
+- Diagnosed: the lip shapes were drawn as filled paths that extended over the teeth (opacity 0.75), causing the "mouth shade overlapping" issue. The dark inner cavity overlay (#5A1E1C at 0.5) and oversized inner shadow also obscured the gradient gums.
+- Redesigned MouthAnatomyDetails with proper layering:
+  1. Lip rim: replaced the two filled lip shapes with a single RING path using fillRule="evenodd" (outer LIP_OUTLINE minus inner MOUTH_OPENING). This frames the mouth WITHOUT covering the teeth. Gradient #D86858→#C2584C→#D86858 with reduced opacity (0.5–0.7).
+  2. Removed the dark inner cavity overlay entirely (the base SVG already has the dark cavity — no need to double up).
+  3. Reduced inner vignette: opacity 0→0.3 (was 0→0.5), inner stop at 65% (was 50%) so only the very edges darken.
+  4. Tongue: repositioned lower (cy=335, was 330), smaller (rx=72 ry=28, was 85×40), lower opacity (0.75, was 0.88) so it sits in the lower-center gap without overlapping lower teeth.
+  5. Palatal rugae: tightened to upper area only, thinner stroke (1.2, was 1.5), lower opacity (0.25, was 0.3).
+  6. Gum highlights: thinner (3.5, was 5), lower opacity (0.25, was 0.3).
+  7. Frenum: thinner, lower opacity.
+  8. Removed the lip contour line (was redundant with the rim).
+- Verified with VLM: "Lips frame teeth cleanly, no overlap. Tongue visible at bottom, not covering lower teeth. Composition clean/polished. No remaining overlap. Polish: 9/10."
+- All 32 teeth remain interactive (clickable → ToothModal opens).
+
+Stage Summary:
+- The overlap is fixed. The lips now frame the mouth as a ring (evenodd fill) instead of filled shapes that cover the teeth.
+- All overlays are more subtle (lower opacity, smaller sizes) so the base gradient gums show through.
+- Tongue sits cleanly in the lower-center gap without covering lower teeth.
+- VLM rated polish 9/10. Lint clean.
