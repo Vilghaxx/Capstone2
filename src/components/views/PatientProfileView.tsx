@@ -7,6 +7,7 @@ import { z } from "zod";
 import {
   ArrowLeft,
   Calendar,
+  Lock,
   Mail,
   MapPin,
   Pencil,
@@ -17,7 +18,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 
-import { useIsDentist } from "@/lib/auth-store";
+import { useIsCashier, useIsDentist } from "@/lib/auth-store";
 import { useNav } from "@/lib/nav";
 import {
   useCreateTreatment,
@@ -304,6 +305,7 @@ function ToothModal({
   onOpenChange: (open: boolean) => void;
 }) {
   const isDentist = useIsDentist();
+  const isCashier = useIsCashier();
   const teethQuery = useTeeth(patientId);
   const toothTreatmentsQuery = useToothTreatments(
     patientId,
@@ -456,6 +458,16 @@ function ToothModal({
         </DialogHeader>
 
         <div className="space-y-5">
+          {/* Read-only banner — cashier only */}
+          {isCashier && (
+            <div className="flex items-start gap-2.5 rounded-md border border-amber-200/70 bg-amber-50/70 px-3 py-2 text-xs text-amber-800 dark:border-amber-900/40 dark:bg-amber-950/20 dark:text-amber-300">
+              <Lock className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+              <span>
+                Read-only — clinical edits restricted to dentists.
+              </span>
+            </div>
+          )}
+
           {/* Status editor — dentist only */}
           {isDentist && toothNumber != null && (
             <div className="space-y-3 rounded-md border p-3">
@@ -950,7 +962,9 @@ export default function PatientProfileView() {
         <CardHeader>
           <CardTitle>Dental Chart</CardTitle>
           <p className="text-sm text-muted-foreground">
-            Click any tooth to view its timeline or update its status.
+            {isDentist
+              ? "Click any tooth to view its timeline or update its status."
+              : "Click any tooth to view its treatment timeline."}
           </p>
         </CardHeader>
         <CardContent>

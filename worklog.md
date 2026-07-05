@@ -445,3 +445,133 @@ Stage Summary:
 - Root cause was invalid XML (dangling entity references from Adobe Illustrator DOCTYPE).
 - Fixed by rebuilding a clean self-contained SVG with only the needed <style>, <defs>, and 405 anatomy paths.
 - Chart now renders the realistic oral cavity background with interactive color-coded teeth overlay.
+
+---
+Task ID: 9-d
+Agent: billing-refactor
+Task: Refactor Billing view for role-appropriate items
+
+Work Log:
+- Read worklog.md and src/components/views/BillingView.tsx in full.
+- Verified permission matrix: both dentist and cashier have identical billing capabilities (view + record payments); patients are gated out at the route level. Existing summary cards, filters, table, and payment modal already work identically for both staff roles — no structural change needed.
+- Confirmed useAuth shape from src/lib/auth-store.ts: exposes `user.role` ("dentist" | "cashier" | "patient"). Also has useIsCashier/useIsDentist selectors.
+- Added `useAuth` import from "@/lib/auth-store".
+- Inside BillingView, read `role = useAuth((s) => s.user?.role)` and computed a role-aware `subtitle`:
+  - cashier → "Record payments and track outstanding balances"
+  - dentist (default branch) → "Review treatment costs and payments"
+- Replaced the previous hardcoded header subtitle ("Track treatments and record payments") with the computed `{subtitle}`.
+- Touched nothing else: no indigo/blue introduced, no structural changes, file remains "use client" with default export and no props.
+- Ran `bun run lint` — clean, zero errors/warnings.
+
+Stage Summary:
+- Billing view header subtitle is now role-aware via useAuth; cashier sees a payment/balance-focused subtitle, dentist sees a cost-review-focused subtitle.
+- All other Billing UI (summary cards, status/patient filters, treatments table, record-payment modal) confirmed to work identically for both permitted roles — no further changes required.
+- Lint clean. Only file touched: src/components/views/BillingView.tsx.
+
+---
+Task ID: 9-b
+Agent: patient-views-refactor
+Task: Refactor Patients + PatientProfile views for strict role gating
+
+Work Log:
+- Read worklog.md and reviewed current PatientsView.tsx + PatientProfileView.tsx in full.
+- Verified the permission matrix: dentist + cashier both view; only dentist can add/edit/delete patient and edit tooth status / add treatments. Patient role is blocked upstream by the page orchestrator.
+- Audited existing role gating in both files:
+  - PatientsView: "Add Patient" header button + EmptyState action already gated by `useIsDentist()`. Cashier had no UI differentiation.
+  - PatientProfileView: Edit + Delete buttons (line ~881), tooth status editor (line ~460), and Add Treatment form (line ~575) all already gated by `useIsDentist()` inside ToothModal. EditPatientDialog + ConfirmDialog only reachable via dentist-only buttons. ToothModal still opened for cashiers via `setModalTooth`, but offered no read-only indicator.
+- PatientsView.tsx changes (surgical):
+  - Added `Info` to lucide imports; switched `useIsDentist` import to `useIsCashier, useIsDentist`.
+  - Added `const isCashier = useIsCashier();` in the component.
+  - Inserted an amber-tinted view-only banner below the page header (and above the search bar) shown only when `isCashier`: "View-only access — patient records can be edited by dentists." Uses amber-50/200/800 + dark-mode amber-950/900/300 (no indigo/blue).
+- PatientProfileView.tsx changes (surgical):
+  - Added `Lock` to lucide imports; switched `useIsDentist` import to `useIsCashier, useIsDentist`.
+  - In `ToothModal`: added `const isCashier = useIsCashier();` and rendered a small amber read-only note at the top of the modal body (before the dentist-only status editor) when `isCashier`: "Read-only — clinical edits restricted to dentists." Cashiers still see the tooth badge, last-treatment description, and the full treatment timeline; they get no status Select, no Save Status button, no Add Treatment form.
+  - Made the Dental Chart card description role-aware: dentists see the original "Click any tooth to view its timeline or update its status." Cashiers see "Click any tooth to view its treatment timeline." (the original wording was misleading for cashiers since they cannot update status).
+- Did NOT touch OralCavityChart, patient info card, treatment history table, search, pagination, grid, or any dialog form fields.
+- Ran `bun run lint` — clean, no errors.
+
+Stage Summary:
+- Cashier now sees: Patients list with NO Add Patient button (header + empty state), an amber "View-only access" banner; Patient profile with NO Edit/Delete buttons, the dental chart (tooth clicks still open ToothModal), ToothModal showing the tooth badge + treatment timeline READ-ONLY with an amber "Read-only — clinical edits restricted to dentists" note, and the full treatment history table.
+- Dentist UI is unchanged functionally — still sees Add Patient, Edit, Delete, status editor, and Add Treatment form. Only a minor conditional dental-chart subtitle text was introduced.
+- Files touched: src/components/views/PatientsView.tsx, src/components/views/PatientProfileView.tsx. Both remain `"use client"`, default-exported, no props. Lint clean.
+
+---
+Task ID: 9-c
+Agent: appointments-refactor
+Task: Refactor Appointments view for strict role gating
+
+Work Log:
+- Read worklog.md (project history + sibling Task 9-d Billing refactor pattern) and `src/components/views/AppointmentsView.tsx` end-to-end (886 lines).
+- Verified the authoritative permission matrix: dentist + cashier both can view / create / approve / decline / update status; ONLY dentist can delete. Patients are blocked at the orchestrator level, so this view only differentiates dentist vs cashier.
+- Traced the existing delete flow:
+  - `AppointmentsView` already reads `const isDentist = useIsDentist()` (line 137) and forwards it to `ListTab` (line 177 / now 187).
+  - `ListTab` passes `isDentist` down to `AppointmentRow` (line 318 / now 348).
+  - `AppointmentRow` already wraps the trash button in `{isDentist && (...)}` (line 393 / now 421). Confirmed and left intact.
+  - The `ConfirmDialog` and `useDeleteAppointment` in `ListTab` are only reachable from the trash button (via `onDelete={() => setDeleteTarget(a)}`). For cashier the button never renders → `deleteTarget` stays null → dialog stays closed → no delete affordance of any kind leaks to cashier.
+  - `ScheduleTab` and `RequestsTab` were inspected and contain no delete/destructive affordances — only "New Appointment"/"Available" (create) and Approve/Decline (status change) actions, which both staff roles may use per the matrix. No `isDentist` flag needed there.
+- Minimal polish (per the task's "verify and make minimal polish" branch): added a subtle role pill in the header next to the "Appointments" title so users see at a glance which staff mode they are in.
+  - Added `useIsCashier` to the existing `@/lib/auth-store` import (alongside `useIsDentist`).
+  - Computed a `rolePill` object in `AppointmentsView`: dentist → emerald pill labelled "Dentist", cashier → amber pill labelled "Cashier" (matches the existing AppShell role color convention; explicitly avoids indigo/blue per project rule).
+  - Rendered the pill inline next to the H1 inside a new flex row; preserved the existing subtitle text unchanged.
+  - Wrapped the title block in `<div className="flex flex-col gap-1.5">` with an inner `<div className="flex items-center gap-2">` so the pill aligns with the title without disturbing the subtitle layout.
+- Did not touch `ScheduleTab`, `RequestsTab`, `NewAppointmentDialog`, the three-tab structure, the calendar, or the approve/decline flow — all preserved as-is.
+- Ran `bun run lint` — clean, zero errors/warnings.
+
+Stage Summary:
+- Delete-button gating was already correct in `AppointmentsView.tsx`; verified the full delete call chain (button → onDelete → setDeleteTarget → ConfirmDialog → useDeleteAppointment) is unreachable for cashier, so cashier sees zero delete affordances.
+- Added a subtle header role pill (emerald for dentist, amber for cashier, no indigo/blue) as the only UI change, giving users an at-a-glance indicator of their staff mode.
+- All other capabilities (view all, create, approve/decline, update status, schedule calendar) remain visible to both dentist and cashier. Three-tab structure and shared New Appointment dialog untouched.
+- Only file modified: `src/components/views/AppointmentsView.tsx`. Remains `"use client"`, default-exported, no props. Lint clean.
+
+---
+Task ID: 9-a
+Agent: dashboard-refactor
+Task: Refactor Dashboard into 3 role-specific dashboards
+
+Work Log:
+- Read worklog.md and the current `src/components/views/DashboardView.tsx` to understand the shared `StaffDashboard` (used by both dentist + cashier) and the existing `PatientDashboard`.
+- Verified supporting APIs/types: `useBillingSummary` returns `{ totalRevenue, collected, unpaid, treatmentCount, paidCount, unpaidCount }`; `useBilling({ status: "unpaid" })` returns `BillingRecord[]` (= `Treatment[]` with joined `patientName`, `procedure`, `cost`, `date`); `useAppointments()` returns staff- or patient-scoped `Appointment[]` depending on auth; billing route accepts `?status=paid|unpaid`.
+- Rewrote `DashboardView.tsx` in place (still `"use client"`, default export, no props). Kept shared helpers and split the body into 3 role-specific components.
+- Added helpers: `isToday(dateStr)`, `getTodays(appts)` (today's appts sorted by time), `countPending(appts)` (status === "pending"). Kept `getUpcoming`, `startOfToday`, `appointmentTypeLabel`, `RoleBadge`.
+- Generalized the appointments card into `AppointmentListCard` (accepts `title` + `description` props) so it can serve the dentist "Upcoming Appointments" card, the cashier "Today's Appointments" card, and the patient "Upcoming Appointments" card.
+- Extracted `QuickActions` wrapper that renders a list of action specs into a responsive `grid-cols-1 sm:grid-cols-2 lg:grid-cols-3` so all three dashboards share the same action section markup.
+- **DentistDashboard** (clinical focus):
+  - 4 stat cards: Total Patients (emerald/Users), Upcoming Appointments (teal/CalendarDays), Total Treatments (amber/Activity, from `billing.treatmentCount`), Pending Requests (rose/AlertCircle, `countPending`).
+  - Quick Actions: "Manage Patients" → patients, "Schedule Appointment" → appointments, "View Billing" → billing.
+  - Upcoming Appointments card: next 5 active appointments (pending/scheduled, date >= today) with patient names + status badges; "View all" → appointments.
+- **CashierDashboard** (financial + scheduling focus):
+  - 4 stat cards: Today's Appointments (teal/CalendarDays, `getTodays().length`), Pending Requests (amber/Clock), Total Revenue (emerald/Wallet, `formatCurrency(totalRevenue)`), Outstanding (rose/AlertCircle, `formatCurrency(unpaid)` with unpaidCount hint).
+  - Quick Actions: "View Billing" (PRIMARY, amber) → billing, "Manage Appointments" (teal) → appointments, "View Patients" (emerald, view-only framing) → patients. Deliberately NO "Manage Patients" create/edit framing.
+  - Two-column grid (lg): "Today's Appointments" card (today's appts sorted by time) + "Recent Unpaid Bills" card (`useBilling({ status: "unpaid" })`, 5 most recent by date desc, showing patient name, procedure, cost in rose, date). Both have "View all" links.
+- **PatientDashboard** (self-service, polished): kept the gradient welcome/hero card with the two primary CTAs (Book Appointment, View My Appointments), the 3 stat cards (Upcoming / Next Appointment / Total Visits), and the upcoming appointments list. Removed the previously-redundant separate "Quick Actions" section (the hero card's buttons already cover the patient's only two actions), tightening the layout. Updated the appointments card description to read naturally.
+- **Root component**: switched to explicit `user.role` branching per spec — `!user` → LoadingSpinner, `"dentist"` → DentistDashboard, `"cashier"` → CashierDashboard, `"patient"` → PatientDashboard, else → EmptyState "Unknown role". Kept the shared header (greeting + RoleBadge + date + role-aware subtitle). Dropped the now-unused `useIsStaff`/`useIsPatient` imports (header subtitle now keyed off `user?.role === "patient"`).
+- Used `useMemo` for all derived counts/lists (`patientNameById`, `upcoming`, `todays`, `pendingCount`, `recentUnpaid`, `totalVisits`, `nextAppointmentDate`). Loading + empty states handled on every card. Palette stays emerald/teal/amber/rose — no indigo/blue.
+- Ran `bun run lint` → clean (eslint . exits 0, no warnings). Ran `npx tsc --noEmit` → 0 errors in DashboardView.tsx (the 6 unrelated tsc errors are in examples/, skills/, and treatments/route.ts).
+
+Stage Summary:
+- `src/components/views/DashboardView.tsx` now renders 3 distinct role-specific dashboards; each role sees only role-appropriate stats, quick actions, and lists.
+- Dentist = clinical focus (patients, treatments, pending approvals, upcoming appts). Cashier = financial + scheduling focus (today's appts, pending requests, revenue, outstanding, recent unpaid bills) — no patient create/edit framing. Patient = self-service (book, my appointments, upcoming, visits) unchanged in spirit, tightened in layout.
+- Shared shell (header, StatCard, QuickActionCard, AppointmentListCard, RoleBadge) reused across roles for visual consistency; role-specific data wired via existing `usePatients` / `useAppointments` / `useBillingSummary` / `useBilling` hooks.
+- Lint clean; no new TypeScript errors introduced. No other files touched.
+
+---
+Task ID: 9 (verification)
+Agent: main (orchestrator)
+Task: Verify role-based refactoring end-to-end in browser
+
+Work Log:
+- Verified dentist dashboard: shows clinical stats (Total Patients, Upcoming Appointments, Total Treatments, Pending Requests) + clinical quick actions (Manage Patients, Schedule Appointment, View Billing). Dentist sees "Add Patient" button on patients list, Edit/Delete on patient profile, delete buttons on appointments.
+- Verified cashier dashboard: shows financial/scheduling stats (Today's Appointments, Pending Requests, Total Revenue, Outstanding) + cashier quick actions (View Billing primary, Manage Appointments, View Patients view-only framing). NO "Manage Patients" or "Total Treatments".
+- Verified cashier on patients list: NO "Add Patient" button; sees "View-only access — patient records can be edited by dentists" banner.
+- Verified cashier on patient profile: NO Edit/Delete buttons; dental chart viewable; tooth modal opens READ-ONLY (Treatment Timeline visible, NO status editor / Save Status / Add Treatment form).
+- Verified cashier on appointments: NO delete buttons (contrast: dentist sees "Delete appointment" buttons). Both see New Appointment + status filters + approve/decline.
+- Verified patient nav: ONLY Dashboard, Book Appointment, My Appointments (no Patients/Appointments/Billing staff items).
+- Verified patient blocked from staff views: navigating to #/patients shows "Access denied" + "Go to dashboard" button.
+- Lint clean. No console errors.
+
+Stage Summary:
+- Role separation is complete and verified across all views:
+  - Dentist: full clinical access (patients CRUD, tooth/treatment editing, appointment delete, billing).
+  - Cashier: view-only patients/profile, read-only tooth modal, appointments without delete, full billing + payments.
+  - Patient: self-service only (dashboard, book, my-appointments); blocked from all staff views.
+- Each dashboard is now role-specific (dentist clinical focus, cashier financial focus, patient self-service focus).

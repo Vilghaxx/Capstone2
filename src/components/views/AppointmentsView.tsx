@@ -16,7 +16,7 @@ import {
   X,
 } from "lucide-react";
 
-import { useIsDentist } from "@/lib/auth-store";
+import { useIsCashier, useIsDentist } from "@/lib/auth-store";
 import {
   useAppointments,
   useCreateAppointment,
@@ -135,6 +135,7 @@ function usePatientMap(): Map<string, string> {
 
 export default function AppointmentsView() {
   const isDentist = useIsDentist();
+  const isCashier = useIsCashier();
   const [dialogOpen, setDialogOpen] = useState(false);
   const [preset, setPreset] = useState<{ date?: string; time?: string }>({});
 
@@ -143,14 +144,41 @@ export default function AppointmentsView() {
     setDialogOpen(true);
   };
 
+  // Subtle role indicator so users see at a glance which staff view they
+  // are operating under. Dentist (emerald) can delete appointments;
+  // cashier (amber) cannot. No indigo/blue per project rule.
+  const rolePill = isDentist
+    ? {
+        label: "Dentist",
+        className:
+          "bg-emerald-100 text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-300",
+      }
+    : isCashier
+      ? {
+          label: "Cashier",
+          className:
+            "bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300",
+        }
+      : null;
+
   return (
     <div className="mx-auto flex w-full max-w-6xl flex-col gap-6 px-4 py-6 sm:px-6 lg:py-8">
       <header className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">
-            Appointments
-          </h1>
-          <p className="mt-1 text-sm text-muted-foreground">
+        <div className="flex flex-col gap-1.5">
+          <div className="flex items-center gap-2">
+            <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">
+              Appointments
+            </h1>
+            {rolePill ? (
+              <span
+                className={`rounded-full px-2 py-0.5 text-xs font-medium ${rolePill.className}`}
+                aria-label={`Signed in as ${rolePill.label.toLowerCase()}`}
+              >
+                {rolePill.label}
+              </span>
+            ) : null}
+          </div>
+          <p className="text-sm text-muted-foreground">
             Schedule, manage, and approve patient appointments.
           </p>
         </div>

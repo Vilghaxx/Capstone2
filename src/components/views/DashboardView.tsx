@@ -10,6 +10,8 @@ import {
   ArrowRight,
   Clock,
   ClipboardList,
+  AlertCircle,
+  Activity,
   type LucideIcon,
 } from "lucide-react";
 
@@ -28,16 +30,16 @@ import { EmptyState } from "@/components/common/EmptyState";
 import { AppointmentStatusBadge } from "@/components/common/StatusBadge";
 
 import { useAuth } from "@/lib/auth-store";
-import { useIsStaff, useIsPatient } from "@/lib/auth-store";
 import { useNav } from "@/lib/nav";
 import {
   usePatients,
   useAppointments,
   useBillingSummary,
+  useBilling,
 } from "@/hooks/queries";
 import { greetingFor, formatCurrency, formatDate } from "@/lib/format";
 import { APPOINTMENT_TYPE_META } from "@/lib/format";
-import type { Appointment } from "@/lib/types";
+import type { Appointment, BillingRecord } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
 /* ------------------------------------------------------------------ */
@@ -51,6 +53,18 @@ function startOfToday(): Date {
   const d = new Date();
   d.setHours(0, 0, 0, 0);
   return d;
+}
+
+/** Whether the given date string falls on the current calendar day. */
+function isToday(dateStr: string): boolean {
+  const d = new Date(dateStr);
+  if (isNaN(d.getTime())) return false;
+  const now = new Date();
+  return (
+    d.getFullYear() === now.getFullYear() &&
+    d.getMonth() === now.getMonth() &&
+    d.getDate() === now.getDate()
+  );
 }
 
 /** Capitalize a type key's display label (uses meta map when known). */
@@ -76,6 +90,20 @@ function getUpcoming(appts: Appointment[] | undefined): Appointment[] {
         new Date(a.date).getTime() - new Date(b.date).getTime() ||
         (a.time || "").localeCompare(b.time || "")
     );
+}
+
+/** All appointments scheduled for today, sorted by time ascending. */
+function getTodays(appts: Appointment[] | undefined): Appointment[] {
+  if (!appts) return [];
+  return appts
+    .filter((a) => isToday(a.date))
+    .sort((a, b) => (a.time || "").localeCompare(b.time || ""));
+}
+
+/** Count appointments currently awaiting approval. */
+function countPending(appts: Appointment[] | undefined): number {
+  if (!appts) return 0;
+  return appts.filter((a) => a.status === "pending").length;
 }
 
 /** Role badge for the dashboard header. */
@@ -165,22 +193,8 @@ function StatCard({
   );
 }
 
-function StatCardSkeleton() {
-  return (
-    <Card className="py-5">
-      <CardContent className="flex items-start gap-4">
-        <Skeleton className="h-11 w-11 rounded-xl" />
-        <div className="flex-1 space-y-2">
-          <Skeleton className="h-4 w-24" />
-          <Skeleton className="h-7 w-20" />
-        </div>
-      </CardContent>
-    </Card>
-  );
-}
-
 /* ------------------------------------------------------------------ */
-/* Upcoming appointments list                                         */
+/* Appointment list                                                   */
 /* ------------------------------------------------------------------ */
 
 function AppointmentRow({
@@ -217,41 +231,42 @@ function AppointmentRow({
   );
 }
 
-function UpcomingAppointmentsCard({
-  appointments,
-  patientNameById,
-  loading,
-  emptyTitle = "No upcoming appointments",
-  emptyMessage = "Scheduled appointments will appear here.",
-  viewAllLabel,
-  viewAllOnClick,
-}: {
+interface AppointmentListCardProps {
+  title: string;
+  description: string;
   appointments: Appointment[];
   patientNameById?: Map<string, string>;
   loading: boolean;
   emptyTitle?: string;
   emptyMessage?: string;
-  viewAllLabel?: string;
   viewAllOnClick?: () => void;
-}) {
+}
+
+function AppointmentListCard({
+  title,
+  description,
+  appointments,
+  patientNameById,
+  loading,
+  emptyTitle = "No appointments",
+  emptyMessage = "Appointments will appear here.",
+  viewAllOnClick,
+}: AppointmentListCardProps) {
   return (
     <Card>
       <CardHeader className="flex flex-row items-center justify-between">
         <div>
-          <CardTitle>Upcoming Appointments</CardTitle>
-          <CardDescription>
-            The next {appointments.length || 0} visit
-            {appointments.length === 1 ? "" : "s"} on the calendar.
-          </CardDescription>
+          <CardTitle>{title}</CardTitle>
+          <CardDescription>{description}</CardDescription>
         </div>
-        {viewAllLabel && viewAllOnClick && appointments.length > 0 && (
+        {viewAllOnClick && appointments.length > 0 && (
           <Button
             size="sm"
             variant="ghost"
             className="gap-1"
             onClick={viewAllOnClick}
           >
-            {viewAllLabel}
+            View all
             <ArrowRight className="h-4 w-4" />
           </Button>
         )}
@@ -321,11 +336,36 @@ function QuickActionCard({
   );
 }
 
+function QuickActions({
+  actions,
+}: {
+  actions: {
+    title: string;
+    description: string;
+    icon: LucideIcon;
+    accent: string;
+    onClick: () => void;
+  }[];
+}) {
+  return (
+    <section className="space-y-3">
+      <h2 className="text-sm font-semibold text-muted-foreground">
+        Quick Actions
+      </h2>
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+        {actions.map((a) => (
+          <QuickActionCard key={a.title} {...a} />
+        ))}
+      </div>
+    </section>
+  );
+}
+
 /* ------------------------------------------------------------------ */
-/* Staff dashboard                                                    */
+/* Dentist dashboard (clinical focus)                                 */
 /* ------------------------------------------------------------------ */
 
-function StaffDashboard() {
+function DentistDashboard() {
   const navigate = useNav((s) => s.navigate);
 
   // Light fetch to read the `total` count.
@@ -333,8 +373,8 @@ function StaffDashboard() {
   // All appointments (staff scope).
   const apptsQuery = useAppointments();
   const billingQuery = useBillingSummary();
-  // For patient name lookup on the upcoming list. Fetch a larger page so we
-  // can map patientId → name without an extra endpoint.
+  // Larger patient page so we can map patientId → name without an extra
+  // endpoint.
   const patientsLookup = usePatients("", 1, 200);
 
   const totalPatients = patientsQuery.data?.total ?? 0;
@@ -355,6 +395,11 @@ function StaffDashboard() {
 
   const upcomingCount = useMemo(
     () => getUpcoming(apptsQuery.data).length,
+    [apptsQuery.data]
+  );
+
+  const pendingCount = useMemo(
+    () => countPending(apptsQuery.data),
     [apptsQuery.data]
   );
 
@@ -386,67 +431,67 @@ function StaffDashboard() {
           onClick={() => navigate("appointments")}
         />
         <StatCard
-          label="Total Revenue"
-          value={formatCurrency(billing?.totalRevenue ?? 0)}
-          icon={Wallet}
+          label="Total Treatments"
+          value={billing?.treatmentCount ?? 0}
+          icon={Activity}
           accent="bg-amber-500"
-          hint="All billed treatments"
+          hint="Billed procedures"
           loading={billingQuery.isLoading}
           onClick={() => navigate("billing")}
         />
         <StatCard
-          label="Collected"
-          value={formatCurrency(billing?.collected ?? 0)}
-          icon={CheckCircle}
+          label="Pending Requests"
+          value={pendingCount}
+          icon={AlertCircle}
           accent="bg-rose-500"
-          hint={`${billing?.paidCount ?? 0} paid · ${
-            billing?.unpaidCount ?? 0
-          } unpaid`}
-          loading={billingQuery.isLoading}
-          onClick={() => navigate("billing")}
+          hint="Awaiting your approval"
+          loading={apptsQuery.isLoading}
+          onClick={() => navigate("appointments")}
         />
       </div>
 
       {/* Quick actions */}
-      <section className="space-y-3">
-        <h2 className="text-sm font-semibold text-muted-foreground">
-          Quick Actions
-        </h2>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-          <QuickActionCard
-            title="View Patients"
-            description="Browse, search, and manage patient records."
-            icon={Users}
-            accent="bg-emerald-500"
-            onClick={() => navigate("patients")}
-          />
-          <QuickActionCard
-            title="Schedule Appointment"
-            description="Create or update upcoming appointments."
-            icon={CalendarPlus}
-            accent="bg-teal-500"
-            onClick={() => navigate("appointments")}
-          />
-          <QuickActionCard
-            title="View Billing"
-            description="Track payments and outstanding balances."
-            icon={ClipboardList}
-            accent="bg-amber-500"
-            onClick={() => navigate("billing")}
-          />
-        </div>
-      </section>
+      <QuickActions
+        actions={[
+          {
+            title: "Manage Patients",
+            description: "View, add, and edit patient records.",
+            icon: Users,
+            accent: "bg-emerald-500",
+            onClick: () => navigate("patients"),
+          },
+          {
+            title: "Schedule Appointment",
+            description: "Create and manage appointments.",
+            icon: CalendarPlus,
+            accent: "bg-teal-500",
+            onClick: () => navigate("appointments"),
+          },
+          {
+            title: "View Billing",
+            description: "Review treatments and payments.",
+            icon: ClipboardList,
+            accent: "bg-amber-500",
+            onClick: () => navigate("billing"),
+          },
+        ]}
+      />
 
       {/* Upcoming appointments */}
-      <UpcomingAppointmentsCard
+      <AppointmentListCard
+        title="Upcoming Appointments"
+        description={`The next ${upcoming.length} visit${
+          upcoming.length === 1 ? "" : "s"
+        } on the calendar.`}
         appointments={upcoming}
         patientNameById={patientNameById}
         loading={apptsQuery.isLoading}
-        viewAllLabel="View all"
+        emptyTitle="No upcoming appointments"
+        emptyMessage="Scheduled appointments will appear here."
         viewAllOnClick={() => navigate("appointments")}
       />
 
-      {statsLoading && apptsQuery.isLoading && (
+      {statsLoading && (
         <p className="sr-only">Loading dashboard data…</p>
       )}
     </div>
@@ -454,7 +499,212 @@ function StaffDashboard() {
 }
 
 /* ------------------------------------------------------------------ */
-/* Patient dashboard                                                  */
+/* Cashier dashboard (financial + scheduling focus)                   */
+/* ------------------------------------------------------------------ */
+
+function UnpaidBillRow({ bill }: { bill: BillingRecord }) {
+  return (
+    <div className="flex items-center justify-between gap-4 rounded-lg border bg-card px-4 py-3 transition-colors hover:bg-accent/40">
+      <div className="min-w-0 flex-1">
+        <p className="truncate text-sm font-medium">
+          {bill.patientName || "Patient"}
+        </p>
+        <p className="mt-0.5 truncate text-xs text-muted-foreground">
+          {bill.procedure || "Treatment"}
+        </p>
+      </div>
+      <div className="shrink-0 text-right">
+        <p className="text-sm font-semibold text-rose-600 dark:text-rose-400">
+          {formatCurrency(bill.cost)}
+        </p>
+        <p className="text-xs text-muted-foreground">{formatDate(bill.date)}</p>
+      </div>
+    </div>
+  );
+}
+
+function CashierDashboard() {
+  const navigate = useNav((s) => s.navigate);
+
+  const apptsQuery = useAppointments();
+  const billingQuery = useBillingSummary();
+  const unpaidQuery = useBilling({ status: "unpaid" });
+  // Larger patient page so we can map patientId → name without an extra
+  // endpoint.
+  const patientsLookup = usePatients("", 1, 200);
+
+  const billing = billingQuery.data;
+
+  const patientNameById = useMemo(() => {
+    const map = new Map<string, string>();
+    for (const p of patientsLookup.data?.data ?? []) {
+      map.set(p.id, p.name);
+    }
+    return map;
+  }, [patientsLookup.data]);
+
+  const todays = useMemo(() => getTodays(apptsQuery.data), [apptsQuery.data]);
+
+  const pendingCount = useMemo(
+    () => countPending(apptsQuery.data),
+    [apptsQuery.data]
+  );
+
+  const recentUnpaid = useMemo(() => {
+    const list = unpaidQuery.data ?? [];
+    return [...list]
+      .sort(
+        (a, b) =>
+          new Date(b.date).getTime() - new Date(a.date).getTime() ||
+          a.patientName?.localeCompare(b.patientName ?? "") ||
+          0
+      )
+      .slice(0, 5);
+  }, [unpaidQuery.data]);
+
+  const statsLoading =
+    apptsQuery.isLoading || billingQuery.isLoading;
+
+  return (
+    <div className="space-y-6">
+      {/* Stats row */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <StatCard
+          label="Today's Appointments"
+          value={todays.length}
+          icon={CalendarDays}
+          accent="bg-teal-500"
+          hint="Scheduled for today"
+          loading={apptsQuery.isLoading}
+          onClick={() => navigate("appointments")}
+        />
+        <StatCard
+          label="Pending Requests"
+          value={pendingCount}
+          icon={Clock}
+          accent="bg-amber-500"
+          hint="Awaiting approval"
+          loading={apptsQuery.isLoading}
+          onClick={() => navigate("appointments")}
+        />
+        <StatCard
+          label="Total Revenue"
+          value={formatCurrency(billing?.totalRevenue ?? 0)}
+          icon={Wallet}
+          accent="bg-emerald-500"
+          hint="All billed treatments"
+          loading={billingQuery.isLoading}
+          onClick={() => navigate("billing")}
+        />
+        <StatCard
+          label="Outstanding"
+          value={formatCurrency(billing?.unpaid ?? 0)}
+          icon={AlertCircle}
+          accent="bg-rose-500"
+          hint={`${billing?.unpaidCount ?? 0} unpaid treatment${
+            (billing?.unpaidCount ?? 0) === 1 ? "" : "s"
+          }`}
+          loading={billingQuery.isLoading}
+          onClick={() => navigate("billing")}
+        />
+      </div>
+
+      {/* Quick actions */}
+      <QuickActions
+        actions={[
+          {
+            title: "View Billing",
+            description: "Record payments and track balances.",
+            icon: ClipboardList,
+            accent: "bg-amber-500",
+            onClick: () => navigate("billing"),
+          },
+          {
+            title: "Manage Appointments",
+            description: "Schedule and approve appointments.",
+            icon: CalendarPlus,
+            accent: "bg-teal-500",
+            onClick: () => navigate("appointments"),
+          },
+          {
+            title: "View Patients",
+            description: "Look up patient records.",
+            icon: Users,
+            accent: "bg-emerald-500",
+            onClick: () => navigate("patients"),
+          },
+        ]}
+      />
+
+      {/* Today's appointments + recent unpaid bills */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <AppointmentListCard
+          title="Today's Appointments"
+          description={
+            todays.length > 0
+              ? `${todays.length} appointment${
+                  todays.length === 1 ? "" : "s"
+                } on the schedule today.`
+              : "Nothing on the schedule today."
+          }
+          appointments={todays}
+          patientNameById={patientNameById}
+          loading={apptsQuery.isLoading}
+          emptyTitle="No appointments today"
+          emptyMessage="Enjoy the quieter day."
+          viewAllOnClick={() => navigate("appointments")}
+        />
+
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between">
+            <div>
+              <CardTitle>Recent Unpaid Bills</CardTitle>
+              <CardDescription>
+                Treatments awaiting payment.
+              </CardDescription>
+            </div>
+            {recentUnpaid.length > 0 && (
+              <Button
+                size="sm"
+                variant="ghost"
+                className="gap-1"
+                onClick={() => navigate("billing")}
+              >
+                View all
+                <ArrowRight className="h-4 w-4" />
+              </Button>
+            )}
+          </CardHeader>
+          <CardContent className="space-y-2">
+            {unpaidQuery.isLoading ? (
+              <div className="space-y-2">
+                {Array.from({ length: 3 }).map((_, i) => (
+                  <Skeleton key={i} className="h-16 w-full rounded-lg" />
+                ))}
+              </div>
+            ) : recentUnpaid.length === 0 ? (
+              <EmptyState
+                title="No unpaid bills"
+                message="All treatments are fully paid."
+              />
+            ) : (
+              recentUnpaid.map((b) => (
+                <UnpaidBillRow key={b.id} bill={b} />
+              ))
+            )}
+          </CardContent>
+        </Card>
+      </div>
+
+      {statsLoading && (
+        <p className="sr-only">Loading dashboard data…</p>
+      )}
+    </div>
+  );
+}
+
+/* ------------------------------------------------------------------ */
+/* Patient dashboard (self-service)                                   */
 /* ------------------------------------------------------------------ */
 
 function PatientDashboard() {
@@ -488,10 +738,12 @@ function PatientDashboard() {
 
   return (
     <div className="space-y-6">
-      {/* Welcome card */}
+      {/* Welcome / hero card with primary CTAs */}
       <Card className="bg-gradient-to-br from-emerald-500/10 via-teal-500/5 to-transparent">
         <CardHeader>
-          <CardTitle className="text-lg">Your dental health at a glance</CardTitle>
+          <CardTitle className="text-lg">
+            Your dental health at a glance
+          </CardTitle>
           <CardDescription>
             Track upcoming visits, review past treatments, and book new
             appointments.
@@ -543,36 +795,20 @@ function PatientDashboard() {
         />
       </div>
 
-      {/* Quick actions */}
-      <section className="space-y-3">
-        <h2 className="text-sm font-semibold text-muted-foreground">
-          Quick Actions
-        </h2>
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <QuickActionCard
-            title="Book Appointment"
-            description="Request a new appointment with the clinic."
-            icon={CalendarPlus}
-            accent="bg-emerald-500"
-            onClick={() => navigate("book")}
-          />
-          <QuickActionCard
-            title="View My Appointments"
-            description="See your upcoming and past visits."
-            icon={ClipboardList}
-            accent="bg-teal-500"
-            onClick={() => navigate("my-appointments")}
-          />
-        </div>
-      </section>
-
       {/* Upcoming appointments */}
-      <UpcomingAppointmentsCard
+      <AppointmentListCard
+        title="Upcoming Appointments"
+        description={
+          upcoming.length > 0
+            ? `You have ${upcoming.length} upcoming visit${
+                upcoming.length === 1 ? "" : "s"
+              }.`
+            : "Your upcoming visits will appear here."
+        }
         appointments={upcoming}
         loading={loading}
         emptyTitle="No upcoming appointments"
         emptyMessage="Book a visit to see it appear here."
-        viewAllLabel="View all"
         viewAllOnClick={() => navigate("my-appointments")}
       />
     </div>
@@ -585,10 +821,9 @@ function PatientDashboard() {
 
 export default function DashboardView() {
   const user = useAuth((s) => s.user);
-  const isStaff = useIsStaff();
-  const isPatient = useIsPatient();
 
   const todayLabel = formatDate(new Date());
+  const isPatient = user?.role === "patient";
 
   return (
     <div className="space-y-6">
@@ -613,9 +848,11 @@ export default function DashboardView() {
       {/* Body */}
       {!user ? (
         <LoadingSpinner text="Loading dashboard…" />
-      ) : isStaff ? (
-        <StaffDashboard />
-      ) : isPatient ? (
+      ) : user.role === "dentist" ? (
+        <DentistDashboard />
+      ) : user.role === "cashier" ? (
+        <CashierDashboard />
+      ) : user.role === "patient" ? (
         <PatientDashboard />
       ) : (
         <EmptyState

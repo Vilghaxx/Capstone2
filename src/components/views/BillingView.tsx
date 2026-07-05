@@ -30,6 +30,7 @@ import {
   PAYMENT_METHODS,
   PAYMENT_METHOD_META,
 } from "@/lib/format";
+import { useAuth } from "@/lib/auth-store";
 import { toastError } from "@/lib/api";
 import type { BillingRecord, BillingSummary } from "@/lib/types";
 
@@ -91,6 +92,14 @@ const COLOR_STYLES: Record<CardColor, { icon: string; value: string }> = {
 };
 
 export default function BillingView() {
+  const role = useAuth((s) => s.user?.role);
+  // Cashier and dentist both have full billing capabilities; the subtitle
+  // is tuned to each role's primary concern.
+  const subtitle =
+    role === "cashier"
+      ? "Record payments and track outstanding balances"
+      : "Review treatment costs and payments";
+
   const [statusFilter, setStatusFilter] = useState<"all" | "paid" | "unpaid">(
     "all"
   );
@@ -201,9 +210,7 @@ export default function BillingView() {
       {/* Header */}
       <div>
         <h1 className="text-2xl font-semibold tracking-tight">Billing</h1>
-        <p className="text-sm text-muted-foreground">
-          Track treatments and record payments
-        </p>
+        <p className="text-sm text-muted-foreground">{subtitle}</p>
       </div>
 
       {/* Summary cards */}
