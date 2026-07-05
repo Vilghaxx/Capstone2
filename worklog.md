@@ -401,3 +401,31 @@ Stage Summary:
 - All core features working: auth, dashboard, patients + dental chart + tooth modal + treatments, appointments (list/schedule/requests + approve/decline), billing (summary + table + payment), patient self-service (book + my appointments).
 - Responsive (desktop sidebar + mobile hamburger). Professional visual design with emerald/teal/amber/rose palette.
 - Demo credentials: dentist/dentist123, cashier/cashier123. Patients can self-register.
+
+---
+Task ID: 7
+Agent: main (orchestrator)
+Task: Replace dental chart with the uploaded oral cavity SVG illustration
+
+Work Log:
+- Analyzed uploaded /home/z/my-project/upload/202402_Oral_Cavity.svg (Adobe Illustrator, 400x400 viewBox, 437 paths, 8755 lines).
+- Discovered structure: 32 teeth as <path id="tooth-N" class="st222" d="..."/> (st222 = white fill), sitting on a detailed pink/red gum + palate + tongue anatomy background.
+- Extracted the 32 tooth path "d" attributes into src/lib/tooth-paths.ts as a Record<number, string> + TOOTH_NUMBERS array.
+- Created public/charts/oral-cavity-base.svg = the original SVG with tooth paths removed (676KB, keeps full gum/palette anatomy + style block).
+- Created src/components/common/OralCavityChart.tsx — a new React component that:
+  - Renders the anatomy SVG as a background <image> (preserving the realistic oral cavity look).
+  - Overlays all 32 teeth as interactive <path> elements colored by status using explicit hex fills (emerald/sky/amber/rose) with stroke + opacity.
+  - Hover: drop-shadow + thicker stroke + a floating tooltip showing tooth number, status label, and last treatment.
+  - Click: calls onSelectTooth(num) to open the existing ToothModal.
+  - Selected tooth gets a dark selection ring (synced with modalTooth state).
+  - Subtle dashed midline divides left/right quadrants; "Patient's Right/Left" orientation labels.
+  - Legend below shows all 4 statuses with live counts per status.
+- Wired OralCavityChart into PatientProfileView: imported the component, replaced <DentalChart> with <OralCavityChart teeth onSelectTooth selectedTooth={modalTooth} />.
+- Removed now-dead code: ToothButton, ChartRow, DentalChart functions + UPPER_ROW/LOWER_ROW constants from PatientProfileView.
+- Verified in browser: chart renders with realistic gums + 32 color-coded teeth; clicking a tooth opens the ToothModal; no console errors; VLM rated the visual design 8/10 ("polished and clinical").
+
+Stage Summary:
+- The dental chart is now a clinically-realistic interactive oral cavity illustration instead of the previous grid of tooth-shaped buttons.
+- The uploaded SVG's anatomy (gums, palate, tongue) is preserved as a static background; teeth are overlaid as interactive SVG paths.
+- File artifacts: src/lib/tooth-paths.ts (14KB), public/charts/oral-cavity-base.svg (676KB), src/components/common/OralCavityChart.tsx.
+- Lint clean, no runtime errors. Existing ToothModal (status edit + treatment timeline + add treatment) works unchanged.

@@ -83,19 +83,13 @@ import {
 import { LoadingSpinner } from "@/components/common/LoadingSpinner";
 import { EmptyState } from "@/components/common/EmptyState";
 import { ConfirmDialog } from "@/components/common/ConfirmDialog";
+import { OralCavityChart } from "@/components/common/OralCavityChart";
 
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
 
 const TOOTH_STATUS_VALUES = Object.values(TOOTH_STATUSES) as ToothStatus[];
-
-// Upper row: viewer's left → right = patient's upper-right (1-8), then upper-left (9-16).
-const UPPER_ROW = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16];
-// Lower row: viewer's left → right = patient's lower-right (32-25), then lower-left (24-17).
-const LOWER_ROW = [
-  32, 31, 30, 29, 28, 27, 26, 25, 24, 23, 22, 21, 20, 19, 18, 17,
-];
 
 function getInitials(name: string): string {
   return name
@@ -291,38 +285,6 @@ function EditPatientDialog({
         </Form>
       </DialogContent>
     </Dialog>
-  );
-}
-
-// ---------------------------------------------------------------------------
-// Tooth button (used in the chart)
-// ---------------------------------------------------------------------------
-
-function ToothButton({
-  tooth,
-  onClick,
-}: {
-  tooth: Tooth | undefined;
-  onClick: () => void;
-}) {
-  const status: ToothStatus = tooth?.status ?? "healthy";
-  const meta = TOOTH_STATUS_META[status];
-  const num = tooth?.toothNumber;
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      title={num ? `Tooth #${num} — ${meta.label}` : meta.label}
-      aria-label={num ? `Tooth ${num}, ${meta.label}` : meta.label}
-      className={cn(
-        "group relative flex h-11 w-6 items-center justify-center rounded-t-full rounded-b-md ring-2 ring-transparent transition-all hover:-translate-y-0.5 hover:ring-foreground/40 focus:outline-none focus-visible:ring-2 focus-visible:ring-ring sm:h-14 sm:w-9",
-        meta.color
-      )}
-    >
-      <span className="text-[10px] font-bold text-white drop-shadow-sm sm:text-xs">
-        {num ?? "—"}
-      </span>
-    </button>
   );
 }
 
@@ -728,109 +690,6 @@ function ToothModal({
 }
 
 // ---------------------------------------------------------------------------
-// Dental chart
-// ---------------------------------------------------------------------------
-
-function ChartRow({
-  nums,
-  label,
-  teethByNumber,
-  onSelectTooth,
-}: {
-  nums: number[];
-  label: string;
-  teethByNumber: Map<number, Tooth>;
-  onSelectTooth: (toothNumber: number) => void;
-}) {
-  const leftQuad = nums.slice(0, 8);
-  const rightQuad = nums.slice(8, 16);
-  return (
-    <div className="space-y-1.5">
-      <p className="text-center text-[10px] font-medium uppercase tracking-wider text-muted-foreground">
-        {label}
-      </p>
-      <div className="flex items-end justify-center gap-1">
-        <div className="flex gap-1">
-          {leftQuad.map((n) => (
-            <ToothButton
-              key={n}
-              tooth={teethByNumber.get(n)}
-              onClick={() => onSelectTooth(n)}
-            />
-          ))}
-        </div>
-        <div className="mx-1 h-12 w-px self-stretch bg-border sm:h-14" />
-        <div className="flex gap-1">
-          {rightQuad.map((n) => (
-            <ToothButton
-              key={n}
-              tooth={teethByNumber.get(n)}
-              onClick={() => onSelectTooth(n)}
-            />
-          ))}
-        </div>
-      </div>
-    </div>
-  );
-}
-
-function DentalChart({
-  teeth,
-  onSelectTooth,
-}: {
-  teeth: Tooth[];
-  onSelectTooth: (toothNumber: number) => void;
-}) {
-  const teethByNumber = useMemo(() => {
-    const m = new Map<number, Tooth>();
-    for (const t of teeth) m.set(t.toothNumber, t);
-    return m;
-  }, [teeth]);
-
-  return (
-    <div className="space-y-4">
-      <div className="flex justify-between text-[10px] font-medium uppercase tracking-wider text-muted-foreground">
-        <span>Patient&apos;s Right</span>
-        <span>Patient&apos;s Left</span>
-      </div>
-      <div className="overflow-x-auto pb-2">
-        <div className="mx-auto flex w-fit min-w-[480px] flex-col gap-3">
-          <ChartRow
-            nums={UPPER_ROW}
-            label="Upper"
-            teethByNumber={teethByNumber}
-            onSelectTooth={onSelectTooth}
-          />
-          <ChartRow
-            nums={LOWER_ROW}
-            label="Lower"
-            teethByNumber={teethByNumber}
-            onSelectTooth={onSelectTooth}
-          />
-        </div>
-      </div>
-
-      {/* Legend */}
-      <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-2 border-t pt-3">
-        {TOOTH_STATUS_VALUES.map((s) => (
-          <div key={s} className="flex items-center gap-1.5">
-            <span
-              className={cn(
-                "h-3 w-3 rounded-full",
-                TOOTH_STATUS_META[s].color
-              )}
-            />
-            <span className="text-xs text-muted-foreground">
-              {TOOTH_STATUS_META[s].label}
-            </span>
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-}
-
-// ---------------------------------------------------------------------------
 // Treatment history table
 // ---------------------------------------------------------------------------
 
@@ -1103,9 +962,10 @@ export default function PatientProfileView() {
               message="Please try again later."
             />
           ) : (
-            <DentalChart
+            <OralCavityChart
               teeth={teeth}
               onSelectTooth={(n) => setModalTooth(n)}
+              selectedTooth={modalTooth}
             />
           )}
         </CardContent>
