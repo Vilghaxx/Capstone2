@@ -429,3 +429,19 @@ Stage Summary:
 - The uploaded SVG's anatomy (gums, palate, tongue) is preserved as a static background; teeth are overlaid as interactive SVG paths.
 - File artifacts: src/lib/tooth-paths.ts (14KB), public/charts/oral-cavity-base.svg (676KB), src/components/common/OralCavityChart.tsx.
 - Lint clean, no runtime errors. Existing ToothModal (status edit + treatment timeline + add treatment) works unchanged.
+
+---
+Task ID: 8
+Agent: main (orchestrator)
+Task: Fix broken background in oral cavity chart
+
+Work Log:
+- Diagnosed: the anatomy SVG at public/charts/oral-cavity-base.svg was invalid XML. Root cause: original Adobe Illustrator SVG declared XML namespace entities (ns_extend, ns_ai, ns_graphs) in a DOCTYPE block, then referenced them as xmlns:x="&ns_extend;" on the <svg> root. My earlier extraction (Task 7) stripped the DOCTYPE but left the dangling &ns_*; entity references + an <i:aipgf> AI metadata block, making the SVG unparseable ("must not undeclare prefix" / "undefined entity"). Browsers refused to render it when loaded via <image href>, so the chart showed a broken/blank background.
+- Rebuilt public/charts/oral-cavity-base.svg cleanly from the original upload: extracted just the <style> block + <defs> + the 405 non-tooth <path> elements, wrapped in a fresh minimal <svg xmlns xmlns:xlink viewBox="0 0 400 400">. Result: valid XML, 180KB (down from 676KB), no Adobe namespace cruft, no <switch>/<foreignObject>/<i:aipgf> metadata, no dangling entities.
+- Verified in browser: the realistic pink/red gum + palate background now renders correctly behind the 32 color-coded interactive tooth paths. VLM confirmed "realistic oral cavity background visible, teeth color-coded, background rendering correctly", rated 8/10.
+- All 32 teeth remain interactive (clickable, open ToothModal).
+
+Stage Summary:
+- Root cause was invalid XML (dangling entity references from Adobe Illustrator DOCTYPE).
+- Fixed by rebuilding a clean self-contained SVG with only the needed <style>, <defs>, and 405 anatomy paths.
+- Chart now renders the realistic oral cavity background with interactive color-coded teeth overlay.
