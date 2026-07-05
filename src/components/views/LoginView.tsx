@@ -29,6 +29,7 @@ import {
   FormControl,
   FormMessage,
 } from "@/components/ui/form";
+import { ThemeToggle } from "@/components/common/ThemeToggle";
 
 const DEMO_CREDS = [
   { role: "Dentist", username: "dentist", password: "dentist123" },
@@ -76,7 +77,10 @@ export default function LoginView() {
   };
 
   return (
-    <div className="flex min-h-screen w-full items-center justify-center bg-gradient-to-br from-emerald-50 via-background to-teal-50 p-4 dark:from-emerald-950/20 dark:via-background dark:to-teal-950/20">
+    <div className="relative flex min-h-screen w-full items-center justify-center bg-gradient-to-br from-emerald-50 via-background to-teal-50 p-4 dark:from-emerald-950/20 dark:via-background dark:to-teal-950/20">
+      <div className="absolute right-4 top-4">
+        <ThemeToggle />
+      </div>
       <div className="w-full max-w-md">
         <Card className="border-border/60 shadow-lg">
           <CardHeader className="items-center gap-3 text-center">

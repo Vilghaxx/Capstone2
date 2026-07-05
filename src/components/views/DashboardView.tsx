@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo } from "react";
+import { motion } from "framer-motion";
 import {
   Users,
   CalendarDays,
@@ -148,48 +149,63 @@ function StatCard({
 }: StatCardProps) {
   const clickable = !!onClick;
   return (
-    <Card
-      role={clickable ? "button" : undefined}
-      tabIndex={clickable ? 0 : undefined}
-      onClick={onClick}
-      onKeyDown={(e) => {
-        if (clickable && (e.key === "Enter" || e.key === " ")) {
-          e.preventDefault();
-          onClick?.();
-        }
-      }}
-      className={cn(
-        "gap-0 py-5 transition-shadow",
-        clickable &&
-          "cursor-pointer hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-      )}
+    <motion.div
+      initial={{ opacity: 0, y: 10, scale: 0.97 }}
+      animate={{ opacity: 1, y: 0, scale: 1 }}
+      transition={{ duration: 0.3, ease: "easeOut" }}
+      whileHover={clickable ? { y: -3, transition: { duration: 0.15 } } : undefined}
+      whileTap={clickable ? { scale: 0.98 } : undefined}
     >
-      <CardContent className="flex items-start gap-4">
-        <div
-          className={cn(
-            "flex h-11 w-11 shrink-0 items-center justify-center rounded-xl text-white",
-            accent
-          )}
-        >
-          <Icon className="h-5 w-5" />
-        </div>
-        <div className="min-w-0 flex-1">
-          <p className="truncate text-sm text-muted-foreground">{label}</p>
-          {loading ? (
-            <Skeleton className="mt-1 h-7 w-20" />
-          ) : (
-            <p className="truncate text-2xl font-semibold tracking-tight">
-              {value}
-            </p>
-          )}
-          {hint && (
-            <p className="mt-0.5 truncate text-xs text-muted-foreground">
-              {hint}
-            </p>
-          )}
-        </div>
-      </CardContent>
-    </Card>
+      <Card
+        role={clickable ? "button" : undefined}
+        tabIndex={clickable ? 0 : undefined}
+        onClick={onClick}
+        onKeyDown={(e) => {
+          if (clickable && (e.key === "Enter" || e.key === " ")) {
+            e.preventDefault();
+            onClick?.();
+          }
+        }}
+        className={cn(
+          "gap-0 py-5 transition-shadow",
+          clickable &&
+            "cursor-pointer hover:shadow-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+        )}
+      >
+        <CardContent className="flex items-start gap-4">
+          <motion.div
+            className={cn(
+              "flex h-11 w-11 shrink-0 items-center justify-center rounded-xl text-white",
+              accent
+            )}
+            whileHover={{ rotate: -8, scale: 1.08 }}
+            transition={{ type: "spring", stiffness: 300, damping: 15 }}
+          >
+            <Icon className="h-5 w-5" />
+          </motion.div>
+          <div className="min-w-0 flex-1">
+            <p className="truncate text-sm text-muted-foreground">{label}</p>
+            {loading ? (
+              <Skeleton className="mt-1 h-7 w-20" />
+            ) : (
+              <motion.p
+                className="truncate text-2xl font-semibold tracking-tight"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ delay: 0.1 }}
+              >
+                {value}
+              </motion.p>
+            )}
+            {hint && (
+              <p className="mt-0.5 truncate text-xs text-muted-foreground">
+                {hint}
+              </p>
+            )}
+          </div>
+        </CardContent>
+      </Card>
+    </motion.div>
   );
 }
 
@@ -312,27 +328,33 @@ function QuickActionCard({
   onClick: () => void;
 }) {
   return (
-    <button
+    <motion.button
       type="button"
       onClick={onClick}
+      initial={{ opacity: 0, y: 8 }}
+      animate={{ opacity: 1, y: 0 }}
+      whileHover={{ y: -2, transition: { duration: 0.15 } }}
+      whileTap={{ scale: 0.98 }}
       className="group flex w-full items-start gap-4 rounded-xl border bg-card p-4 text-left transition-all hover:shadow-md hover:border-primary/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
     >
-      <div
+      <motion.div
         className={cn(
           "flex h-10 w-10 shrink-0 items-center justify-center rounded-lg text-white",
           accent
         )}
+        whileHover={{ scale: 1.1, rotate: -5 }}
+        transition={{ type: "spring", stiffness: 300, damping: 15 }}
       >
         <Icon className="h-5 w-5" />
-      </div>
+      </motion.div>
       <div className="min-w-0 flex-1">
         <div className="flex items-center justify-between gap-2">
           <p className="text-sm font-semibold">{title}</p>
-          <ArrowRight className="h-4 w-4 shrink-0 text-muted-foreground transition-transform group-hover:translate-x-0.5" />
+          <ArrowRight className="h-4 w-4 shrink-0 text-muted-foreground transition-transform group-hover:translate-x-1" />
         </div>
         <p className="mt-0.5 text-xs text-muted-foreground">{description}</p>
       </div>
-    </button>
+    </motion.button>
   );
 }
 

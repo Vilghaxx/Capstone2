@@ -33,6 +33,7 @@ import {
 import { useAuth } from "@/lib/auth-store";
 import { toastError } from "@/lib/api";
 import type { BillingRecord, BillingSummary } from "@/lib/types";
+import { motion } from "framer-motion";
 
 import {
   Card,
@@ -90,6 +91,12 @@ const COLOR_STYLES: Record<CardColor, { icon: string; value: string }> = {
     value: "text-rose-600 dark:text-rose-400",
   },
 };
+
+/**
+ * Motion-enabled table row used for a subtle staggered fade-in when the
+ * billing list mounts. Keeps the shadcn TableRow styling intact.
+ */
+const MotionTableRow = motion.create(TableRow);
 
 export default function BillingView() {
   const role = useAuth((s) => s.user?.role);
@@ -215,33 +222,41 @@ export default function BillingView() {
 
       {/* Summary cards */}
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        {summaryCards.map((c) => {
+        {summaryCards.map((c, index) => {
           const Icon = c.icon;
           const styles = COLOR_STYLES[c.color];
           return (
-            <Card key={c.label}>
-              <CardHeader>
-                <div className="flex items-center justify-between">
-                  <CardTitle className="text-sm font-medium text-muted-foreground">
-                    {c.label}
-                  </CardTitle>
-                  <span
-                    className={`flex h-9 w-9 items-center justify-center rounded-lg ${styles.icon}`}
-                  >
-                    <Icon className="h-4 w-4" />
-                  </span>
-                </div>
-              </CardHeader>
-              <CardContent>
-                {summaryQuery.isLoading ? (
-                  <div className="h-7 w-24 animate-pulse rounded bg-muted" />
-                ) : (
-                  <p className={`text-2xl font-semibold ${styles.value}`}>
-                    {c.value}
-                  </p>
-                )}
-              </CardContent>
-            </Card>
+            <motion.div
+              key={c.label}
+              initial={{ opacity: 0, y: 10, scale: 0.97 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              whileHover={{ y: -2 }}
+              transition={{ duration: 0.25, delay: index * 0.05 }}
+            >
+              <Card>
+                <CardHeader>
+                  <div className="flex items-center justify-between">
+                    <CardTitle className="text-sm font-medium text-muted-foreground">
+                      {c.label}
+                    </CardTitle>
+                    <span
+                      className={`flex h-9 w-9 items-center justify-center rounded-lg ${styles.icon}`}
+                    >
+                      <Icon className="h-4 w-4" />
+                    </span>
+                  </div>
+                </CardHeader>
+                <CardContent>
+                  {summaryQuery.isLoading ? (
+                    <div className="h-7 w-24 animate-pulse rounded bg-muted" />
+                  ) : (
+                    <p className={`text-2xl font-semibold ${styles.value}`}>
+                      {c.value}
+                    </p>
+                  )}
+                </CardContent>
+              </Card>
+            </motion.div>
           );
         })}
       </div>
@@ -323,8 +338,16 @@ export default function BillingView() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {records.map((r) => (
-                    <TableRow key={r.id}>
+                  {records.map((r, index) => (
+                    <MotionTableRow
+                      key={r.id}
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      transition={{
+                        duration: 0.2,
+                        delay: Math.min(index * 0.02, 0.3),
+                      }}
+                    >
                       <TableCell className="font-medium">
                         {r.patientName ?? patientsMap.get(r.patientId) ?? "—"}
                       </TableCell>
@@ -374,7 +397,7 @@ export default function BillingView() {
                           </Button>
                         )}
                       </TableCell>
-                    </TableRow>
+                    </MotionTableRow>
                   ))}
                 </TableBody>
               </Table>

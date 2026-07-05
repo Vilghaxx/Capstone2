@@ -40,6 +40,7 @@ import {
   FormControl,
   FormMessage,
 } from "@/components/ui/form";
+import { ThemeToggle } from "@/components/common/ThemeToggle";
 
 // Use the schema's *input* type for form values, because the zodResolver
 // validates the input shape (address is optional before the .default("") kicks
@@ -91,7 +92,10 @@ export default function RegisterView() {
   };
 
   return (
-    <div className="flex min-h-screen w-full items-center justify-center bg-gradient-to-br from-emerald-50 via-background to-teal-50 p-4 py-8 dark:from-emerald-950/20 dark:via-background dark:to-teal-950/20">
+    <div className="relative flex min-h-screen w-full items-center justify-center bg-gradient-to-br from-emerald-50 via-background to-teal-50 p-4 py-8 dark:from-emerald-950/20 dark:via-background dark:to-teal-950/20">
+      <div className="absolute right-4 top-4">
+        <ThemeToggle />
+      </div>
       <div className="w-full max-w-lg">
         <Card className="border-border/60 shadow-lg">
           <CardHeader className="items-center gap-3 text-center">

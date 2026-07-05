@@ -64,6 +64,14 @@ import { LoadingSpinner } from "@/components/common/LoadingSpinner";
 import { EmptyState } from "@/components/common/EmptyState";
 import { ConfirmDialog } from "@/components/common/ConfirmDialog";
 import { AppointmentStatusBadge } from "@/components/common/StatusBadge";
+import { motion } from "framer-motion";
+
+/**
+ * Motion-enabled shadcn Button. Used for the Approve/Decline actions in the
+ * Requests tab so we can attach `whileTap` press feedback without losing the
+ * variant/size props.
+ */
+const MotionButton = motion.create(Button);
 
 /* ------------------------------------------------------------------ */
 /* Helpers                                                             */
@@ -338,7 +346,7 @@ function ListTab({
                 </CardTitle>
               </CardHeader>
               <CardContent className="flex flex-col gap-2">
-                {group.items.map((a) => (
+                {group.items.map((a, i) => (
                   <AppointmentRow
                     key={a.id}
                     appt={a}
@@ -346,6 +354,7 @@ function ListTab({
                     isDentist={isDentist}
                     onStatusChange={onStatusChange}
                     onDelete={() => setDeleteTarget(a)}
+                    index={i}
                   />
                 ))}
               </CardContent>
@@ -377,15 +386,23 @@ function AppointmentRow({
   isDentist,
   onStatusChange,
   onDelete,
+  index = 0,
 }: {
   appt: Appointment;
   patientName: string;
   isDentist: boolean;
   onStatusChange: (id: string, status: AppointmentStatus) => void;
   onDelete: () => void;
+  index?: number;
 }) {
   return (
-    <div className="flex flex-col gap-3 rounded-lg border border-border bg-card/40 p-3 sm:flex-row sm:items-center sm:justify-between">
+    <motion.div
+      initial={{ opacity: 0, x: -6 }}
+      animate={{ opacity: 1, x: 0 }}
+      whileHover={{ x: 2 }}
+      transition={{ duration: 0.2, delay: index * 0.02 }}
+      className="flex flex-col gap-3 rounded-lg border border-border bg-card/40 p-3 sm:flex-row sm:items-center sm:justify-between"
+    >
       <div className="flex flex-col gap-1">
         <div className="flex flex-wrap items-center gap-2 text-sm font-medium">
           <Clock className="h-4 w-4 text-muted-foreground" />
@@ -429,7 +446,7 @@ function AppointmentRow({
           </Button>
         )}
       </div>
-    </div>
+    </motion.div>
   );
 }
 
@@ -644,25 +661,27 @@ function RequestsTab() {
               ) : null}
             </div>
             <div className="mt-1 flex gap-2">
-              <Button
+              <MotionButton
                 size="sm"
                 className="flex-1"
                 onClick={() => onApprove(a)}
                 disabled={updateAppt.isPending}
+                whileTap={{ scale: 0.95 }}
               >
                 <Check className="h-4 w-4" />
                 Approve
-              </Button>
-              <Button
+              </MotionButton>
+              <MotionButton
                 size="sm"
                 variant="outline"
                 className="flex-1"
                 onClick={() => onDecline(a)}
                 disabled={updateAppt.isPending}
+                whileTap={{ scale: 0.95 }}
               >
                 <X className="h-4 w-4" />
                 Decline
-              </Button>
+              </MotionButton>
             </div>
           </CardContent>
         </Card>

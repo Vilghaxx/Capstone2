@@ -23,6 +23,7 @@ import {
   SheetTrigger,
   SheetTitle,
 } from "@/components/ui/sheet";
+import { ThemeToggle } from "@/components/common/ThemeToggle";
 
 interface NavItem {
   view: ViewName;
@@ -138,18 +139,21 @@ function UserCard() {
           {roleLabel(user.role)}
         </p>
       </div>
-      <Button
-        variant="ghost"
-        size="icon"
-        className="h-8 w-8 text-muted-foreground hover:text-destructive"
-        onClick={() => {
-          logout();
-          navigate("dashboard");
-        }}
-        aria-label="Log out"
-      >
-        <LogOut className="h-4 w-4" />
-      </Button>
+      <div className="flex items-center gap-1">
+        <ThemeToggle className="h-8 w-8 text-muted-foreground" />
+        <Button
+          variant="ghost"
+          size="icon"
+          className="h-8 w-8 text-muted-foreground hover:text-destructive"
+          onClick={() => {
+            logout();
+            navigate("dashboard");
+          }}
+          aria-label="Log out"
+        >
+          <LogOut className="h-4 w-4" />
+        </Button>
+      </div>
     </div>
   );
 }
@@ -199,12 +203,13 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                 </div>
               </SheetContent>
             </Sheet>
-            <div className="flex items-center gap-2">
+            <div className="flex flex-1 items-center gap-2">
               <div className="flex h-7 w-7 items-center justify-center rounded-md bg-primary text-primary-foreground">
                 <Stethoscope className="h-4 w-4" />
               </div>
               <span className="font-semibold">Radiograph</span>
             </div>
+            <ThemeToggle className="h-8 w-8" />
           </header>
 
           <main className="flex-1 p-4 sm:p-6 lg:p-8">{children}</main>

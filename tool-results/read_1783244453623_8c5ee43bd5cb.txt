@@ -1,0 +1,886 @@
+     1→"use client";
+     2→
+     3→import { useEffect, useMemo, useState } from "react";
+     4→import { useForm, useWatch } from "react-hook-form";
+     5→import { zodResolver } from "@hookform/resolvers/zod";
+     6→import { z } from "zod";
+     7→import { toast } from "sonner";
+     8→import {
+     9→  CalendarDays,
+    10→  Check,
+    11→  ClipboardList,
+    12→  Clock,
+    13→  Calendar as CalendarIcon,
+    14→  Plus,
+    15→  Trash2,
+    16→  X,
+    17→} from "lucide-react";
+    18→
+    19→import { useIsCashier, useIsDentist } from "@/lib/auth-store";
+    20→import {
+    21→  useAppointments,
+    22→  useCreateAppointment,
+    23→  useDeleteAppointment,
+    24→  usePatients,
+    25→  useUpdateAppointment,
+    26→} from "@/hooks/queries";
+    27→import {
+    28→  appointmentFormSchema,
+    29→  type AppointmentFormValues,
+    30→} from "@/lib/schemas/appointment-schema";
+    31→import {
+    32→  APPOINTMENT_STATUSES,
+    33→  APPOINTMENT_STATUS_META,
+    34→  APPOINTMENT_TYPES,
+    35→  APPOINTMENT_TYPE_META,
+    36→  TIME_SLOTS,
+    37→} from "@/lib/format";
+    38→import type { Appointment, AppointmentStatus, Patient } from "@/lib/types";
+    39→
+    40→import { Button } from "@/components/ui/button";
+    41→import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+    42→import { Input } from "@/components/ui/input";
+    43→import { Label } from "@/components/ui/label";
+    44→import { Textarea } from "@/components/ui/textarea";
+    45→import {
+    46→  Select,
+    47→  SelectContent,
+    48→  SelectItem,
+    49→  SelectTrigger,
+    50→  SelectValue,
+    51→} from "@/components/ui/select";
+    52→import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+    53→import {
+    54→  Dialog,
+    55→  DialogContent,
+    56→  DialogDescription,
+    57→  DialogFooter,
+    58→  DialogHeader,
+    59→  DialogTitle,
+    60→} from "@/components/ui/dialog";
+    61→import { Calendar } from "@/components/ui/calendar";
+    62→
+    63→import { LoadingSpinner } from "@/components/common/LoadingSpinner";
+    64→import { EmptyState } from "@/components/common/EmptyState";
+    65→import { ConfirmDialog } from "@/components/common/ConfirmDialog";
+    66→import { AppointmentStatusBadge } from "@/components/common/StatusBadge";
+    67→
+    68→/* ------------------------------------------------------------------ */
+    69→/* Helpers                                                             */
+    70→/* ------------------------------------------------------------------ */
+    71→
+    72→const STATUS_VALUES = Object.values(APPOINTMENT_STATUSES) as AppointmentStatus[];
+    73→
+    74→/** Format a local Date as YYYY-MM-DD using local parts (for today / selected day). */
+    75→function localToYMD(d: Date): string {
+    76→  const y = d.getFullYear();
+    77→  const m = String(d.getMonth() + 1).padStart(2, "0");
+    78→  const day = String(d.getDate()).padStart(2, "0");
+    79→  return `${y}-${m}-${day}`;
+    80→}
+    81→
+    82→/**
+    83→ * Format an appointment's stored date string (ISO, UTC midnight) as
+    84→ * YYYY-MM-DD using UTC parts so the calendar day matches what the server
+    85→ * stored (and what the date filter expects).
+    86→ */
+    87→function apptDateToYMD(value: string): string {
+    88→  const d = new Date(value);
+    89→  if (isNaN(d.getTime())) return "";
+    90→  return `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, "0")}-${String(d.getUTCDate()).padStart(2, "0")}`;
+    91→}
+    92→
+    93→/** Pretty-print a YYYY-MM-DD string as a localized date (timezone-safe). */
+    94→function formatYMD(ymd: string): string {
+    95→  if (!ymd) return "—";
+    96→  const [y, m, d] = ymd.split("-").map(Number);
+    97→  if (!y || !m || !d) return ymd;
+    98→  return new Date(y, m - 1, d).toLocaleDateString("en-PH", {
+    99→    year: "numeric",
+   100→    month: "short",
+   101→    day: "numeric",
+   102→  });
+   103→}
+   104→
+   105→/** Human-readable label for an appointment type (already capitalized). */
+   106→function typeLabel(type: string): string {
+   107→  if (APPOINTMENT_TYPE_META[type]) return APPOINTMENT_TYPE_META[type];
+   108→  if (!type) return "—";
+   109→  return type.charAt(0).toUpperCase() + type.slice(1);
+   110→}
+   111→
+   112→/** Standard error toast for caught API errors. */
+   113→function reportError(err: unknown, fallback: string) {
+   114→  toast.error(err instanceof Error ? err.message : fallback);
+   115→}
+   116→
+   117→/* ------------------------------------------------------------------ */
+   118→/* Patient name lookup                                                 */
+   119→/* ------------------------------------------------------------------ */
+   120→
+   121→/** Build a Map<patientId, name> from the large patient list. */
+   122→function usePatientMap(): Map<string, string> {
+   123→  const { data } = usePatients("", 1, 200);
+   124→  return useMemo(() => {
+   125→    const map = new Map<string, string>();
+   126→    const patients = (data?.data as Patient[] | undefined) ?? [];
+   127→    for (const p of patients) map.set(p.id, p.name);
+   128→    return map;
+   129→  }, [data]);
+   130→}
+   131→
+   132→/* ------------------------------------------------------------------ */
+   133→/* Main view                                                           */
+   134→/* ------------------------------------------------------------------ */
+   135→
+   136→export default function AppointmentsView() {
+   137→  const isDentist = useIsDentist();
+   138→  const isCashier = useIsCashier();
+   139→  const [dialogOpen, setDialogOpen] = useState(false);
+   140→  const [preset, setPreset] = useState<{ date?: string; time?: string }>({});
+   141→
+   142→  const openDialog = (p?: { date?: string; time?: string }) => {
+   143→    setPreset(p ?? {});
+   144→    setDialogOpen(true);
+   145→  };
+   146→
+   147→  // Subtle role indicator so users see at a glance which staff view they
+   148→  // are operating under. Dentist (emerald) can delete appointments;
+   149→  // cashier (amber) cannot. No indigo/blue per project rule.
+   150→  const rolePill = isDentist
+   151→    ? {
+   152→        label: "Dentist",
+   153→        className:
+   154→          "bg-emerald-100 text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-300",
+   155→      }
+   156→    : isCashier
+   157→      ? {
+   158→          label: "Cashier",
+   159→          className:
+   160→            "bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300",
+   161→        }
+   162→      : null;
+   163→
+   164→  return (
+   165→    <div className="mx-auto flex w-full max-w-6xl flex-col gap-6 px-4 py-6 sm:px-6 lg:py-8">
+   166→      <header className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+   167→        <div className="flex flex-col gap-1.5">
+   168→          <div className="flex items-center gap-2">
+   169→            <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">
+   170→              Appointments
+   171→            </h1>
+   172→            {rolePill ? (
+   173→              <span
+   174→                className={`rounded-full px-2 py-0.5 text-xs font-medium ${rolePill.className}`}
+   175→                aria-label={`Signed in as ${rolePill.label.toLowerCase()}`}
+   176→              >
+   177→                {rolePill.label}
+   178→              </span>
+   179→            ) : null}
+   180→          </div>
+   181→          <p className="text-sm text-muted-foreground">
+   182→            Schedule, manage, and approve patient appointments.
+   183→          </p>
+   184→        </div>
+   185→        <Button onClick={() => openDialog()}>
+   186→          <Plus className="h-4 w-4" />
+   187→          New Appointment
+   188→        </Button>
+   189→      </header>
+   190→
+   191→      <Tabs defaultValue="list" className="w-full">
+   192→        <TabsList className="grid w-full grid-cols-3 sm:w-auto">
+   193→          <TabsTrigger value="list" className="gap-1.5">
+   194→            <ClipboardList className="h-4 w-4" /> List
+   195→          </TabsTrigger>
+   196→          <TabsTrigger value="schedule" className="gap-1.5">
+   197→            <CalendarDays className="h-4 w-4" /> Schedule
+   198→          </TabsTrigger>
+   199→          <TabsTrigger value="requests" className="gap-1.5">
+   200→            <ClipboardList className="h-4 w-4" /> Requests
+   201→          </TabsTrigger>
+   202→        </TabsList>
+   203→
+   204→        <TabsContent value="list" className="mt-4">
+   205→          <ListTab isDentist={isDentist} onNew={openDialog} />
+   206→        </TabsContent>
+   207→        <TabsContent value="schedule" className="mt-4">
+   208→          <ScheduleTab onNew={openDialog} />
+   209→        </TabsContent>
+   210→        <TabsContent value="requests" className="mt-4">
+   211→          <RequestsTab />
+   212→        </TabsContent>
+   213→      </Tabs>
+   214→
+   215→      <NewAppointmentDialog
+   216→        open={dialogOpen}
+   217→        onOpenChange={setDialogOpen}
+   218→        preset={preset}
+   219→      />
+   220→    </div>
+   221→  );
+   222→}
+   223→
+   224→/* ------------------------------------------------------------------ */
+   225→/* Tab 1: List                                                         */
+   226→/* ------------------------------------------------------------------ */
+   227→
+   228→function ListTab({
+   229→  isDentist,
+   230→  onNew,
+   231→}: {
+   232→  isDentist: boolean;
+   233→  onNew: (p?: { date?: string; time?: string }) => void;
+   234→}) {
+   235→  const patientMap = usePatientMap();
+   236→  const [statusFilter, setStatusFilter] = useState<string>("all");
+   237→  const filters = statusFilter === "all" ? undefined : { status: statusFilter };
+   238→  const { data, isLoading } = useAppointments(filters);
+   239→
+   240→  const updateAppt = useUpdateAppointment();
+   241→  const deleteAppt = useDeleteAppointment();
+   242→  const [deleteTarget, setDeleteTarget] = useState<Appointment | null>(null);
+   243→
+   244→  // Group by YYYY-MM-DD, sort ascending; within each date sort by time.
+   245→  const grouped = useMemo(() => {
+   246→    const list = data ?? [];
+   247→    const map = new Map<string, Appointment[]>();
+   248→    for (const a of list) {
+   249→      const ymd = apptDateToYMD(a.date);
+   250→      if (!ymd) continue;
+   251→      const arr = map.get(ymd) ?? [];
+   252→      arr.push(a);
+   253→      map.set(ymd, arr);
+   254→    }
+   255→    return Array.from(map.keys())
+   256→      .sort()
+   257→      .map((k) => ({
+   258→        date: k,
+   259→        items: map
+   260→          .get(k)!
+   261→          .sort((x, y) => (x.time || "").localeCompare(y.time || "")),
+   262→      }));
+   263→  }, [data]);
+   264→
+   265→  const onStatusChange = async (id: string, status: AppointmentStatus) => {
+   266→    try {
+   267→      await updateAppt.mutateAsync({ id, data: { status } });
+   268→      toast.success(`Status updated to "${APPOINTMENT_STATUS_META[status].label}"`);
+   269→    } catch (err) {
+   270→      reportError(err, "Failed to update status");
+   271→    }
+   272→  };
+   273→
+   274→  const onConfirmDelete = async () => {
+   275→    if (!deleteTarget) return;
+   276→    try {
+   277→      await deleteAppt.mutateAsync(deleteTarget.id);
+   278→      toast.success("Appointment deleted");
+   279→    } catch (err) {
+   280→      reportError(err, "Failed to delete appointment");
+   281→    } finally {
+   282→      setDeleteTarget(null);
+   283→    }
+   284→  };
+   285→
+   286→  const totalCount = grouped.reduce((n, g) => n + g.items.length, 0);
+   287→
+   288→  return (
+   289→    <div className="flex flex-col gap-4">
+   290→      <div className="flex flex-wrap items-end justify-between gap-3">
+   291→        <div className="flex flex-col gap-1.5">
+   292→          <Label htmlFor="status-filter" className="text-xs text-muted-foreground">
+   293→            Filter by status
+   294→          </Label>
+   295→          <Select value={statusFilter} onValueChange={setStatusFilter}>
+   296→            <SelectTrigger id="status-filter" className="w-[200px]">
+   297→              <SelectValue placeholder="All statuses" />
+   298→            </SelectTrigger>
+   299→            <SelectContent>
+   300→              <SelectItem value="all">All statuses</SelectItem>
+   301→              {STATUS_VALUES.map((s) => (
+   302→                <SelectItem key={s} value={s}>
+   303→                  {APPOINTMENT_STATUS_META[s].label}
+   304→                </SelectItem>
+   305→              ))}
+   306→            </SelectContent>
+   307→          </Select>
+   308→        </div>
+   309→        <p className="text-sm text-muted-foreground">
+   310→          {totalCount} appointment{totalCount === 1 ? "" : "s"}
+   311→        </p>
+   312→      </div>
+   313→
+   314→      {isLoading ? (
+   315→        <LoadingSpinner text="Loading appointments…" />
+   316→      ) : totalCount === 0 ? (
+   317→        <EmptyState
+   318→          title="No appointments"
+   319→          message={
+   320→            statusFilter === "all"
+   321→              ? "There are no appointments yet. Create one to get started."
+   322→              : "No appointments match this filter."
+   323→          }
+   324→          action={
+   325→            <Button onClick={() => onNew()}>
+   326→              <Plus className="h-4 w-4" />
+   327→              New Appointment
+   328→            </Button>
+   329→          }
+   330→        />
+   331→      ) : (
+   332→        <div className="flex flex-col gap-4">
+   333→          {grouped.map((group) => (
+   334→            <Card key={group.date}>
+   335→              <CardHeader className="pb-0">
+   336→                <CardTitle className="text-sm font-medium text-muted-foreground">
+   337→                  {formatYMD(group.date)}
+   338→                </CardTitle>
+   339→              </CardHeader>
+   340→              <CardContent className="flex flex-col gap-2">
+   341→                {group.items.map((a) => (
+   342→                  <AppointmentRow
+   343→                    key={a.id}
+   344→                    appt={a}
+   345→                    patientName={patientMap.get(a.patientId) ?? "Unknown"}
+   346→                    isDentist={isDentist}
+   347→                    onStatusChange={onStatusChange}
+   348→                    onDelete={() => setDeleteTarget(a)}
+   349→                  />
+   350→                ))}
+   351→              </CardContent>
+   352→            </Card>
+   353→          ))}
+   354→        </div>
+   355→      )}
+   356→
+   357→      <ConfirmDialog
+   358→        open={!!deleteTarget}
+   359→        onOpenChange={(o) => !o && setDeleteTarget(null)}
+   360→        title="Delete appointment?"
+   361→        message={
+   362→          deleteTarget
+   363→            ? `Delete ${patientMap.get(deleteTarget.patientId) ?? "this patient"}'s appointment on ${formatYMD(apptDateToYMD(deleteTarget.date))} at ${deleteTarget.time || "—"}? This action cannot be undone.`
+   364→            : "This action cannot be undone."
+   365→        }
+   366→        confirmLabel="Delete"
+   367→        destructive
+   368→        onConfirm={onConfirmDelete}
+   369→      />
+   370→    </div>
+   371→  );
+   372→}
+   373→
+   374→function AppointmentRow({
+   375→  appt,
+   376→  patientName,
+   377→  isDentist,
+   378→  onStatusChange,
+   379→  onDelete,
+   380→}: {
+   381→  appt: Appointment;
+   382→  patientName: string;
+   383→  isDentist: boolean;
+   384→  onStatusChange: (id: string, status: AppointmentStatus) => void;
+   385→  onDelete: () => void;
+   386→}) {
+   387→  return (
+   388→    <div className="flex flex-col gap-3 rounded-lg border border-border bg-card/40 p-3 sm:flex-row sm:items-center sm:justify-between">
+   389→      <div className="flex flex-col gap-1">
+   390→        <div className="flex flex-wrap items-center gap-2 text-sm font-medium">
+   391→          <Clock className="h-4 w-4 text-muted-foreground" />
+   392→          <span>{appt.time || "—"}</span>
+   393→          <span className="rounded-md bg-primary/10 px-2 py-0.5 text-xs font-medium text-primary">
+   394→            {typeLabel(appt.type)}
+   395→          </span>
+   396→        </div>
+   397→        <div className="text-sm">
+   398→          <span className="font-medium">{patientName}</span>
+   399→          {appt.notes ? (
+   400→            <span className="text-muted-foreground"> — {appt.notes}</span>
+   401→          ) : null}
+   402→        </div>
+   403→      </div>
+   404→
+   405→      <div className="flex items-center gap-2">
+   406→        <Select
+   407→          value={appt.status}
+   408→          onValueChange={(v) => onStatusChange(appt.id, v as AppointmentStatus)}
+   409→        >
+   410→          <SelectTrigger size="sm" className="w-[150px]">
+   411→            <SelectValue />
+   412→          </SelectTrigger>
+   413→          <SelectContent>
+   414→            {STATUS_VALUES.map((s) => (
+   415→              <SelectItem key={s} value={s}>
+   416→                {APPOINTMENT_STATUS_META[s].label}
+   417→              </SelectItem>
+   418→            ))}
+   419→          </SelectContent>
+   420→        </Select>
+   421→        {isDentist && (
+   422→          <Button
+   423→            variant="ghost"
+   424→            size="icon"
+   425→            onClick={onDelete}
+   426→            aria-label="Delete appointment"
+   427→          >
+   428→            <Trash2 className="h-4 w-4 text-destructive" />
+   429→          </Button>
+   430→        )}
+   431→      </div>
+   432→    </div>
+   433→  );
+   434→}
+   435→
+   436→/* ------------------------------------------------------------------ */
+   437→/* Tab 2: Schedule                                                     */
+   438→/* ------------------------------------------------------------------ */
+   439→
+   440→function ScheduleTab({
+   441→  onNew,
+   442→}: {
+   443→  onNew: (p?: { date?: string; time?: string }) => void;
+   444→}) {
+   445→  const patientMap = usePatientMap();
+   446→  const [selectedDate, setSelectedDate] = useState<Date>(new Date());
+   447→  const selectedYMD = localToYMD(selectedDate);
+   448→
+   449→  const { data, isLoading } = useAppointments({ date: selectedYMD });
+   450→
+   451→  // Map time → appointments; collect off-grid appointments separately.
+   452→  const { byTime, otherTimes } = useMemo(() => {
+   453→    const map = new Map<string, Appointment[]>();
+   454→    const others: Appointment[] = [];
+   455→    const slotSet = new Set(TIME_SLOTS);
+   456→    for (const a of data ?? []) {
+   457→      const t = a.time || "";
+   458→      if (slotSet.has(t)) {
+   459→        const arr = map.get(t) ?? [];
+   460→        arr.push(a);
+   461→        map.set(t, arr);
+   462→      } else {
+   463→        others.push(a);
+   464→      }
+   465→    }
+   466→    for (const arr of map.values()) {
+   467→      arr.sort((x, y) => (x.time || "").localeCompare(y.time || ""));
+   468→    }
+   469→    others.sort((x, y) => (x.time || "").localeCompare(y.time || ""));
+   470→    return { byTime: map, otherTimes: others };
+   471→  }, [data]);
+   472→
+   473→  return (
+   474→    <div className="flex flex-col gap-4 lg:flex-row lg:items-start">
+   475→      <Card className="w-full lg:w-fit">
+   476→        <CardHeader className="pb-0">
+   477→          <CardTitle className="flex items-center gap-2 text-sm">
+   478→            <CalendarIcon className="h-4 w-4 text-muted-foreground" />
+   479→            {formatYMD(selectedYMD)}
+   480→          </CardTitle>
+   481→        </CardHeader>
+   482→        <CardContent>
+   483→          <Calendar
+   484→            mode="single"
+   485→            selected={selectedDate}
+   486→            onSelect={(d) => d && setSelectedDate(d)}
+   487→            className="mx-auto"
+   488→          />
+   489→          <p className="mt-2 text-center text-xs text-muted-foreground">
+   490→            Tap a date to view its schedule.
+   491→          </p>
+   492→        </CardContent>
+   493→      </Card>
+   494→
+   495→      <div className="flex-1">
+   496→        {isLoading ? (
+   497→          <LoadingSpinner text="Loading schedule…" />
+   498→        ) : (
+   499→          <div className="flex flex-col gap-2">
+   500→            {TIME_SLOTS.map((time) => {
+   501→              const items = byTime.get(time) ?? [];
+   502→              return (
+   503→                <div
+   504→                  key={time}
+   505→                  className="flex gap-3 rounded-lg border border-border bg-card/30 p-3"
+   506→                >
+   507→                  <div className="w-16 shrink-0 pt-0.5 text-sm font-medium text-muted-foreground">
+   508→                    {time}
+   509→                  </div>
+   510→                  <div className="flex flex-1 flex-col gap-2">
+   511→                    {items.length === 0 ? (
+   512→                      <button
+   513→                        type="button"
+   514→                        onClick={() => onNew({ date: selectedYMD, time })}
+   515→                        className="flex items-center gap-1.5 self-start rounded-md px-2 py-1 text-sm text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground"
+   516→                      >
+   517→                        <Plus className="h-4 w-4" /> Available
+   518→                      </button>
+   519→                    ) : (
+   520→                      items.map((a) => (
+   521→                        <div
+   522→                          key={a.id}
+   523→                          className="flex items-center justify-between gap-2 rounded-md bg-accent/40 px-3 py-2"
+   524→                        >
+   525→                          <div className="flex flex-col">
+   526→                            <span className="text-sm font-medium">
+   527→                              {patientMap.get(a.patientId) ?? "Unknown"}
+   528→                            </span>
+   529→                            <span className="text-xs text-muted-foreground">
+   530→                              {typeLabel(a.type)}
+   531→                              {a.notes ? ` • ${a.notes}` : ""}
+   532→                            </span>
+   533→                          </div>
+   534→                          <AppointmentStatusBadge status={a.status} />
+   535→                        </div>
+   536→                      ))
+   537→                    )}
+   538→                  </div>
+   539→                </div>
+   540→              );
+   541→            })}
+   542→
+   543→            {otherTimes.length > 0 && (
+   544→              <div className="mt-2 flex flex-col gap-2 rounded-lg border border-dashed border-border p-3">
+   545→                <div className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+   546→                  Other times
+   547→                </div>
+   548→                {otherTimes.map((a) => (
+   549→                  <div
+   550→                    key={a.id}
+   551→                    className="flex items-center justify-between gap-2 rounded-md bg-accent/20 px-3 py-2"
+   552→                  >
+   553→                    <div className="flex flex-col">
+   554→                      <span className="text-sm font-medium">
+   555→                        {patientMap.get(a.patientId) ?? "Unknown"} ·{" "}
+   556→                        {a.time || "—"}
+   557→                      </span>
+   558→                      <span className="text-xs text-muted-foreground">
+   559→                        {typeLabel(a.type)}
+   560→                        {a.notes ? ` • ${a.notes}` : ""}
+   561→                      </span>
+   562→                    </div>
+   563→                    <AppointmentStatusBadge status={a.status} />
+   564→                  </div>
+   565→                ))}
+   566→              </div>
+   567→            )}
+   568→          </div>
+   569→        )}
+   570→      </div>
+   571→    </div>
+   572→  );
+   573→}
+   574→
+   575→/* ------------------------------------------------------------------ */
+   576→/* Tab 3: Requests                                                     */
+   577→/* ------------------------------------------------------------------ */
+   578→
+   579→function RequestsTab() {
+   580→  const patientMap = usePatientMap();
+   581→  const { data, isLoading } = useAppointments({ status: "pending" });
+   582→  const updateAppt = useUpdateAppointment();
+   583→
+   584→  const sorted = useMemo(() => {
+   585→    const list = data ?? [];
+   586→    return [...list].sort(
+   587→      (a, b) =>
+   588→        new Date(a.date).getTime() - new Date(b.date).getTime() ||
+   589→        (a.time || "").localeCompare(b.time || "")
+   590→    );
+   591→  }, [data]);
+   592→
+   593→  const onApprove = async (a: Appointment) => {
+   594→    try {
+   595→      await updateAppt.mutateAsync({ id: a.id, data: { status: "scheduled" } });
+   596→      toast.success("Appointment approved and scheduled");
+   597→    } catch (err) {
+   598→      reportError(err, "Failed to approve appointment");
+   599→    }
+   600→  };
+   601→
+   602→  const onDecline = async (a: Appointment) => {
+   603→    try {
+   604→      await updateAppt.mutateAsync({ id: a.id, data: { status: "cancelled" } });
+   605→      toast.info("Appointment request declined");
+   606→    } catch (err) {
+   607→      reportError(err, "Failed to decline appointment");
+   608→    }
+   609→  };
+   610→
+   611→  if (isLoading) return <LoadingSpinner text="Loading requests…" />;
+   612→
+   613→  if (sorted.length === 0) {
+   614→    return (
+   615→      <EmptyState
+   616→        title="No pending requests"
+   617→        message="All appointment requests have been reviewed."
+   618→      />
+   619→    );
+   620→  }
+   621→
+   622→  return (
+   623→    <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+   624→      {sorted.map((a) => (
+   625→        <Card key={a.id}>
+   626→          <CardContent className="flex flex-col gap-3">
+   627→            <div className="flex items-center justify-between gap-2">
+   628→              <span className="rounded-md bg-primary/10 px-2 py-0.5 text-xs font-medium text-primary">
+   629→                {typeLabel(a.type)}
+   630→              </span>
+   631→              <AppointmentStatusBadge status={a.status} />
+   632→            </div>
+   633→            <div className="flex flex-col gap-1 text-sm">
+   634→              <span className="font-medium">
+   635→                {patientMap.get(a.patientId) ?? "Unknown"}
+   636→              </span>
+   637→              <span className="text-muted-foreground">
+   638→                {formatYMD(apptDateToYMD(a.date))} at {a.time || "—"}
+   639→              </span>
+   640→              {a.notes ? (
+   641→                <span className="text-xs italic text-muted-foreground">
+   642→                  &ldquo;{a.notes}&rdquo;
+   643→                </span>
+   644→              ) : null}
+   645→            </div>
+   646→            <div className="mt-1 flex gap-2">
+   647→              <Button
+   648→                size="sm"
+   649→                className="flex-1"
+   650→                onClick={() => onApprove(a)}
+   651→                disabled={updateAppt.isPending}
+   652→              >
+   653→                <Check className="h-4 w-4" />
+   654→                Approve
+   655→              </Button>
+   656→              <Button
+   657→                size="sm"
+   658→                variant="outline"
+   659→                className="flex-1"
+   660→                onClick={() => onDecline(a)}
+   661→                disabled={updateAppt.isPending}
+   662→              >
+   663→                <X className="h-4 w-4" />
+   664→                Decline
+   665→              </Button>
+   666→            </div>
+   667→          </CardContent>
+   668→        </Card>
+   669→      ))}
+   670→    </div>
+   671→  );
+   672→}
+   673→
+   674→/* ------------------------------------------------------------------ */
+   675→/* New Appointment Dialog (shared)                                     */
+   676→/* ------------------------------------------------------------------ */
+   677→
+   678→function NewAppointmentDialog({
+   679→  open,
+   680→  onOpenChange,
+   681→  preset,
+   682→}: {
+   683→  open: boolean;
+   684→  onOpenChange: (o: boolean) => void;
+   685→  preset: { date?: string; time?: string };
+   686→}) {
+   687→  const { data: patientsData, isLoading: patientsLoading } = usePatients("", 1, 200);
+   688→  const patients = (patientsData?.data as Patient[] | undefined) ?? [];
+   689→  const createAppt = useCreateAppointment();
+   690→
+   691→  const form = useForm<
+   692→    z.input<typeof appointmentFormSchema>,
+   693→    unknown,
+   694→    AppointmentFormValues
+   695→  >({
+   696→    resolver: zodResolver(appointmentFormSchema),
+   697→    defaultValues: {
+   698→      patientId: "",
+   699→      date: preset.date ?? localToYMD(new Date()),
+   700→      time: preset.time ?? TIME_SLOTS[0],
+   701→      type: APPOINTMENT_TYPES.CHECKUP,
+   702→      notes: "",
+   703→      status: "scheduled",
+   704→    },
+   705→  });
+   706→
+   707→  // Reset form when opening or when the preset changes.
+   708→  useEffect(() => {
+   709→    if (open) {
+   710→      form.reset({
+   711→        patientId: "",
+   712→        date: preset.date ?? localToYMD(new Date()),
+   713→        time: preset.time ?? TIME_SLOTS[0],
+   714→        type: APPOINTMENT_TYPES.CHECKUP,
+   715→        notes: "",
+   716→        status: "scheduled",
+   717→      });
+   718→    }
+   719→  }, [open, preset.date, preset.time, form]);
+   720→
+   721→  const {
+   722→    register,
+   723→    handleSubmit,
+   724→    setValue,
+   725→    control,
+   726→    formState: { errors },
+   727→  } = form;
+   728→
+   729→  // Subscribe to specific fields for controlled selects. `useWatch` is
+   730→  // hook-based and safe for React Compiler memoization (unlike `watch`).
+   731→  const patientId = useWatch({ control, name: "patientId" });
+   732→  const timeValue = useWatch({ control, name: "time" });
+   733→  const typeValue = useWatch({ control, name: "type" });
+   734→
+   735→  const onSubmit = async (values: AppointmentFormValues) => {
+   736→    try {
+   737→      await createAppt.mutateAsync({
+   738→        patientId: values.patientId,
+   739→        date: values.date,
+   740→        time: values.time,
+   741→        type: values.type,
+   742→        notes: values.notes ?? "",
+   743→        status: "scheduled",
+   744→      });
+   745→      toast.success("Appointment created");
+   746→      onOpenChange(false);
+   747→    } catch (err) {
+   748→      reportError(err, "Failed to create appointment");
+   749→    }
+   750→  };
+   751→
+   752→  return (
+   753→    <Dialog open={open} onOpenChange={onOpenChange}>
+   754→      <DialogContent>
+   755→        <DialogHeader>
+   756→          <DialogTitle>New Appointment</DialogTitle>
+   757→          <DialogDescription>
+   758→            Schedule an appointment for a patient. New staff-created
+   759→            appointments default to &ldquo;Scheduled&rdquo;.
+   760→          </DialogDescription>
+   761→        </DialogHeader>
+   762→
+   763→        <form
+   764→          onSubmit={handleSubmit(onSubmit)}
+   765→          className="flex flex-col gap-4"
+   766→        >
+   767→          <div className="flex flex-col gap-1.5">
+   768→            <Label htmlFor="appt-patient">Patient</Label>
+   769→            <Select
+   770→              value={patientId}
+   771→              onValueChange={(v) =>
+   772→                setValue("patientId", v, { shouldValidate: true })
+   773→              }
+   774→            >
+   775→              <SelectTrigger id="appt-patient" className="w-full">
+   776→                <SelectValue
+   777→                  placeholder={
+   778→                    patientsLoading ? "Loading patients…" : "Select a patient"
+   779→                  }
+   780→                />
+   781→              </SelectTrigger>
+   782→              <SelectContent>
+   783→                {patients.length === 0 ? (
+   784→                  <SelectItem value="__none" disabled>
+   785→                    {patientsLoading ? "Loading patients…" : "No patients found"}
+   786→                  </SelectItem>
+   787→                ) : (
+   788→                  patients.map((p) => (
+   789→                    <SelectItem key={p.id} value={p.id}>
+   790→                      {p.name}
+   791→                    </SelectItem>
+   792→                  ))
+   793→                )}
+   794→              </SelectContent>
+   795→            </Select>
+   796→            {errors.patientId && (
+   797→              <p className="text-xs text-destructive">
+   798→                {errors.patientId.message}
+   799→              </p>
+   800→            )}
+   801→          </div>
+   802→
+   803→          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+   804→            <div className="flex flex-col gap-1.5">
+   805→              <Label htmlFor="appt-date">Date</Label>
+   806→              <Input id="appt-date" type="date" {...register("date")} />
+   807→              {errors.date && (
+   808→                <p className="text-xs text-destructive">{errors.date.message}</p>
+   809→              )}
+   810→            </div>
+   811→            <div className="flex flex-col gap-1.5">
+   812→              <Label htmlFor="appt-time">Time</Label>
+   813→              <Select
+   814→                value={timeValue}
+   815→                onValueChange={(v) =>
+   816→                  setValue("time", v, { shouldValidate: true })
+   817→                }
+   818→              >
+   819→                <SelectTrigger id="appt-time" className="w-full">
+   820→                  <SelectValue placeholder="Select a time" />
+   821→                </SelectTrigger>
+   822→                <SelectContent>
+   823→                  {TIME_SLOTS.map((t) => (
+   824→                    <SelectItem key={t} value={t}>
+   825→                      {t}
+   826→                    </SelectItem>
+   827→                  ))}
+   828→                </SelectContent>
+   829→              </Select>
+   830→              {errors.time && (
+   831→                <p className="text-xs text-destructive">{errors.time.message}</p>
+   832→              )}
+   833→            </div>
+   834→          </div>
+   835→
+   836→          <div className="flex flex-col gap-1.5">
+   837→            <Label htmlFor="appt-type">Type</Label>
+   838→            <Select
+   839→              value={typeValue}
+   840→              onValueChange={(v) =>
+   841→                setValue("type", v, { shouldValidate: true })
+   842→              }
+   843→            >
+   844→              <SelectTrigger id="appt-type" className="w-full">
+   845→                <SelectValue placeholder="Select type" />
+   846→              </SelectTrigger>
+   847→              <SelectContent>
+   848→                {Object.values(APPOINTMENT_TYPES).map((t) => (
+   849→                  <SelectItem key={t} value={t}>
+   850→                    {typeLabel(t)}
+   851→                  </SelectItem>
+   852→                ))}
+   853→              </SelectContent>
+   854→            </Select>
+   855→            {errors.type && (
+   856→              <p className="text-xs text-destructive">{errors.type.message}</p>
+   857→            )}
+   858→          </div>
+   859→
+   860→          <div className="flex flex-col gap-1.5">
+   861→            <Label htmlFor="appt-notes">Notes</Label>
+   862→            <Textarea
+   863→              id="appt-notes"
+   864→              placeholder="Optional notes for the dentist or reception"
+   865→              {...register("notes")}
+   866→            />
+   867→          </div>
+   868→
+   869→          <DialogFooter>
+   870→            <Button
+   871→              type="button"
+   872→              variant="outline"
+   873→              onClick={() => onOpenChange(false)}
+   874→            >
+   875→              Cancel
+   876→            </Button>
+   877→            <Button type="submit" disabled={createAppt.isPending}>
+   878→              {createAppt.isPending ? "Creating…" : "Create appointment"}
+   879→            </Button>
+   880→          </DialogFooter>
+   881→        </form>
+   882→      </DialogContent>
+   883→    </Dialog>
+   884→  );
+   885→}
+   886→

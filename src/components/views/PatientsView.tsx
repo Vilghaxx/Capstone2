@@ -27,6 +27,7 @@ import { patientFormSchema } from "@/lib/schemas/patient-schema";
 import { formatDate } from "@/lib/format";
 import { toastError } from "@/lib/api";
 import type { Patient } from "@/lib/types";
+import { motion } from "framer-motion";
 
 type PatientFormInput = z.input<typeof patientFormSchema>;
 type PatientFormOutput = z.output<typeof patientFormSchema>;
@@ -67,47 +68,61 @@ function getInitials(name: string): string {
     .toUpperCase();
 }
 
-function PatientCard({ patient }: { patient: Patient }) {
+function PatientCard({
+  patient,
+  index = 0,
+}: {
+  patient: Patient;
+  index?: number;
+}) {
   const navigate = useNav((s) => s.navigate);
   return (
-    <Card
-      role="button"
-      tabIndex={0}
-      onClick={() => navigate("patient-profile", { id: patient.id })}
-      onKeyDown={(e) => {
-        if (e.key === "Enter" || e.key === " ") {
-          e.preventDefault();
-          navigate("patient-profile", { id: patient.id });
-        }
-      }}
-      className="cursor-pointer transition-all hover:border-primary/40 hover:shadow-md focus:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+    <motion.div
+      initial={{ opacity: 0, y: 8 }}
+      animate={{ opacity: 1, y: 0 }}
+      whileHover={{ y: -3 }}
+      whileTap={{ scale: 0.98 }}
+      transition={{ duration: 0.2, delay: index * 0.03 }}
     >
-      <CardContent className="flex items-start gap-4">
-        <Avatar className="h-12 w-12 shrink-0">
-          <AvatarFallback className="bg-primary/10 text-sm font-semibold text-primary">
-            {getInitials(patient.name) || "?"}
-          </AvatarFallback>
-        </Avatar>
-        <div className="min-w-0 flex-1">
-          <p className="truncate font-semibold">{patient.name}</p>
-          <div className="mt-1.5 space-y-1 text-xs text-muted-foreground">
-            <p className="flex items-center gap-1.5">
-              <Phone className="h-3 w-3 shrink-0" />
-              <span className="truncate">{patient.phone}</span>
-            </p>
-            <p className="flex items-center gap-1.5">
-              <Mail className="h-3 w-3 shrink-0" />
-              <span className="truncate">{patient.email}</span>
-            </p>
-            <p className="flex items-center gap-1.5">
-              <Calendar className="h-3 w-3 shrink-0" />
-              <span>Born {formatDate(patient.dateOfBirth)}</span>
-            </p>
+      <Card
+        role="button"
+        tabIndex={0}
+        onClick={() => navigate("patient-profile", { id: patient.id })}
+        onKeyDown={(e) => {
+          if (e.key === "Enter" || e.key === " ") {
+            e.preventDefault();
+            navigate("patient-profile", { id: patient.id });
+          }
+        }}
+        className="cursor-pointer transition-all hover:border-primary/40 hover:shadow-md focus:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+      >
+        <CardContent className="flex items-start gap-4">
+          <Avatar className="h-12 w-12 shrink-0">
+            <AvatarFallback className="bg-primary/10 text-sm font-semibold text-primary">
+              {getInitials(patient.name) || "?"}
+            </AvatarFallback>
+          </Avatar>
+          <div className="min-w-0 flex-1">
+            <p className="truncate font-semibold">{patient.name}</p>
+            <div className="mt-1.5 space-y-1 text-xs text-muted-foreground">
+              <p className="flex items-center gap-1.5">
+                <Phone className="h-3 w-3 shrink-0" />
+                <span className="truncate">{patient.phone}</span>
+              </p>
+              <p className="flex items-center gap-1.5">
+                <Mail className="h-3 w-3 shrink-0" />
+                <span className="truncate">{patient.email}</span>
+              </p>
+              <p className="flex items-center gap-1.5">
+                <Calendar className="h-3 w-3 shrink-0" />
+                <span>Born {formatDate(patient.dateOfBirth)}</span>
+              </p>
+            </div>
           </div>
-        </div>
-        <ChevronRight className="mt-1 h-4 w-4 shrink-0 text-muted-foreground" />
-      </CardContent>
-    </Card>
+          <ChevronRight className="mt-1 h-4 w-4 shrink-0 text-muted-foreground" />
+        </CardContent>
+      </Card>
+    </motion.div>
   );
 }
 
@@ -394,8 +409,8 @@ export default function PatientsView() {
             {search ? ` matching “${search}”` : ""}
           </p>
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {patients.map((p) => (
-              <PatientCard key={p.id} patient={p} />
+            {patients.map((p, i) => (
+              <PatientCard key={p.id} patient={p} index={i} />
             ))}
           </div>
 
