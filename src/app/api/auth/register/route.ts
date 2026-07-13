@@ -1,9 +1,9 @@
 import { db } from "@/lib/db";
 import { hashPassword, signToken, type JwtPayload } from "@/lib/auth";
 import {
-  fail,
+  errorResponse,
   handleZodError,
-  ok,
+  jsonResponse,
   withErrors,
 } from "@/lib/api-response";
 import { registerFormSchema } from "@/lib/schemas/auth-schema";
@@ -17,7 +17,7 @@ import { ROLES, TOOTH_STATUSES, TOTAL_TEETH } from "@/lib/constants";
  */
 export const POST = withErrors(async (req: Request) => {
   const body = await req.json().catch(() => null);
-  if (!body) return fail("Invalid JSON body", 400);
+  if (!body) return errorResponse("Invalid JSON body", 400);
 
   const parsed = registerFormSchema.safeParse(body);
   if (!parsed.success) return handleZodError(parsed.error);
@@ -28,7 +28,7 @@ export const POST = withErrors(async (req: Request) => {
   // Ensure username is not taken.
   const existing = await db.user.findUnique({ where: { username } });
   if (existing) {
-    return fail("Username is already taken", 409);
+    return errorResponse("Username is already taken", 409);
   }
 
   // Create the user, patient, link, and 32 teeth atomically so a failure at
@@ -82,7 +82,7 @@ export const POST = withErrors(async (req: Request) => {
   });
 
   if (!result) {
-    return fail("Username is already taken", 409);
+    return errorResponse("Username is already taken", 409);
   }
 
   const { user, patient } = result;
@@ -97,7 +97,7 @@ export const POST = withErrors(async (req: Request) => {
 
   const token = signToken(payload);
 
-  return ok({
+  return jsonResponse({
     token,
     user: {
       id: user.id,

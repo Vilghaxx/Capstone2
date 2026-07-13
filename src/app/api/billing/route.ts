@@ -7,7 +7,7 @@ import {
 import { ROLES } from "@/lib/constants";
 import {
   forbidden,
-  ok,
+  jsonResponse,
   unauthorized,
   withErrors,
 } from "@/lib/api-response";
@@ -72,5 +72,5 @@ export const GET = withErrors(async (req: NextRequest) => {
     patientName: patientMap.get(t.patientId) ?? null,
   }));
 
-  return ok(data);
+  return jsonResponse(data);
 });

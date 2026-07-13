@@ -2,16 +2,20 @@ import { NextResponse } from "next/server";
 import { ZodError } from "zod";
 
 /**
- * Standard success response.
+ * Standard success response — builds a JSON NextResponse with the given data.
  */
-export function ok<T>(data: T, status = 200) {
+export function jsonResponse<TData>(data: TData, status = 200) {
   return NextResponse.json(data, { status });
 }
 
 /**
- * Standard error response.
+ * Standard error response — builds a JSON NextResponse with an error payload.
  */
-export function fail(message: string, status = 400, details?: unknown) {
+export function errorResponse(
+  message: string,
+  status = 400,
+  details?: unknown
+) {
   return NextResponse.json(
     { error: message, ...(details ? { details } : {}) },
     { status }
@@ -22,21 +26,21 @@ export function fail(message: string, status = 400, details?: unknown) {
  * Unauthorized (401) response.
  */
 export function unauthorized(message = "Authentication required") {
-  return fail(message, 401);
+  return errorResponse(message, 401);
 }
 
 /**
  * Forbidden (403) response.
  */
 export function forbidden(message = "Insufficient permissions") {
-  return fail(message, 403);
+  return errorResponse(message, 403);
 }
 
 /**
  * Not found (404) response.
  */
 export function notFound(message = "Resource not found") {
-  return fail(message, 404);
+  return errorResponse(message, 404);
 }
 
 /**
@@ -69,7 +73,7 @@ export function withErrors<TArgs extends unknown[]>(
       console.error("[API ERROR]", err);
       const message =
         err instanceof Error ? err.message : "Internal server error";
-      return fail(message, 500);
+      return errorResponse(message, 500);
     }
   };
 }

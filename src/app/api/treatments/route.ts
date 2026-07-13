@@ -2,9 +2,9 @@ import { NextRequest } from "next/server";
 import { db } from "@/lib/db";
 import { getUserFromRequest, requireRole } from "@/lib/auth";
 import {
-  fail,
+  errorResponse,
   notFound,
-  ok,
+  jsonResponse,
   unauthorized,
   forbidden,
   handleZodError,
@@ -30,7 +30,7 @@ export const POST = withErrors(async (req: NextRequest) => {
   const dentist = user!;
 
   const body = await req.json().catch(() => null);
-  if (body === null) return fail("Invalid JSON body", 400);
+  if (body === null) return errorResponse("Invalid JSON body", 400);
 
   const parsed = treatmentFormSchema.safeParse(body);
   if (!parsed.success) {
@@ -83,5 +83,5 @@ export const POST = withErrors(async (req: NextRequest) => {
     return created;
   });
 
-  return ok(treatment, 201);
+  return jsonResponse(treatment, 201);
 });

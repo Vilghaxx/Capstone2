@@ -85,7 +85,7 @@ function roleLabel(role: string) {
 }
 
 function NavList({ onNavigate }: { onNavigate?: () => void }) {
-  const user = useAuth((s) => s.user);
+  const user = useAuth((state) => state.user);
   const navigate = useNav((s) => s.navigate);
   const view = useNav((s) => s.view);
 
@@ -121,8 +121,8 @@ function NavList({ onNavigate }: { onNavigate?: () => void }) {
 }
 
 function UserCard() {
-  const user = useAuth((s) => s.user);
-  const logout = useAuth((s) => s.logout);
+  const user = useAuth((state) => state.user);
+  const logout = useAuth((state) => state.logout);
   const navigate = useNav((s) => s.navigate);
   if (!user) return null;
 

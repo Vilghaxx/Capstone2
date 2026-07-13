@@ -6,11 +6,11 @@ import {
   requireRole,
 } from "@/lib/auth";
 import {
-  fail,
+  errorResponse,
   forbidden,
   handleZodError,
   notFound,
-  ok,
+  jsonResponse,
   unauthorized,
   withErrors,
 } from "@/lib/api-response";
@@ -55,7 +55,7 @@ export const GET = withErrors(
       return forbidden("You can only view your own appointments");
     }
 
-    return ok(appointment);
+    return jsonResponse(appointment);
   },
 );
 
@@ -80,7 +80,7 @@ export const PUT = withErrors(
     if (!existing) return notFound("Appointment not found");
 
     const body = await req.json().catch(() => null);
-    if (body === null) return fail("Invalid JSON body", 400);
+    if (body === null) return errorResponse("Invalid JSON body", 400);
 
     const parsed = appointmentUpdateSchema.safeParse(body);
     if (!parsed.success) return handleZodError(parsed.error);
@@ -96,13 +96,13 @@ export const PUT = withErrors(
     if (date !== undefined) {
       const parsedDate = new Date(date);
       if (Number.isNaN(parsedDate.getTime())) {
-        return fail("Invalid date format.", 400);
+        return errorResponse("Invalid date format.", 400);
       }
       data.date = parsedDate;
     }
 
     if (Object.keys(data).length === 0) {
-      return ok(existing);
+      return jsonResponse(existing);
     }
 
     const updated = await db.appointment.update({
@@ -110,7 +110,7 @@ export const PUT = withErrors(
       data,
     });
 
-    return ok(updated);
+    return jsonResponse(updated);
   },
 );
 
@@ -133,6 +133,6 @@ export const DELETE = withErrors(
 
     await db.appointment.delete({ where: { id } });
 
-    return ok({ success: true });
+    return jsonResponse({ success: true });
   },
 );

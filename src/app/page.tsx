@@ -73,22 +73,20 @@ function AppContent() {
   }
 
   // Unauthenticated → only Login / Register are accessible.
+  // Both views render their own full-screen layout, so no wrapper needed.
   if (!user) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-background via-muted/30 to-primary/5 p-4 dark:from-background dark:via-muted/20 dark:to-primary/10">
-        <AnimatePresence mode="wait">
-          <motion.div
-            key={view === "register" ? "register" : "login"}
-            initial={{ opacity: 0, y: 12, scale: 0.98 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: -8, scale: 0.98 }}
-            transition={{ duration: 0.25, ease: "easeOut" }}
-            className="w-full"
-          >
-            {view === "register" ? <RegisterView /> : <LoginView />}
-          </motion.div>
-        </AnimatePresence>
-      </div>
+      <AnimatePresence mode="wait">
+        <motion.div
+          key={view === "register" ? "register" : "login"}
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          transition={{ duration: 0.2, ease: "easeOut" }}
+        >
+          {view === "register" ? <RegisterView /> : <LoginView />}
+        </motion.div>
+      </AnimatePresence>
     );
   }
 

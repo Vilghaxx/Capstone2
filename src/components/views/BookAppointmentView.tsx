@@ -15,12 +15,12 @@ import {
 
 import { useAuth } from "@/lib/auth-store";
 import { useNav } from "@/lib/nav";
-import { useCreateAppointment } from "@/hooks/queries";
+import { useCreateAppointment } from "@/hooks";
 import { appointmentFormSchema } from "@/lib/schemas/appointment-schema";
 import {
   APPOINTMENT_TYPES,
   APPOINTMENT_TYPE_META,
-  TIME_SLOTS,
+  APPOINTMENT_TIME_SLOTS,
 } from "@/lib/format";
 
 import { Button } from "@/components/ui/button";
@@ -57,7 +57,7 @@ function todayStr(): string {
 }
 
 export default function BookAppointmentView() {
-  const user = useAuth((s) => s.user);
+  const user = useAuth((state) => state.user);
   const navigate = useNav((s) => s.navigate);
   const createAppointment = useCreateAppointment();
   const [submitted, setSubmitted] = useState(false);
@@ -254,7 +254,7 @@ export default function BookAppointmentView() {
                   <SelectValue placeholder="Select a time" />
                 </SelectTrigger>
                 <SelectContent>
-                  {TIME_SLOTS.map((slot) => (
+                  {APPOINTMENT_TIME_SLOTS.map((slot) => (
                     <SelectItem key={slot} value={slot}>
                       {slot}
                     </SelectItem>

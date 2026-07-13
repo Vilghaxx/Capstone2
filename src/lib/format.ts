@@ -81,7 +81,7 @@ export function greetingFor(date = new Date()): string {
 }
 
 /** Build a list of hour-slot labels for the schedule view (8am–6pm). */
-export const TIME_SLOTS = Array.from({ length: 11 }, (_, i) => {
+export const APPOINTMENT_TIME_SLOTS = Array.from({ length: 11 }, (_, i) => {
   const h = i + 8;
   return `${String(h).padStart(2, "0")}:00`;
 });

@@ -2,7 +2,7 @@ import type { NextRequest } from "next/server";
 import { db } from "@/lib/db";
 import { getUserFromRequest, requireRole } from "@/lib/auth";
 import { ROLES } from "@/lib/constants";
-import { ok, unauthorized, withErrors } from "@/lib/api-response";
+import { jsonResponse, unauthorized, withErrors } from "@/lib/api-response";
 
 /**
  * GET /api/teeth/[patientId]
@@ -22,6 +22,6 @@ export const GET = withErrors(
       orderBy: { toothNumber: "asc" },
     });
 
-    return ok(teeth);
+    return jsonResponse(teeth);
   }
 );

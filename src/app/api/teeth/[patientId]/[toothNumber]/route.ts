@@ -4,8 +4,8 @@ import { getUserFromRequest, requireRole } from "@/lib/auth";
 import { ROLES } from "@/lib/constants";
 import { toothUpdateSchema } from "@/lib/schemas/billing-schema";
 import {
-  fail,
-  ok,
+  errorResponse,
+  jsonResponse,
   unauthorized,
   forbidden,
   notFound,
@@ -43,7 +43,7 @@ export const GET = withErrors(
     });
 
     if (!tooth) return notFound("Tooth not found");
-    return ok(tooth);
+    return jsonResponse(tooth);
   }
 );
 
@@ -68,7 +68,7 @@ export const PUT = withErrors(
     }
 
     const body = await req.json().catch(() => null);
-    if (body === null) return fail("Invalid JSON body", 400);
+    if (body === null) return errorResponse("Invalid JSON body", 400);
 
     const parsed = toothUpdateSchema.safeParse(body);
     if (!parsed.success) return handleZodError(parsed.error);
@@ -95,6 +95,6 @@ export const PUT = withErrors(
       },
     });
 
-    return ok(tooth);
+    return jsonResponse(tooth);
   }
 );

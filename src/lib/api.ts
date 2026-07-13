@@ -61,8 +61,8 @@ export async function apiFetch<T = unknown>(
   return data as T;
 }
 
-/** Convenience verbs. */
-export const api = {
+/** Convenience verbs — the API client used across the app. */
+export const apiClient = {
   get: <T = unknown>(url: string) => apiFetch<T>(url),
   post: <T = unknown>(url: string, body?: unknown) =>
     apiFetch<T>(url, {
@@ -80,14 +80,18 @@ export const api = {
 /** Auth API helpers. */
 export const authApi = {
   login: (username: string, password: string) =>
-    api.post<{ token: string; user: AuthUser }>("/api/auth/login", {
+    apiClient.post<{ token: string; user: AuthUser }>("/api/auth/login", {
       username,
       password,
     }),
   register: (payload: Record<string, unknown>) =>
-    api.post<{ token: string; user: AuthUser }>("/api/auth/register", payload),
-  me: () => api.get<{ user: AuthUser }>("/api/auth/me"),
-  seed: () => api.post<{ message: string; results: unknown }>("/api/auth/seed"),
+    apiClient.post<{ token: string; user: AuthUser }>(
+      "/api/auth/register",
+      payload
+    ),
+  me: () => apiClient.get<{ user: AuthUser }>("/api/auth/me"),
+  seed: () =>
+    apiClient.post<{ message: string; results: unknown }>("/api/auth/seed"),
 };
 
 /** Show a toast for a caught API error. */

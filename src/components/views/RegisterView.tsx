@@ -48,7 +48,7 @@ import { ToothIcon } from "@/components/common/ToothIcon";
 type RegisterFormValues = z.input<typeof registerFormSchema>;
 
 export default function RegisterView() {
-  const register = useAuth((s) => s.register);
+  const register = useAuth((state) => state.register);
   const navigate = useNav((s) => s.navigate);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);

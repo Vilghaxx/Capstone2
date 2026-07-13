@@ -1,5 +1,5 @@
 import { seedDatabase } from "@/lib/seed";
-import { ok, withErrors } from "@/lib/api-response";
+import { jsonResponse, withErrors } from "@/lib/api-response";
 
 /**
  * POST /api/auth/seed
@@ -11,5 +11,5 @@ import { ok, withErrors } from "@/lib/api-response";
  */
 export const POST = withErrors(async () => {
   const results = await seedDatabase();
-  return ok({ message: "Seed completed", results });
+  return jsonResponse({ message: "Seed completed", results });
 });

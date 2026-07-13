@@ -4,11 +4,11 @@ import { getUserFromRequest, requireRole } from "@/lib/auth";
 import { ROLES } from "@/lib/constants";
 import { paymentFormSchema } from "@/lib/schemas/billing-schema";
 import {
-  fail,
+  errorResponse,
   forbidden,
   handleZodError,
   notFound,
-  ok,
+  jsonResponse,
   unauthorized,
   withErrors,
 } from "@/lib/api-response";
@@ -36,7 +36,7 @@ export const PUT = withErrors(
     const { id: treatmentId } = await params;
 
     const body = await req.json().catch(() => null);
-    if (body === null) return fail("Invalid JSON body", 400);
+    if (body === null) return errorResponse("Invalid JSON body", 400);
 
     const parsed = paymentFormSchema.safeParse(body);
     if (!parsed.success) return handleZodError(parsed.error);
@@ -59,6 +59,6 @@ export const PUT = withErrors(
       },
     });
 
-    return ok(updated);
+    return jsonResponse(updated);
   }
 );

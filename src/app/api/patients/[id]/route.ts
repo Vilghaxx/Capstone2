@@ -2,11 +2,11 @@ import { NextRequest } from "next/server";
 import { db } from "@/lib/db";
 import { getUserFromRequest, requireRole } from "@/lib/auth";
 import {
-  fail,
+  errorResponse,
   forbidden,
   handleZodError,
   notFound,
-  ok,
+  jsonResponse,
   unauthorized,
   withErrors,
 } from "@/lib/api-response";
@@ -27,7 +27,7 @@ export const GET = withErrors(async (req: NextRequest, ctx: RouteContext) => {
   const patient = await db.patient.findUnique({ where: { id } });
   if (!patient) return notFound("Patient not found");
 
-  return ok(patient);
+  return jsonResponse(patient);
 });
 
 /**
@@ -46,7 +46,7 @@ export const PUT = withErrors(async (req: NextRequest, ctx: RouteContext) => {
   if (!existing) return notFound("Patient not found");
 
   const body = await req.json().catch(() => null);
-  if (body === null) return fail("Invalid JSON body");
+  if (body === null) return errorResponse("Invalid JSON body");
 
   const parsed = patientFormSchema.safeParse(body);
   if (!parsed.success) return handleZodError(parsed.error);
@@ -64,7 +64,7 @@ export const PUT = withErrors(async (req: NextRequest, ctx: RouteContext) => {
     },
   });
 
-  return ok(updated);
+  return jsonResponse(updated);
 });
 
 /**
@@ -89,6 +89,6 @@ export const DELETE = withErrors(
     await db.appointment.deleteMany({ where: { patientId: id } });
     await db.patient.delete({ where: { id } });
 
-    return ok({ success: true });
+    return jsonResponse({ success: true });
   }
 );

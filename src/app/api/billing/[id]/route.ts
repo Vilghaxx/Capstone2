@@ -1,7 +1,7 @@
 import { NextRequest } from "next/server";
 import { db } from "@/lib/db";
 import { getUserFromRequest } from "@/lib/auth";
-import { ok, unauthorized, withErrors } from "@/lib/api-response";
+import { jsonResponse, unauthorized, withErrors } from "@/lib/api-response";
 
 /**
  * GET /api/billing/[id]
@@ -40,7 +40,7 @@ export const GET = withErrors(
     const paid = paidAgg._sum.cost ?? 0;
     const unpaid = totalCost - paid;
 
-    return ok({
+    return jsonResponse({
       data: treatments,
       summary: {
         totalCost,

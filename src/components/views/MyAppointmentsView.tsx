@@ -10,7 +10,7 @@ import {
   StickyNote,
 } from "lucide-react";
 
-import { useAppointments } from "@/hooks/queries";
+import { useAppointments } from "@/hooks";
 import { useNav } from "@/lib/nav";
 import { APPOINTMENT_TYPE_META } from "@/lib/format";
 import type { Appointment } from "@/lib/types";

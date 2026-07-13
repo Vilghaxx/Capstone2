@@ -5,10 +5,10 @@ import {
   requireRole,
 } from "@/lib/auth";
 import {
-  fail,
+  errorResponse,
   forbidden,
   handleZodError,
-  ok,
+  jsonResponse,
   unauthorized,
   withErrors,
 } from "@/lib/api-response";
@@ -66,7 +66,7 @@ export const GET = withErrors(async (req: NextRequest) => {
     }),
   ]);
 
-  return ok({
+  return jsonResponse({
     data: patients,
     total,
     page,
@@ -86,7 +86,7 @@ export const POST = withErrors(async (req: NextRequest) => {
   if (!roleCheck.ok) return forbidden();
 
   const body = await req.json().catch(() => null);
-  if (body === null) return fail("Invalid JSON body");
+  if (body === null) return errorResponse("Invalid JSON body");
 
   const parsed = patientFormSchema.safeParse(body);
   if (!parsed.success) return handleZodError(parsed.error);
@@ -112,5 +112,5 @@ export const POST = withErrors(async (req: NextRequest) => {
     })),
   });
 
-  return ok(created, 201);
+  return jsonResponse(created, 201);
 });

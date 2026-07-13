@@ -21,7 +21,7 @@ import {
   useCreatePatient,
   useDebounce,
   usePatients,
-} from "@/hooks/queries";
+} from "@/hooks";
 import { patientFormSchema } from "@/lib/schemas/patient-schema";
 import { formatDate } from "@/lib/format";
 import { toastError } from "@/lib/api";

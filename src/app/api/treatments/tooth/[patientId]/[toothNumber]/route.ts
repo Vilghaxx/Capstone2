@@ -1,7 +1,7 @@
 import { NextRequest } from "next/server";
 import { db } from "@/lib/db";
 import { getUserFromRequest } from "@/lib/auth";
-import { ok, unauthorized, withErrors } from "@/lib/api-response";
+import { jsonResponse, unauthorized, withErrors } from "@/lib/api-response";
 
 /**
  * GET /api/treatments/tooth/[patientId]/[toothNumber]
@@ -23,7 +23,7 @@ export const GET = withErrors(
     const { patientId, toothNumber } = await params;
     const toothNum = Number(toothNumber);
     if (Number.isNaN(toothNum)) {
-      return ok([]);
+      return jsonResponse([]);
     }
 
     const treatments = await db.treatment.findMany({
@@ -31,6 +31,6 @@ export const GET = withErrors(
       orderBy: { date: "desc" },
     });
 
-    return ok(treatments);
+    return jsonResponse(treatments);
   }
 );

@@ -19,7 +19,7 @@ import {
   useBillingSummary,
   usePatients,
   useRecordPayment,
-} from "@/hooks/queries";
+} from "@/hooks";
 import {
   paymentFormSchema,
   type PaymentFormValues,
@@ -99,7 +99,7 @@ const COLOR_STYLES: Record<CardColor, { icon: string; value: string }> = {
 const MotionTableRow = motion.create(TableRow);
 
 export default function BillingView() {
-  const role = useAuth((s) => s.user?.role);
+  const role = useAuth((state) => state.user?.role);
   // Cashier and dentist both have full billing capabilities; the subtitle
   // is tuned to each role's primary concern.
   const subtitle =

@@ -29,7 +29,7 @@ function getQueryClient() {
 
 export function Providers({ children }: { children: React.ReactNode }) {
   const queryClient = getQueryClient();
-  const restore = useAuth((s) => s.restore);
+  const restore = useAuth((state) => state.restore);
 
   // Restore the session once on mount.
   useEffect(() => {

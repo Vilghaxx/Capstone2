@@ -5,10 +5,10 @@ import {
   requireRole,
 } from "@/lib/auth";
 import {
-  fail,
+  errorResponse,
   handleZodError,
   notFound,
-  ok,
+  jsonResponse,
   unauthorized,
   withErrors,
 } from "@/lib/api-response";
@@ -46,7 +46,7 @@ export const GET = withErrors(async (req: NextRequest) => {
     // Patients are sandboxed to their own appointments. If the patient
     // account is not linked to a patient record, return an empty result set
     // rather than accidentally listing everyone's appointments.
-    if (!user!.patientRef) return ok([]);
+    if (!user!.patientRef) return jsonResponse([]);
     where.patientId = user!.patientRef;
   }
 
@@ -58,7 +58,7 @@ export const GET = withErrors(async (req: NextRequest) => {
     // date is expected as YYYY-MM-DD. Filter by a UTC day range.
     const startOfDay = new Date(`${date}T00:00:00.000Z`);
     if (Number.isNaN(startOfDay.getTime())) {
-      return fail("Invalid date format. Expected YYYY-MM-DD.", 400);
+      return errorResponse("Invalid date format. Expected YYYY-MM-DD.", 400);
     }
     const startOfNextDay = new Date(
       startOfDay.getTime() + 24 * 60 * 60 * 1000,
@@ -71,7 +71,7 @@ export const GET = withErrors(async (req: NextRequest) => {
     orderBy: { date: "asc" },
   });
 
-  return ok(appointments);
+  return jsonResponse(appointments);
 });
 
 /**
@@ -93,7 +93,7 @@ export const POST = withErrors(async (req: NextRequest) => {
   if (!roleCheck.ok) return unauthorized(roleCheck.error);
 
   const body = await req.json().catch(() => null);
-  if (body === null) return fail("Invalid JSON body");
+  if (body === null) return errorResponse("Invalid JSON body");
 
   const parsed = appointmentFormSchema.safeParse(body);
   if (!parsed.success) {
@@ -106,7 +106,7 @@ export const POST = withErrors(async (req: NextRequest) => {
 
   if (user!.role === ROLES.PATIENT) {
     if (!user!.patientRef) {
-      return fail(
+      return errorResponse(
         "Patient account is not linked to a patient record.",
         400,
       );
@@ -122,7 +122,7 @@ export const POST = withErrors(async (req: NextRequest) => {
   // Parse the date string into a Date object for storage.
   const parsedDate = new Date(data.date);
   if (Number.isNaN(parsedDate.getTime())) {
-    return fail("Invalid date format.", 400);
+    return errorResponse("Invalid date format.", 400);
   }
 
   // Verify the patient exists (no FK in schema, so we check explicitly).
@@ -141,5 +141,5 @@ export const POST = withErrors(async (req: NextRequest) => {
     },
   });
 
-  return ok(created, 201);
+  return jsonResponse(created, 201);
 });

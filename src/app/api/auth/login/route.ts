@@ -5,9 +5,9 @@ import {
   type JwtPayload,
 } from "@/lib/auth";
 import {
-  fail,
+  errorResponse,
   handleZodError,
-  ok,
+  jsonResponse,
   withErrors,
 } from "@/lib/api-response";
 import { loginFormSchema } from "@/lib/schemas/auth-schema";
@@ -18,7 +18,7 @@ import { loginFormSchema } from "@/lib/schemas/auth-schema";
  */
 export const POST = withErrors(async (req: Request) => {
   const body = await req.json().catch(() => null);
-  if (!body) return fail("Invalid JSON body", 400);
+  if (!body) return errorResponse("Invalid JSON body", 400);
 
   const parsed = loginFormSchema.safeParse(body);
   if (!parsed.success) return handleZodError(parsed.error);
@@ -27,7 +27,7 @@ export const POST = withErrors(async (req: Request) => {
 
   const user = await db.user.findUnique({ where: { username } });
   if (!user || !comparePassword(password, user.password)) {
-    return fail("Invalid username or password", 401);
+    return errorResponse("Invalid username or password", 401);
   }
 
   const payload: JwtPayload = {
@@ -40,7 +40,7 @@ export const POST = withErrors(async (req: Request) => {
 
   const token = signToken(payload);
 
-  return ok({
+  return jsonResponse({
     token,
     user: {
       id: user.id,

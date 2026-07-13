@@ -1,0 +1,931 @@
+     1→     1→"use client";
+     2→     2→
+     3→     3→import { useEffect, useMemo, useState } from "react";
+     4→     4→import { useForm, useWatch } from "react-hook-form";
+     5→     5→import { zodResolver } from "@hookform/resolvers/zod";
+     6→     6→import { z } from "zod";
+     7→     7→import { toast } from "sonner";
+     8→     8→import {
+     9→     9→  CalendarDays,
+    10→    10→  Check,
+    11→    11→  ClipboardList,
+    12→    12→  Clock,
+    13→    13→  Calendar as CalendarIcon,
+    14→    14→  Plus,
+    15→    15→  Trash2,
+    16→    16→  X,
+    17→    17→} from "lucide-react";
+    18→    18→
+    19→    19→import { useIsCashier, useIsDentist } from "@/lib/auth-store";
+    20→    20→import {
+    21→    21→  useAppointments,
+    22→    22→  useCreateAppointment,
+    23→    23→  useDeleteAppointment,
+    24→    24→  usePatients,
+    25→    25→  useUpdateAppointment,
+    26→    26→} from "@/hooks/queries";
+    27→    27→import {
+    28→    28→  appointmentFormSchema,
+    29→    29→  type AppointmentFormValues,
+    30→    30→} from "@/lib/schemas/appointment-schema";
+    31→    31→import {
+    32→    32→  APPOINTMENT_STATUSES,
+    33→    33→  APPOINTMENT_STATUS_META,
+    34→    34→  APPOINTMENT_TYPES,
+    35→    35→  APPOINTMENT_TYPE_META,
+    36→    36→  TIME_SLOTS,
+    37→    37→} from "@/lib/format";
+    38→    38→import type { Appointment, AppointmentStatus, Patient } from "@/lib/types";
+    39→    39→
+    40→    40→import { Button } from "@/components/ui/button";
+    41→    41→import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+    42→    42→import { Input } from "@/components/ui/input";
+    43→    43→import { Label } from "@/components/ui/label";
+    44→    44→import { Textarea } from "@/components/ui/textarea";
+    45→    45→import {
+    46→    46→  Select,
+    47→    47→  SelectContent,
+    48→    48→  SelectItem,
+    49→    49→  SelectTrigger,
+    50→    50→  SelectValue,
+    51→    51→} from "@/components/ui/select";
+    52→    52→import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+    53→    53→import {
+    54→    54→  Dialog,
+    55→    55→  DialogContent,
+    56→    56→  DialogDescription,
+    57→    57→  DialogFooter,
+    58→    58→  DialogHeader,
+    59→    59→  DialogTitle,
+    60→    60→} from "@/components/ui/dialog";
+    61→    61→import { Calendar } from "@/components/ui/calendar";
+    62→    62→
+    63→    63→import { LoadingSpinner } from "@/components/common/LoadingSpinner";
+    64→    64→import { EmptyState } from "@/components/common/EmptyState";
+    65→    65→import { ConfirmDialog } from "@/components/common/ConfirmDialog";
+    66→    66→import { AppointmentStatusBadge } from "@/components/common/StatusBadge";
+    67→    67→import { motion } from "framer-motion";
+    68→    68→
+    69→    69→/**
+    70→    70→ * Motion-enabled shadcn Button. Used for the Approve/Decline actions in the
+    71→    71→ * Requests tab so we can attach `whileTap` press feedback without losing the
+    72→    72→ * variant/size props.
+    73→    73→ */
+    74→    74→const MotionButton = motion.create(Button);
+    75→    75→
+    76→    76→/* ------------------------------------------------------------------ */
+    77→    77→/* Helpers                                                             */
+    78→    78→/* ------------------------------------------------------------------ */
+    79→    79→
+    80→    80→const STATUS_VALUES = Object.values(APPOINTMENT_STATUSES) as AppointmentStatus[];
+    81→    81→
+    82→    82→/** Format a local Date as YYYY-MM-DD using local parts (for today / selected day). */
+    83→    83→function localToYMD(d: Date): string {
+    84→    84→  const y = d.getFullYear();
+    85→    85→  const m = String(d.getMonth() + 1).padStart(2, "0");
+    86→    86→  const day = String(d.getDate()).padStart(2, "0");
+    87→    87→  return `${y}-${m}-${day}`;
+    88→    88→}
+    89→    89→
+    90→    90→/**
+    91→    91→ * Format an appointment's stored date string (ISO, UTC midnight) as
+    92→    92→ * YYYY-MM-DD using UTC parts so the calendar day matches what the server
+    93→    93→ * stored (and what the date filter expects).
+    94→    94→ */
+    95→    95→function apptDateToYMD(value: string): string {
+    96→    96→  const d = new Date(value);
+    97→    97→  if (isNaN(d.getTime())) return "";
+    98→    98→  return `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, "0")}-${String(d.getUTCDate()).padStart(2, "0")}`;
+    99→    99→}
+   100→   100→
+   101→   101→/** Pretty-print a YYYY-MM-DD string as a localized date (timezone-safe). */
+   102→   102→function formatYMD(ymd: string): string {
+   103→   103→  if (!ymd) return "—";
+   104→   104→  const [y, m, d] = ymd.split("-").map(Number);
+   105→   105→  if (!y || !m || !d) return ymd;
+   106→   106→  return new Date(y, m - 1, d).toLocaleDateString("en-PH", {
+   107→   107→    year: "numeric",
+   108→   108→    month: "short",
+   109→   109→    day: "numeric",
+   110→   110→  });
+   111→   111→}
+   112→   112→
+   113→   113→/** Human-readable label for an appointment type (already capitalized). */
+   114→   114→function typeLabel(type: string): string {
+   115→   115→  if (APPOINTMENT_TYPE_META[type]) return APPOINTMENT_TYPE_META[type];
+   116→   116→  if (!type) return "—";
+   117→   117→  return type.charAt(0).toUpperCase() + type.slice(1);
+   118→   118→}
+   119→   119→
+   120→   120→/** Standard error toast for caught API errors. */
+   121→   121→function reportError(err: unknown, fallback: string) {
+   122→   122→  toast.error(err instanceof Error ? err.message : fallback);
+   123→   123→}
+   124→   124→
+   125→   125→/* ------------------------------------------------------------------ */
+   126→   126→/* Patient name lookup                                                 */
+   127→   127→/* ------------------------------------------------------------------ */
+   128→   128→
+   129→   129→/** Build a Map<patientId, name> from the large patient list. */
+   130→   130→function usePatientMap(): Map<string, string> {
+   131→   131→  const { data } = usePatients("", 1, 200);
+   132→   132→  return useMemo(() => {
+   133→   133→    const map = new Map<string, string>();
+   134→   134→    const patients = (data?.data as Patient[] | undefined) ?? [];
+   135→   135→    for (const p of patients) map.set(p.id, p.name);
+   136→   136→    return map;
+   137→   137→  }, [data]);
+   138→   138→}
+   139→   139→
+   140→   140→/* ------------------------------------------------------------------ */
+   141→   141→/* Main view                                                           */
+   142→   142→/* ------------------------------------------------------------------ */
+   143→   143→
+   144→   144→export default function AppointmentsView() {
+   145→   145→  const isDentist = useIsDentist();
+   146→   146→  const isCashier = useIsCashier();
+   147→   147→  const [dialogOpen, setDialogOpen] = useState(false);
+   148→   148→  const [preset, setPreset] = useState<{ date?: string; time?: string }>({});
+   149→   149→
+   150→   150→  const openDialog = (p?: { date?: string; time?: string }) => {
+   151→   151→    setPreset(p ?? {});
+   152→   152→    setDialogOpen(true);
+   153→   153→  };
+   154→   154→
+   155→   155→  // Subtle role indicator so users see at a glance which staff view they
+   156→   156→  // are operating under. Dentist (emerald) can delete appointments;
+   157→   157→  // cashier (amber) cannot. No indigo/blue per project rule.
+   158→   158→  const rolePill = isDentist
+   159→   159→    ? {
+   160→   160→        label: "Dentist",
+   161→   161→        className:
+   162→   162→          "bg-emerald-100 text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-300",
+   163→   163→      }
+   164→   164→    : isCashier
+   165→   165→      ? {
+   166→   166→          label: "Cashier",
+   167→   167→          className:
+   168→   168→            "bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300",
+   169→   169→        }
+   170→   170→      : null;
+   171→   171→
+   172→   172→  return (
+   173→   173→    <div className="mx-auto flex w-full max-w-7xl flex-col gap-6 px-4 py-6 sm:px-6 lg:py-8 2xl:max-w-[1400px]">
+   174→   174→      <header className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+   175→   175→        <div className="flex flex-col gap-1.5">
+   176→   176→          <div className="flex items-center gap-2">
+   177→   177→            <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">
+   178→   178→              Appointments
+   179→   179→            </h1>
+   180→   180→            {rolePill ? (
+   181→   181→              <span
+   182→   182→                className={`rounded-full px-2 py-0.5 text-xs font-medium ${rolePill.className}`}
+   183→   183→                aria-label={`Signed in as ${rolePill.label.toLowerCase()}`}
+   184→   184→              >
+   185→   185→                {rolePill.label}
+   186→   186→              </span>
+   187→   187→            ) : null}
+   188→   188→          </div>
+   189→   189→          <p className="text-sm text-muted-foreground">
+   190→   190→            Schedule, manage, and approve patient appointments.
+   191→   191→          </p>
+   192→   192→        </div>
+   193→   193→        <Button onClick={() => openDialog()}>
+   194→   194→          <Plus className="h-4 w-4" />
+   195→   195→          New Appointment
+   196→   196→        </Button>
+   197→   197→      </header>
+   198→   198→
+   199→   199→      <Tabs defaultValue="list" className="w-full">
+   200→   200→        <TabsList className="flex w-full overflow-x-auto sm:w-auto">
+   201→   201→          <TabsTrigger value="list" className="gap-1.5">
+   202→   202→            <ClipboardList className="h-4 w-4" /> List
+   203→   203→          </TabsTrigger>
+   204→   204→          <TabsTrigger value="schedule" className="gap-1.5">
+   205→   205→            <CalendarDays className="h-4 w-4" /> Schedule
+   206→   206→          </TabsTrigger>
+   207→   207→          <TabsTrigger value="requests" className="gap-1.5">
+   208→   208→            <ClipboardList className="h-4 w-4" /> Requests
+   209→   209→          </TabsTrigger>
+   210→   210→        </TabsList>
+   211→   211→
+   212→   212→        <TabsContent value="list" className="mt-4">
+   213→   213→          <ListTab isDentist={isDentist} onNew={openDialog} />
+   214→   214→        </TabsContent>
+   215→   215→        <TabsContent value="schedule" className="mt-4">
+   216→   216→          <ScheduleTab onNew={openDialog} />
+   217→   217→        </TabsContent>
+   218→   218→        <TabsContent value="requests" className="mt-4">
+   219→   219→          <RequestsTab />
+   220→   220→        </TabsContent>
+   221→   221→      </Tabs>
+   222→   222→
+   223→   223→      <NewAppointmentDialog
+   224→   224→        open={dialogOpen}
+   225→   225→        onOpenChange={setDialogOpen}
+   226→   226→        preset={preset}
+   227→   227→      />
+   228→   228→    </div>
+   229→   229→  );
+   230→   230→}
+   231→   231→
+   232→   232→/* ------------------------------------------------------------------ */
+   233→   233→/* Tab 1: List                                                         */
+   234→   234→/* ------------------------------------------------------------------ */
+   235→   235→
+   236→   236→function ListTab({
+   237→   237→  isDentist,
+   238→   238→  onNew,
+   239→   239→}: {
+   240→   240→  isDentist: boolean;
+   241→   241→  onNew: (p?: { date?: string; time?: string }) => void;
+   242→   242→}) {
+   243→   243→  const patientMap = usePatientMap();
+   244→   244→  const [statusFilter, setStatusFilter] = useState<string>("all");
+   245→   245→  const filters = statusFilter === "all" ? undefined : { status: statusFilter };
+   246→   246→  const { data, isLoading, isError } = useAppointments(filters);
+   247→   247→
+   248→   248→  const updateAppt = useUpdateAppointment();
+   249→   249→  const deleteAppt = useDeleteAppointment();
+   250→   250→  const [deleteTarget, setDeleteTarget] = useState<Appointment | null>(null);
+   251→   251→
+   252→   252→  // Group by YYYY-MM-DD, sort ascending; within each date sort by time.
+   253→   253→  const grouped = useMemo(() => {
+   254→   254→    const list = data ?? [];
+   255→   255→    const map = new Map<string, Appointment[]>();
+   256→   256→    for (const a of list) {
+   257→   257→      const ymd = apptDateToYMD(a.date);
+   258→   258→      if (!ymd) continue;
+   259→   259→      const arr = map.get(ymd) ?? [];
+   260→   260→      arr.push(a);
+   261→   261→      map.set(ymd, arr);
+   262→   262→    }
+   263→   263→    return Array.from(map.keys())
+   264→   264→      .sort()
+   265→   265→      .map((k) => ({
+   266→   266→        date: k,
+   267→   267→        items: map
+   268→   268→          .get(k)!
+   269→   269→          .sort((x, y) => (x.time || "").localeCompare(y.time || "")),
+   270→   270→      }));
+   271→   271→  }, [data]);
+   272→   272→
+   273→   273→  const onStatusChange = async (id: string, status: AppointmentStatus) => {
+   274→   274→    try {
+   275→   275→      await updateAppt.mutateAsync({ id, data: { status } });
+   276→   276→      toast.success(`Status updated to "${APPOINTMENT_STATUS_META[status].label}"`);
+   277→   277→    } catch (err) {
+   278→   278→      reportError(err, "Failed to update status");
+   279→   279→    }
+   280→   280→  };
+   281→   281→
+   282→   282→  const onConfirmDelete = async () => {
+   283→   283→    if (!deleteTarget) return;
+   284→   284→    try {
+   285→   285→      await deleteAppt.mutateAsync(deleteTarget.id);
+   286→   286→      toast.success("Appointment deleted");
+   287→   287→      setDeleteTarget(null);
+   288→   288→    } catch (err) {
+   289→   289→      reportError(err, "Failed to delete appointment");
+   290→   290→      // Re-throw so ConfirmDialog keeps the dialog open for retry.
+   291→   291→      throw err;
+   292→   292→    }
+   293→   293→  };
+   294→   294→
+   295→   295→  const totalCount = grouped.reduce((n, g) => n + g.items.length, 0);
+   296→   296→
+   297→   297→  return (
+   298→   298→    <div className="flex flex-col gap-4">
+   299→   299→      <div className="flex flex-wrap items-end justify-between gap-3">
+   300→   300→        <div className="flex flex-col gap-1.5">
+   301→   301→          <Label htmlFor="status-filter" className="text-xs text-muted-foreground">
+   302→   302→            Filter by status
+   303→   303→          </Label>
+   304→   304→          <Select value={statusFilter} onValueChange={setStatusFilter}>
+   305→   305→            <SelectTrigger id="status-filter" className="w-[200px]">
+   306→   306→              <SelectValue placeholder="All statuses" />
+   307→   307→            </SelectTrigger>
+   308→   308→            <SelectContent>
+   309→   309→              <SelectItem value="all">All statuses</SelectItem>
+   310→   310→              {STATUS_VALUES.map((s) => (
+   311→   311→                <SelectItem key={s} value={s}>
+   312→   312→                  {APPOINTMENT_STATUS_META[s].label}
+   313→   313→                </SelectItem>
+   314→   314→              ))}
+   315→   315→            </SelectContent>
+   316→   316→          </Select>
+   317→   317→        </div>
+   318→   318→        <p className="text-sm text-muted-foreground">
+   319→   319→          {totalCount} appointment{totalCount === 1 ? "" : "s"}
+   320→   320→        </p>
+   321→   321→      </div>
+   322→   322→
+   323→   323→      {isLoading ? (
+   324→   324→        <LoadingSpinner text="Loading appointments…" />
+   325→   325→      ) : isError ? (
+   326→   326→        <EmptyState
+   327→   327→          title="Could not load appointments"
+   328→   328→          message="Something went wrong while fetching appointments. Please try again later."
+   329→   329→        />
+   330→   330→      ) : totalCount === 0 ? (
+   331→   331→        <EmptyState
+   332→   332→          title="No appointments"
+   333→   333→          message={
+   334→   334→            statusFilter === "all"
+   335→   335→              ? "There are no appointments yet. Create one to get started."
+   336→   336→              : "No appointments match this filter."
+   337→   337→          }
+   338→   338→          action={
+   339→   339→            <Button onClick={() => onNew()}>
+   340→   340→              <Plus className="h-4 w-4" />
+   341→   341→              New Appointment
+   342→   342→            </Button>
+   343→   343→          }
+   344→   344→        />
+   345→   345→      ) : (
+   346→   346→        <div className="flex flex-col gap-4">
+   347→   347→          {grouped.map((group) => (
+   348→   348→            <Card key={group.date}>
+   349→   349→              <CardHeader className="pb-0">
+   350→   350→                <CardTitle className="text-sm font-medium text-muted-foreground">
+   351→   351→                  {formatYMD(group.date)}
+   352→   352→                </CardTitle>
+   353→   353→              </CardHeader>
+   354→   354→              <CardContent className="flex flex-col gap-2">
+   355→   355→                {group.items.map((a, i) => (
+   356→   356→                  <AppointmentRow
+   357→   357→                    key={a.id}
+   358→   358→                    appt={a}
+   359→   359→                    patientName={patientMap.get(a.patientId) ?? "Unknown"}
+   360→   360→                    isDentist={isDentist}
+   361→   361→                    onStatusChange={onStatusChange}
+   362→   362→                    onDelete={() => setDeleteTarget(a)}
+   363→   363→                    index={i}
+   364→   364→                  />
+   365→   365→                ))}
+   366→   366→              </CardContent>
+   367→   367→            </Card>
+   368→   368→          ))}
+   369→   369→        </div>
+   370→   370→      )}
+   371→   371→
+   372→   372→      <ConfirmDialog
+   373→   373→        open={!!deleteTarget}
+   374→   374→        onOpenChange={(o) => !o && setDeleteTarget(null)}
+   375→   375→        title="Delete appointment?"
+   376→   376→        message={
+   377→   377→          deleteTarget
+   378→   378→            ? `Delete ${patientMap.get(deleteTarget.patientId) ?? "this patient"}'s appointment on ${formatYMD(apptDateToYMD(deleteTarget.date))} at ${deleteTarget.time || "—"}? This action cannot be undone.`
+   379→   379→            : "This action cannot be undone."
+   380→   380→        }
+   381→   381→        confirmLabel="Delete"
+   382→   382→        destructive
+   383→   383→        onConfirm={onConfirmDelete}
+   384→   384→      />
+   385→   385→    </div>
+   386→   386→  );
+   387→   387→}
+   388→   388→
+   389→   389→function AppointmentRow({
+   390→   390→  appt,
+   391→   391→  patientName,
+   392→   392→  isDentist,
+   393→   393→  onStatusChange,
+   394→   394→  onDelete,
+   395→   395→  index = 0,
+   396→   396→}: {
+   397→   397→  appt: Appointment;
+   398→   398→  patientName: string;
+   399→   399→  isDentist: boolean;
+   400→   400→  onStatusChange: (id: string, status: AppointmentStatus) => void;
+   401→   401→  onDelete: () => void;
+   402→   402→  index?: number;
+   403→   403→}) {
+   404→   404→  return (
+   405→   405→    <motion.div
+   406→   406→      initial={{ opacity: 0, x: -6 }}
+   407→   407→      animate={{ opacity: 1, x: 0 }}
+   408→   408→      whileHover={{ x: 2 }}
+   409→   409→      transition={{ duration: 0.2, delay: index * 0.02 }}
+   410→   410→      className="flex flex-col gap-3 rounded-lg border border-border bg-card/40 p-3 sm:flex-row sm:items-center sm:justify-between"
+   411→   411→    >
+   412→   412→      <div className="flex flex-col gap-1">
+   413→   413→        <div className="flex flex-wrap items-center gap-2 text-sm font-medium">
+   414→   414→          <Clock className="h-4 w-4 text-muted-foreground" />
+   415→   415→          <span>{appt.time || "—"}</span>
+   416→   416→          <span className="rounded-md bg-primary/10 px-2 py-0.5 text-xs font-medium text-primary">
+   417→   417→            {typeLabel(appt.type)}
+   418→   418→          </span>
+   419→   419→        </div>
+   420→   420→        <div className="text-sm">
+   421→   421→          <span className="font-medium">{patientName}</span>
+   422→   422→          {appt.notes ? (
+   423→   423→            <span className="text-muted-foreground"> — {appt.notes}</span>
+   424→   424→          ) : null}
+   425→   425→        </div>
+   426→   426→      </div>
+   427→   427→
+   428→   428→      <div className="flex flex-wrap items-center justify-end gap-2">
+   429→   429→        <Select
+   430→   430→          value={appt.status}
+   431→   431→          onValueChange={(v) => onStatusChange(appt.id, v as AppointmentStatus)}
+   432→   432→        >
+   433→   433→          <SelectTrigger size="sm" className="w-full sm:w-[150px]">
+   434→   434→            <SelectValue />
+   435→   435→          </SelectTrigger>
+   436→   436→          <SelectContent>
+   437→   437→            {STATUS_VALUES.map((s) => (
+   438→   438→              <SelectItem key={s} value={s}>
+   439→   439→                {APPOINTMENT_STATUS_META[s].label}
+   440→   440→              </SelectItem>
+   441→   441→            ))}
+   442→   442→          </SelectContent>
+   443→   443→        </Select>
+   444→   444→        {isDentist && (
+   445→   445→          <Button
+   446→   446→            variant="ghost"
+   447→   447→            size="icon"
+   448→   448→            onClick={onDelete}
+   449→   449→            aria-label="Delete appointment"
+   450→   450→          >
+   451→   451→            <Trash2 className="h-4 w-4 text-destructive" />
+   452→   452→          </Button>
+   453→   453→        )}
+   454→   454→      </div>
+   455→   455→    </motion.div>
+   456→   456→  );
+   457→   457→}
+   458→   458→
+   459→   459→/* ------------------------------------------------------------------ */
+   460→   460→/* Tab 2: Schedule                                                     */
+   461→   461→/* ------------------------------------------------------------------ */
+   462→   462→
+   463→   463→function ScheduleTab({
+   464→   464→  onNew,
+   465→   465→}: {
+   466→   466→  onNew: (p?: { date?: string; time?: string }) => void;
+   467→   467→}) {
+   468→   468→  const patientMap = usePatientMap();
+   469→   469→  const [selectedDate, setSelectedDate] = useState<Date>(new Date());
+   470→   470→  const selectedYMD = localToYMD(selectedDate);
+   471→   471→
+   472→   472→  const { data, isLoading, isError } = useAppointments({ date: selectedYMD });
+   473→   473→
+   474→   474→  // Map time → appointments; collect off-grid appointments separately.
+   475→   475→  // Only show appointments that belong on the schedule (scheduled or
+   476→   476→  // completed). Pending requests, cancelled, and no-shows are excluded so
+   477→   477→  // the calendar reflects the confirmed day's agenda.
+   478→   478→  const { byTime, otherTimes } = useMemo(() => {
+   479→   479→    const map = new Map<string, Appointment[]>();
+   480→   480→    const others: Appointment[] = [];
+   481→   481→    const slotSet = new Set(TIME_SLOTS);
+   482→   482→    const visibleStatuses = new Set(["scheduled", "completed"]);
+   483→   483→    for (const a of data ?? []) {
+   484→   484→      if (!visibleStatuses.has(a.status)) continue;
+   485→   485→      const t = a.time || "";
+   486→   486→      if (slotSet.has(t)) {
+   487→   487→        const arr = map.get(t) ?? [];
+   488→   488→        arr.push(a);
+   489→   489→        map.set(t, arr);
+   490→   490→      } else {
+   491→   491→        others.push(a);
+   492→   492→      }
+   493→   493→    }
+   494→   494→    for (const arr of map.values()) {
+   495→   495→      arr.sort((x, y) => (x.time || "").localeCompare(y.time || ""));
+   496→   496→    }
+   497→   497→    others.sort((x, y) => (x.time || "").localeCompare(y.time || ""));
+   498→   498→    return { byTime: map, otherTimes: others };
+   499→   499→  }, [data]);
+   500→   500→
+   501→   501→  return (
+   502→   502→    <div className="flex flex-col gap-4 lg:flex-row lg:items-start">
+   503→   503→      <Card className="w-full lg:w-fit">
+   504→   504→        <CardHeader className="pb-0">
+   505→   505→          <CardTitle className="flex items-center gap-2 text-sm">
+   506→   506→            <CalendarIcon className="h-4 w-4 text-muted-foreground" />
+   507→   507→            {formatYMD(selectedYMD)}
+   508→   508→          </CardTitle>
+   509→   509→        </CardHeader>
+   510→   510→        <CardContent>
+   511→   511→          <Calendar
+   512→   512→            mode="single"
+   513→   513→            selected={selectedDate}
+   514→   514→            onSelect={(d) => d && setSelectedDate(d)}
+   515→   515→            className="mx-auto"
+   516→   516→          />
+   517→   517→          <p className="mt-2 text-center text-xs text-muted-foreground">
+   518→   518→            Tap a date to view its schedule.
+   519→   519→          </p>
+   520→   520→        </CardContent>
+   521→   521→      </Card>
+   522→   522→
+   523→   523→      <div className="flex-1">
+   524→   524→        {isLoading ? (
+   525→   525→          <LoadingSpinner text="Loading schedule…" />
+   526→   526→        ) : isError ? (
+   527→   527→          <EmptyState
+   528→   528→            title="Could not load schedule"
+   529→   529→            message="Something went wrong while fetching appointments. Please try again later."
+   530→   530→          />
+   531→   531→        ) : (
+   532→   532→          <div className="flex flex-col gap-2">
+   533→   533→            {TIME_SLOTS.map((time) => {
+   534→   534→              const items = byTime.get(time) ?? [];
+   535→   535→              return (
+   536→   536→                <div
+   537→   537→                  key={time}
+   538→   538→                  className="flex gap-3 rounded-lg border border-border bg-card/30 p-2 xs:p-3 lg:p-4"
+   539→   539→                >
+   540→   540→                  <div className="w-16 shrink-0 pt-0.5 text-sm font-medium text-muted-foreground">
+   541→   541→                    {time}
+   542→   542→                  </div>
+   543→   543→                  <div className="flex flex-1 flex-col gap-2">
+   544→   544→                    {items.length === 0 ? (
+   545→   545→                      <button
+   546→   546→                        type="button"
+   547→   547→                        onClick={() => onNew({ date: selectedYMD, time })}
+   548→   548→                        className="flex items-center gap-1.5 self-start rounded-md px-2 py-1 text-sm text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground"
+   549→   549→                      >
+   550→   550→                        <Plus className="h-4 w-4" /> Available
+   551→   551→                      </button>
+   552→   552→                    ) : (
+   553→   553→                      items.map((a) => (
+   554→   554→                        <div
+   555→   555→                          key={a.id}
+   556→   556→                          className="flex items-center justify-between gap-2 rounded-md bg-accent/40 px-3 py-2"
+   557→   557→                        >
+   558→   558→                          <div className="flex flex-col">
+   559→   559→                            <span className="text-sm font-medium">
+   560→   560→                              {patientMap.get(a.patientId) ?? "Unknown"}
+   561→   561→                            </span>
+   562→   562→                            <span className="text-xs text-muted-foreground">
+   563→   563→                              {typeLabel(a.type)}
+   564→   564→                              {a.notes ? ` • ${a.notes}` : ""}
+   565→   565→                            </span>
+   566→   566→                          </div>
+   567→   567→                          <AppointmentStatusBadge status={a.status} />
+   568→   568→                        </div>
+   569→   569→                      ))
+   570→   570→                    )}
+   571→   571→                  </div>
+   572→   572→                </div>
+   573→   573→              );
+   574→   574→            })}
+   575→   575→
+   576→   576→            {otherTimes.length > 0 && (
+   577→   577→              <div className="mt-2 flex flex-col gap-2 rounded-lg border border-dashed border-border p-3">
+   578→   578→                <div className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+   579→   579→                  Other times
+   580→   580→                </div>
+   581→   581→                {otherTimes.map((a) => (
+   582→   582→                  <div
+   583→   583→                    key={a.id}
+   584→   584→                    className="flex items-center justify-between gap-2 rounded-md bg-accent/20 px-3 py-2"
+   585→   585→                  >
+   586→   586→                    <div className="flex flex-col">
+   587→   587→                      <span className="text-sm font-medium">
+   588→   588→                        {patientMap.get(a.patientId) ?? "Unknown"} ·{" "}
+   589→   589→                        {a.time || "—"}
+   590→   590→                      </span>
+   591→   591→                      <span className="text-xs text-muted-foreground">
+   592→   592→                        {typeLabel(a.type)}
+   593→   593→                        {a.notes ? ` • ${a.notes}` : ""}
+   594→   594→                      </span>
+   595→   595→                    </div>
+   596→   596→                    <AppointmentStatusBadge status={a.status} />
+   597→   597→                  </div>
+   598→   598→                ))}
+   599→   599→              </div>
+   600→   600→            )}
+   601→   601→          </div>
+   602→   602→        )}
+   603→   603→      </div>
+   604→   604→    </div>
+   605→   605→  );
+   606→   606→}
+   607→   607→
+   608→   608→/* ------------------------------------------------------------------ */
+   609→   609→/* Tab 3: Requests                                                     */
+   610→   610→/* ------------------------------------------------------------------ */
+   611→   611→
+   612→   612→function RequestsTab() {
+   613→   613→  const patientMap = usePatientMap();
+   614→   614→  const { data, isLoading, isError } = useAppointments({ status: "pending" });
+   615→   615→  const updateAppt = useUpdateAppointment();
+   616→   616→
+   617→   617→  const sorted = useMemo(() => {
+   618→   618→    const list = data ?? [];
+   619→   619→    return [...list].sort(
+   620→   620→      (a, b) =>
+   621→   621→        new Date(a.date).getTime() - new Date(b.date).getTime() ||
+   622→   622→        (a.time || "").localeCompare(b.time || "")
+   623→   623→    );
+   624→   624→  }, [data]);
+   625→   625→
+   626→   626→  const onApprove = async (a: Appointment) => {
+   627→   627→    try {
+   628→   628→      await updateAppt.mutateAsync({ id: a.id, data: { status: "scheduled" } });
+   629→   629→      toast.success("Appointment approved and scheduled");
+   630→   630→    } catch (err) {
+   631→   631→      reportError(err, "Failed to approve appointment");
+   632→   632→    }
+   633→   633→  };
+   634→   634→
+   635→   635→  const onDecline = async (a: Appointment) => {
+   636→   636→    try {
+   637→   637→      await updateAppt.mutateAsync({ id: a.id, data: { status: "cancelled" } });
+   638→   638→      toast.info("Appointment request declined");
+   639→   639→    } catch (err) {
+   640→   640→      reportError(err, "Failed to decline appointment");
+   641→   641→    }
+   642→   642→  };
+   643→   643→
+   644→   644→  if (isLoading) return <LoadingSpinner text="Loading requests…" />;
+   645→   645→
+   646→   646→  if (isError) {
+   647→   647→    return (
+   648→   648→      <EmptyState
+   649→   649→        title="Could not load requests"
+   650→   650→        message="Something went wrong while fetching pending requests. Please try again later."
+   651→   651→      />
+   652→   652→    );
+   653→   653→  }
+   654→   654→
+   655→   655→  if (sorted.length === 0) {
+   656→   656→    return (
+   657→   657→      <EmptyState
+   658→   658→        title="No pending requests"
+   659→   659→        message="All appointment requests have been reviewed."
+   660→   660→      />
+   661→   661→    );
+   662→   662→  }
+   663→   663→
+   664→   664→  return (
+   665→   665→    <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+   666→   666→      {sorted.map((a) => (
+   667→   667→        <Card key={a.id}>
+   668→   668→          <CardContent className="flex flex-col gap-3">
+   669→   669→            <div className="flex items-center justify-between gap-2">
+   670→   670→              <span className="rounded-md bg-primary/10 px-2 py-0.5 text-xs font-medium text-primary">
+   671→   671→                {typeLabel(a.type)}
+   672→   672→              </span>
+   673→   673→              <AppointmentStatusBadge status={a.status} />
+   674→   674→            </div>
+   675→   675→            <div className="flex flex-col gap-1 text-sm">
+   676→   676→              <span className="font-medium">
+   677→   677→                {patientMap.get(a.patientId) ?? "Unknown"}
+   678→   678→              </span>
+   679→   679→              <span className="text-muted-foreground">
+   680→   680→                {formatYMD(apptDateToYMD(a.date))} at {a.time || "—"}
+   681→   681→              </span>
+   682→   682→              {a.notes ? (
+   683→   683→                <span className="text-xs italic text-muted-foreground">
+   684→   684→                  &ldquo;{a.notes}&rdquo;
+   685→   685→                </span>
+   686→   686→              ) : null}
+   687→   687→            </div>
+   688→   688→            <div className="mt-1 flex gap-2">
+   689→   689→              <MotionButton
+   690→   690→                size="sm"
+   691→   691→                className="flex-1"
+   692→   692→                onClick={() => onApprove(a)}
+   693→   693→                disabled={updateAppt.isPending}
+   694→   694→                whileTap={{ scale: 0.95 }}
+   695→   695→              >
+   696→   696→                <Check className="h-4 w-4" />
+   697→   697→                Approve
+   698→   698→              </MotionButton>
+   699→   699→              <MotionButton
+   700→   700→                size="sm"
+   701→   701→                variant="outline"
+   702→   702→                className="flex-1"
+   703→   703→                onClick={() => onDecline(a)}
+   704→   704→                disabled={updateAppt.isPending}
+   705→   705→                whileTap={{ scale: 0.95 }}
+   706→   706→              >
+   707→   707→                <X className="h-4 w-4" />
+   708→   708→                Decline
+   709→   709→              </MotionButton>
+   710→   710→            </div>
+   711→   711→          </CardContent>
+   712→   712→        </Card>
+   713→   713→      ))}
+   714→   714→    </div>
+   715→   715→  );
+   716→   716→}
+   717→   717→
+   718→   718→/* ------------------------------------------------------------------ */
+   719→   719→/* New Appointment Dialog (shared)                                     */
+   720→   720→/* ------------------------------------------------------------------ */
+   721→   721→
+   722→   722→function NewAppointmentDialog({
+   723→   723→  open,
+   724→   724→  onOpenChange,
+   725→   725→  preset,
+   726→   726→}: {
+   727→   727→  open: boolean;
+   728→   728→  onOpenChange: (o: boolean) => void;
+   729→   729→  preset: { date?: string; time?: string };
+   730→   730→}) {
+   731→   731→  const { data: patientsData, isLoading: patientsLoading } = usePatients("", 1, 200);
+   732→   732→  const patients = (patientsData?.data as Patient[] | undefined) ?? [];
+   733→   733→  const createAppt = useCreateAppointment();
+   734→   734→
+   735→   735→  const form = useForm<
+   736→   736→    z.input<typeof appointmentFormSchema>,
+   737→   737→    unknown,
+   738→   738→    AppointmentFormValues
+   739→   739→  >({
+   740→   740→    resolver: zodResolver(appointmentFormSchema),
+   741→   741→    defaultValues: {
+   742→   742→      patientId: "",
+   743→   743→      date: preset.date ?? localToYMD(new Date()),
+   744→   744→      time: preset.time ?? TIME_SLOTS[0],
+   745→   745→      type: APPOINTMENT_TYPES.CHECKUP,
+   746→   746→      notes: "",
+   747→   747→      status: "scheduled",
+   748→   748→    },
+   749→   749→  });
+   750→   750→
+   751→   751→  // Reset form when opening or when the preset changes.
+   752→   752→  useEffect(() => {
+   753→   753→    if (open) {
+   754→   754→      form.reset({
+   755→   755→        patientId: "",
+   756→   756→        date: preset.date ?? localToYMD(new Date()),
+   757→   757→        time: preset.time ?? TIME_SLOTS[0],
+   758→   758→        type: APPOINTMENT_TYPES.CHECKUP,
+   759→   759→        notes: "",
+   760→   760→        status: "scheduled",
+   761→   761→      });
+   762→   762→    }
+   763→   763→  }, [open, preset.date, preset.time, form]);
+   764→   764→
+   765→   765→  const {
+   766→   766→    register,
+   767→   767→    handleSubmit,
+   768→   768→    setValue,
+   769→   769→    control,
+   770→   770→    formState: { errors },
+   771→   771→  } = form;
+   772→   772→
+   773→   773→  // Subscribe to specific fields for controlled selects. `useWatch` is
+   774→   774→  // hook-based and safe for React Compiler memoization (unlike `watch`).
+   775→   775→  const patientId = useWatch({ control, name: "patientId" });
+   776→   776→  const timeValue = useWatch({ control, name: "time" });
+   777→   777→  const typeValue = useWatch({ control, name: "type" });
+   778→   778→
+   779→   779→  const onSubmit = async (values: AppointmentFormValues) => {
+   780→   780→    try {
+   781→   781→      await createAppt.mutateAsync({
+   782→   782→        patientId: values.patientId,
+   783→   783→        date: values.date,
+   784→   784→        time: values.time,
+   785→   785→        type: values.type,
+   786→   786→        notes: values.notes ?? "",
+   787→   787→        status: "scheduled",
+   788→   788→      });
+   789→   789→      toast.success("Appointment created");
+   790→   790→      onOpenChange(false);
+   791→   791→    } catch (err) {
+   792→   792→      reportError(err, "Failed to create appointment");
+   793→   793→    }
+   794→   794→  };
+   795→   795→
+   796→   796→  return (
+   797→   797→    <Dialog open={open} onOpenChange={onOpenChange}>
+   798→   798→      <DialogContent className="max-w-[90vw] sm:max-w-[500px]">
+   799→   799→        <DialogHeader>
+   800→   800→          <DialogTitle>New Appointment</DialogTitle>
+   801→   801→          <DialogDescription>
+   802→   802→            Schedule an appointment for a patient. New staff-created
+   803→   803→            appointments default to &ldquo;Scheduled&rdquo;.
+   804→   804→          </DialogDescription>
+   805→   805→        </DialogHeader>
+   806→   806→
+   807→   807→        <form
+   808→   808→          onSubmit={handleSubmit(onSubmit)}
+   809→   809→          className="flex flex-col gap-4"
+   810→   810→        >
+   811→   811→          <div className="flex flex-col gap-1.5">
+   812→   812→            <Label htmlFor="appt-patient">Patient</Label>
+   813→   813→            <Select
+   814→   814→              value={patientId}
+   815→   815→              onValueChange={(v) =>
+   816→   816→                setValue("patientId", v, { shouldValidate: true })
+   817→   817→              }
+   818→   818→            >
+   819→   819→              <SelectTrigger id="appt-patient" className="w-full">
+   820→   820→                <SelectValue
+   821→   821→                  placeholder={
+   822→   822→                    patientsLoading ? "Loading patients…" : "Select a patient"
+   823→   823→                  }
+   824→   824→                />
+   825→   825→              </SelectTrigger>
+   826→   826→              <SelectContent>
+   827→   827→                {patients.length === 0 ? (
+   828→   828→                  <SelectItem value="__none" disabled>
+   829→   829→                    {patientsLoading ? "Loading patients…" : "No patients found"}
+   830→   830→                  </SelectItem>
+   831→   831→                ) : (
+   832→   832→                  patients.map((p) => (
+   833→   833→                    <SelectItem key={p.id} value={p.id}>
+   834→   834→                      {p.name}
+   835→   835→                    </SelectItem>
+   836→   836→                  ))
+   837→   837→                )}
+   838→   838→              </SelectContent>
+   839→   839→            </Select>
+   840→   840→            {errors.patientId && (
+   841→   841→              <p className="text-xs text-destructive">
+   842→   842→                {errors.patientId.message}
+   843→   843→              </p>
+   844→   844→            )}
+   845→   845→          </div>
+   846→   846→
+   847→   847→          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+   848→   848→            <div className="flex flex-col gap-1.5">
+   849→   849→              <Label htmlFor="appt-date">Date</Label>
+   850→   850→              <Input id="appt-date" type="date" {...register("date")} />
+   851→   851→              {errors.date && (
+   852→   852→                <p className="text-xs text-destructive">{errors.date.message}</p>
+   853→   853→              )}
+   854→   854→            </div>
+   855→   855→            <div className="flex flex-col gap-1.5">
+   856→   856→              <Label htmlFor="appt-time">Time</Label>
+   857→   857→              <Select
+   858→   858→                value={timeValue}
+   859→   859→                onValueChange={(v) =>
+   860→   860→                  setValue("time", v, { shouldValidate: true })
+   861→   861→                }
+   862→   862→              >
+   863→   863→                <SelectTrigger id="appt-time" className="w-full">
+   864→   864→                  <SelectValue placeholder="Select a time" />
+   865→   865→                </SelectTrigger>
+   866→   866→                <SelectContent>
+   867→   867→                  {TIME_SLOTS.map((t) => (
+   868→   868→                    <SelectItem key={t} value={t}>
+   869→   869→                      {t}
+   870→   870→                    </SelectItem>
+   871→   871→                  ))}
+   872→   872→                </SelectContent>
+   873→   873→              </Select>
+   874→   874→              {errors.time && (
+   875→   875→                <p className="text-xs text-destructive">{errors.time.message}</p>
+   876→   876→              )}
+   877→   877→            </div>
+   878→   878→          </div>
+   879→   879→
+   880→   880→          <div className="flex flex-col gap-1.5">
+   881→   881→            <Label htmlFor="appt-type">Type</Label>
+   882→   882→            <Select
+   883→   883→              value={typeValue}
+   884→   884→              onValueChange={(v) =>
+   885→   885→                setValue("type", v, { shouldValidate: true })
+   886→   886→              }
+   887→   887→            >
+   888→   888→              <SelectTrigger id="appt-type" className="w-full">
+   889→   889→                <SelectValue placeholder="Select type" />
+   890→   890→              </SelectTrigger>
+   891→   891→              <SelectContent>
+   892→   892→                {Object.values(APPOINTMENT_TYPES).map((t) => (
+   893→   893→                  <SelectItem key={t} value={t}>
+   894→   894→                    {typeLabel(t)}
+   895→   895→                  </SelectItem>
+   896→   896→                ))}
+   897→   897→              </SelectContent>
+   898→   898→            </Select>
+   899→   899→            {errors.type && (
+   900→   900→              <p className="text-xs text-destructive">{errors.type.message}</p>
+   901→   901→            )}
+   902→   902→          </div>
+   903→   903→
+   904→   904→          <div className="flex flex-col gap-1.5">
+   905→   905→            <Label htmlFor="appt-notes">Notes</Label>
+   906→   906→            <Textarea
+   907→   907→              id="appt-notes"
+   908→   908→              placeholder="Optional notes for the dentist or reception"
+   909→   909→              {...register("notes")}
+   910→   910→            />
+   911→   911→          </div>
+   912→   912→
+   913→   913→          <DialogFooter>
+   914→   914→            <Button
+   915→   915→              type="button"
+   916→   916→              variant="outline"
+   917→   917→              onClick={() => onOpenChange(false)}
+   918→   918→              disabled={createAppt.isPending}
+   919→   919→            >
+   920→   920→              Cancel
+   921→   921→            </Button>
+   922→   922→            <Button type="submit" disabled={createAppt.isPending}>
+   923→   923→              {createAppt.isPending ? "Creating…" : "Create appointment"}
+   924→   924→            </Button>
+   925→   925→          </DialogFooter>
+   926→   926→        </form>
+   927→   927→      </DialogContent>
+   928→   928→    </Dialog>
+   929→   929→  );
+   930→   930→}
+   931→   931→

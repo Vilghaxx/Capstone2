@@ -1,7 +1,7 @@
 import type { NextRequest } from "next/server";
 import { db } from "@/lib/db";
 import { getUserFromRequest } from "@/lib/auth";
-import { ok, unauthorized, withErrors } from "@/lib/api-response";
+import { jsonResponse, unauthorized, withErrors } from "@/lib/api-response";
 
 /**
  * GET /api/auth/me
@@ -16,7 +16,7 @@ export const GET = withErrors(async (req: NextRequest) => {
   const user = await db.user.findUnique({ where: { id: payload.sub } });
   if (!user) return unauthorized("User no longer exists");
 
-  return ok({
+  return jsonResponse({
     user: {
       id: user.id,
       username: user.username,

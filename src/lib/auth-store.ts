@@ -1,7 +1,7 @@
 "use client";
 
 import { create } from "zustand";
-import { authApi, setToken, getToken, api } from "@/lib/api";
+import { authApi, setToken, getToken, apiClient } from "@/lib/api";
 import type { AuthUser, Role } from "@/lib/types";
 
 interface AuthState {
@@ -57,16 +57,21 @@ export const useAuth = create<AuthState>((set) => ({
 }));
 
 // Convenience role-check selectors.
-export const useIsDentist = () => useAuth((s) => s.user?.role === "dentist");
-export const useIsCashier = () => useAuth((s) => s.user?.role === "cashier");
-export const useIsPatient = () => useAuth((s) => s.user?.role === "patient");
+export const useIsDentist = () =>
+  useAuth((state) => state.user?.role === "dentist");
+export const useIsCashier = () =>
+  useAuth((state) => state.user?.role === "cashier");
+export const useIsPatient = () =>
+  useAuth((state) => state.user?.role === "patient");
 export const useIsStaff = () =>
-  useAuth((s) => s.user?.role === "dentist" || s.user?.role === "cashier");
-export const useIsAuthenticated = () => useAuth((s) => !!s.user);
+  useAuth(
+    (state) => state.user?.role === "dentist" || state.user?.role === "cashier"
+  );
+export const useIsAuthenticated = () => useAuth((state) => !!state.user);
 
 /** Role helper usable outside React components. */
 export function roleOf(user: AuthUser | null): Role | null {
   return user?.role ?? null;
 }
 
-export { api };
+export { apiClient };

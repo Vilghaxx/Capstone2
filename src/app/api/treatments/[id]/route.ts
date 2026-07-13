@@ -2,8 +2,8 @@ import { NextRequest } from "next/server";
 import { db } from "@/lib/db";
 import { getUserFromRequest, requireRole } from "@/lib/auth";
 import {
-  fail,
-  ok,
+  errorResponse,
+  jsonResponse,
   unauthorized,
   forbidden,
   notFound,
@@ -37,7 +37,7 @@ export const GET = withErrors(
       orderBy: { date: "desc" },
     });
 
-    return ok(treatments);
+    return jsonResponse(treatments);
   }
 );
 
@@ -66,7 +66,7 @@ export const PUT = withErrors(
     if (!existing) return notFound("Treatment not found");
 
     const body = await req.json().catch(() => null);
-    if (body === null) return fail("Invalid JSON body", 400);
+    if (body === null) return errorResponse("Invalid JSON body", 400);
 
     const parsed = treatmentUpdateSchema.safeParse(body);
     if (!parsed.success) {
@@ -78,6 +78,6 @@ export const PUT = withErrors(
       data: parsed.data,
     });
 
-    return ok(updated);
+    return jsonResponse(updated);
   }
 );
