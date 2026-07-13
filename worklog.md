@@ -1039,3 +1039,22 @@ Stage Summary:
 - 8 API bugs fixed (security leak, atomicity, error handling, edge cases).
 - 13 frontend issues fixed (error states, a11y, role-gating, UX polish).
 - Production-ready: zero console errors across all roles and views, clean lint, atomic transactions, proper error handling.
+
+---
+Task ID: 18
+Agent: main (orchestrator)
+Task: Replace generic AI star logo with dental tooth icon
+
+Work Log:
+- Replaced public/logo.svg: was the generic Z.ai "Z" star (dark rounded square + breathing white Z). Now a custom dental-themed logo — emerald-teal rounded square gradient background + white tooth path + subtle sparkle highlight. Serves as the browser favicon.
+- Created src/components/common/ToothIcon.tsx — a reusable lucide-compatible tooth icon component (24x24 viewBox, stroke-based, accepts className + standard SVG props). Used as the brand mark throughout the app.
+- Replaced all Stethoscope lucide icon usages with ToothIcon:
+  - AppShell.tsx: sidebar brand (desktop), mobile sheet title, mobile header (3 locations)
+  - LoginView.tsx: card header brand mark
+  - RegisterView.tsx: card header brand mark
+- Verified via VLM: login card header shows "white tooth shape inside a green square" ✓; sidebar shows "tooth icon next to Dental System" ✓.
+- Lint clean.
+
+Stage Summary:
+- The generic AI star favicon and Stethoscope brand icons are replaced with a custom dental tooth icon — both as the browser favicon (public/logo.svg) and as the in-app brand mark (ToothIcon component).
+- The branding is now cohesive and theme-appropriate for a dental practice management system.

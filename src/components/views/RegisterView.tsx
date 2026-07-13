@@ -4,7 +4,6 @@ import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import {
-  Stethoscope,
   User,
   Lock,
   Mail,
@@ -41,6 +40,7 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { ThemeToggle } from "@/components/common/ThemeToggle";
+import { ToothIcon } from "@/components/common/ToothIcon";
 
 // Use the schema's *input* type for form values, because the zodResolver
 // validates the input shape (address is optional before the .default("") kicks
@@ -100,7 +100,7 @@ export default function RegisterView() {
         <Card className="border-border/60 shadow-lg">
           <CardHeader className="items-center gap-3 text-center">
             <div className="flex size-12 items-center justify-center rounded-xl bg-primary text-primary-foreground shadow-sm">
-              <Stethoscope className="size-6" />
+              <ToothIcon className="size-6" />
             </div>
             <div className="space-y-1.5">
               <CardTitle className="text-2xl">

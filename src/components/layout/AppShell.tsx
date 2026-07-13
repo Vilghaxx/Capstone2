@@ -9,10 +9,10 @@ import {
   CalendarPlus,
   CalendarRange,
   LogOut,
-  Stethoscope,
   Menu,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { ToothIcon } from "@/components/common/ToothIcon";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/lib/auth-store";
@@ -168,7 +168,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         <aside className="hidden w-64 shrink-0 flex-col border-r border-border bg-card p-4 lg:flex 2xl:w-72">
           <div className="mb-6 flex items-center gap-2 px-2">
             <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary text-primary-foreground">
-              <Stethoscope className="h-5 w-5" />
+              <ToothIcon className="h-5 w-5" />
             </div>
             <div>
               <p className="text-sm font-semibold leading-tight">Dental System</p>
@@ -195,7 +195,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               </SheetTrigger>
               <SheetContent side="left" className="w-72 p-4">
                 <SheetTitle className="mb-4 flex items-center gap-2">
-                  <Stethoscope className="h-5 w-5" /> Dental System
+                  <ToothIcon className="h-5 w-5" /> Dental System
                 </SheetTitle>
                 <div className="flex flex-col gap-4">
                   <NavList onNavigate={() => setMobileOpen(false)} />
@@ -205,7 +205,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             </Sheet>
             <div className="flex flex-1 items-center gap-2">
               <div className="flex h-7 w-7 items-center justify-center rounded-md bg-primary text-primary-foreground">
-                <Stethoscope className="h-4 w-4" />
+                <ToothIcon className="h-4 w-4" />
               </div>
               <span className="font-semibold">Dental System</span>
             </div>

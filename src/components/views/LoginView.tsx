@@ -3,7 +3,8 @@
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Stethoscope, User, Lock, Eye, EyeOff, Sparkles } from "lucide-react";
+import { User, Lock, Eye, EyeOff, Sparkles } from "lucide-react";
+import { ToothIcon } from "@/components/common/ToothIcon";
 import { toast } from "sonner";
 
 import { loginFormSchema, type LoginFormValues } from "@/lib/schemas/auth-schema";
@@ -85,7 +86,7 @@ export default function LoginView() {
         <Card className="border-border/60 shadow-lg">
           <CardHeader className="items-center gap-3 text-center">
             <div className="flex size-12 items-center justify-center rounded-xl bg-primary text-primary-foreground shadow-sm">
-              <Stethoscope className="size-6" />
+              <ToothIcon className="size-6" />
             </div>
             <div className="space-y-1.5">
               <CardTitle className="text-2xl">Welcome back</CardTitle>
