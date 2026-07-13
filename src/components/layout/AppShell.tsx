@@ -171,7 +171,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               <Stethoscope className="h-5 w-5" />
             </div>
             <div>
-              <p className="text-sm font-semibold leading-tight">Radiograph</p>
+              <p className="text-sm font-semibold leading-tight">Dental System</p>
               <p className="text-xs text-muted-foreground leading-tight">
                 Dental Practice
               </p>
@@ -195,7 +195,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               </SheetTrigger>
               <SheetContent side="left" className="w-72 p-4">
                 <SheetTitle className="mb-4 flex items-center gap-2">
-                  <Stethoscope className="h-5 w-5" /> Radiograph
+                  <Stethoscope className="h-5 w-5" /> Dental System
                 </SheetTitle>
                 <div className="flex flex-col gap-4">
                   <NavList onNavigate={() => setMobileOpen(false)} />
@@ -207,7 +207,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               <div className="flex h-7 w-7 items-center justify-center rounded-md bg-primary text-primary-foreground">
                 <Stethoscope className="h-4 w-4" />
               </div>
-              <span className="font-semibold">Radiograph</span>
+              <span className="font-semibold">Dental System</span>
             </div>
             <ThemeToggle className="h-8 w-8" />
           </header>

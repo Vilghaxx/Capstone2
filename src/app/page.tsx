@@ -67,7 +67,7 @@ function AppContent() {
   if (!initialized || loading) {
     return (
       <div className="flex min-h-screen items-center justify-center">
-        <LoadingSpinner text="Starting Radiograph…" size="lg" />
+        <LoadingSpinner text="Starting Dental System…" size="lg" />
       </div>
     );
   }
@@ -112,6 +112,32 @@ function AppContent() {
             <p className="text-lg font-semibold">Access denied</p>
             <p className="text-sm text-muted-foreground">
               You don&apos;t have permission to view this page.
+            </p>
+            <button
+              className="mt-2 text-sm font-medium text-primary hover:underline"
+              onClick={() => navigate("dashboard")}
+            >
+              Go to dashboard
+            </button>
+          </div>
+        </ViewTransition>
+      </AppShell>
+    );
+  }
+
+  // Role-gate patient-only views (book + my-appointments) — staff cannot
+  // access them because they have no patient profile to book against.
+  if (
+    (user.role === "dentist" || user.role === "cashier") &&
+    (view === "book" || view === "my-appointments")
+  ) {
+    return (
+      <AppShell>
+        <ViewTransition view={view}>
+          <div className="flex min-h-[50vh] flex-col items-center justify-center gap-2 text-center">
+            <p className="text-lg font-semibold">Access denied</p>
+            <p className="text-sm text-muted-foreground">
+              Only patient accounts can access this page.
             </p>
             <button
               className="mt-2 text-sm font-medium text-primary hover:underline"

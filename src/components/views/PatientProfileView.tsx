@@ -479,14 +479,17 @@ function ToothModal({
               </div>
               <div className="grid gap-3 sm:grid-cols-2">
                 <div className="space-y-1.5">
-                  <label className="text-xs font-medium text-muted-foreground">
+                  <label
+                    htmlFor="tooth-status-select"
+                    className="text-xs font-medium text-muted-foreground"
+                  >
                     Status
                   </label>
                   <Select
                     value={statusDraft}
                     onValueChange={(v) => setStatusDraft(v as ToothStatus)}
                   >
-                    <SelectTrigger className="w-full">
+                    <SelectTrigger id="tooth-status-select" className="w-full">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
@@ -507,10 +510,14 @@ function ToothModal({
                   </Select>
                 </div>
                 <div className="space-y-1.5">
-                  <label className="text-xs font-medium text-muted-foreground">
+                  <label
+                    htmlFor="tooth-notes-textarea"
+                    className="text-xs font-medium text-muted-foreground"
+                  >
                     Clinical notes
                   </label>
                   <Textarea
+                    id="tooth-notes-textarea"
                     value={notesDraft}
                     onChange={(e) => setNotesDraft(e.target.value)}
                     placeholder="Add clinical notes…"
@@ -857,8 +864,8 @@ export default function PatientProfileView() {
       navigate("patients");
     } catch (err) {
       toastError(err, "Failed to delete patient");
-    } finally {
-      setDeleteOpen(false);
+      // Re-throw so ConfirmDialog keeps the dialog open for retry.
+      throw err;
     }
   }
 

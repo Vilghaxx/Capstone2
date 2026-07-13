@@ -84,7 +84,7 @@ export default function RegisterView() {
         address: values.address ?? "",
       };
       await register(payload);
-      toast.success("Account created! Welcome to Radiograph");
+      toast.success("Account created! Welcome to Dental System");
       navigate("dashboard");
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Registration failed");

@@ -249,6 +249,13 @@ export default function BillingView() {
                 <CardContent>
                   {summaryQuery.isLoading ? (
                     <div className="h-7 w-24 animate-pulse rounded bg-muted" />
+                  ) : summaryQuery.isError ? (
+                    <p
+                      className="text-lg xs:text-2xl font-semibold text-muted-foreground"
+                      title="Could not load summary"
+                    >
+                      —
+                    </p>
                   ) : (
                     <p className={`text-lg xs:text-2xl font-semibold ${styles.value}`}>
                       {c.value}
@@ -265,14 +272,17 @@ export default function BillingView() {
       <Card>
         <CardContent className="flex flex-col gap-2 sm:flex-row sm:items-end sm:gap-3">
           <div className="flex flex-col gap-1.5">
-            <label className="text-xs font-medium text-muted-foreground">
+            <label
+              htmlFor="billing-status-filter"
+              className="text-xs font-medium text-muted-foreground"
+            >
               Status
             </label>
             <Select
               value={statusFilter}
               onValueChange={(v) => setStatusFilter(v as typeof statusFilter)}
             >
-              <SelectTrigger className="w-full sm:w-44">
+              <SelectTrigger id="billing-status-filter" className="w-full sm:w-44">
                 <SelectValue placeholder="All" />
               </SelectTrigger>
               <SelectContent>
@@ -283,14 +293,17 @@ export default function BillingView() {
             </Select>
           </div>
           <div className="flex flex-col gap-1.5">
-            <label className="text-xs font-medium text-muted-foreground">
+            <label
+              htmlFor="billing-patient-filter"
+              className="text-xs font-medium text-muted-foreground"
+            >
               Patient
             </label>
             <Select
               value={patientFilter}
               onValueChange={(v) => setPatientFilter(v)}
             >
-              <SelectTrigger className="w-full sm:w-60">
+              <SelectTrigger id="billing-patient-filter" className="w-full sm:w-60">
                 <SelectValue placeholder="All patients" />
               </SelectTrigger>
               <SelectContent>
@@ -317,6 +330,11 @@ export default function BillingView() {
         <CardContent>
           {billingQuery.isLoading ? (
             <LoadingSpinner text="Loading billing records…" />
+          ) : billingQuery.isError ? (
+            <EmptyState
+              title="Could not load billing records"
+              message="Something went wrong while fetching billing data. Please try again later."
+            />
           ) : records.length === 0 ? (
             <EmptyState
               title="No billing records"

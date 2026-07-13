@@ -31,41 +31,61 @@ export const POST = withErrors(async (req: Request) => {
     return fail("Username is already taken", 409);
   }
 
-  // Create the user account (patient role, not yet linked).
-  const user = await db.user.create({
-    data: {
-      username,
-      password: hashPassword(password),
-      role: ROLES.PATIENT,
-      name,
-    },
+  // Create the user, patient, link, and 32 teeth atomically so a failure at
+  // any step does not leave orphan rows behind.
+  const result = await db.$transaction(async (tx) => {
+    // Re-check inside the transaction to close the race window.
+    const raceExisting = await tx.user.findUnique({ where: { username } });
+    if (raceExisting) {
+      throw new Error("USERNAME_TAKEN");
+    }
+
+    const newUser = await tx.user.create({
+      data: {
+        username,
+        password: hashPassword(password),
+        role: ROLES.PATIENT,
+        name,
+      },
+    });
+
+    const newPatient = await tx.patient.create({
+      data: {
+        name,
+        phone,
+        email,
+        dateOfBirth,
+        address: address ?? "",
+      },
+    });
+
+    await tx.user.update({
+      where: { id: newUser.id },
+      data: { patientRef: newPatient.id },
+    });
+
+    // Create 32 default tooth records (all healthy) for the new patient.
+    const teethData = Array.from({ length: TOTAL_TEETH }, (_, i) => ({
+      patientId: newPatient.id,
+      toothNumber: i + 1,
+      status: TOOTH_STATUSES.HEALTHY,
+      notes: null,
+    }));
+    await tx.tooth.createMany({ data: teethData });
+
+    return { user: newUser, patient: newPatient };
+  }).catch((err) => {
+    if (err instanceof Error && err.message === "USERNAME_TAKEN") {
+      return null;
+    }
+    throw err;
   });
 
-  // Create the corresponding Patient record.
-  const patient = await db.patient.create({
-    data: {
-      name,
-      phone,
-      email,
-      dateOfBirth,
-      address: address ?? "",
-    },
-  });
+  if (!result) {
+    return fail("Username is already taken", 409);
+  }
 
-  // Link the user to the new patient.
-  await db.user.update({
-    where: { id: user.id },
-    data: { patientRef: patient.id },
-  });
-
-  // Create 32 default tooth records (all healthy) for the new patient.
-  const teethData = Array.from({ length: TOTAL_TEETH }, (_, i) => ({
-    patientId: patient.id,
-    toothNumber: i + 1,
-    status: TOOTH_STATUSES.HEALTHY,
-    notes: null,
-  }));
-  await db.tooth.createMany({ data: teethData });
+  const { user, patient } = result;
 
   const payload: JwtPayload = {
     sub: user.id,

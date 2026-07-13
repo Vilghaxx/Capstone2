@@ -6,6 +6,7 @@ import {
   requireRole,
 } from "@/lib/auth";
 import {
+  fail,
   forbidden,
   handleZodError,
   notFound,
@@ -79,9 +80,7 @@ export const PUT = withErrors(
     if (!existing) return notFound("Appointment not found");
 
     const body = await req.json().catch(() => null);
-    if (body === null) {
-      return ok(existing); // nothing to update
-    }
+    if (body === null) return fail("Invalid JSON body", 400);
 
     const parsed = appointmentUpdateSchema.safeParse(body);
     if (!parsed.success) return handleZodError(parsed.error);
@@ -97,7 +96,7 @@ export const PUT = withErrors(
     if (date !== undefined) {
       const parsedDate = new Date(date);
       if (Number.isNaN(parsedDate.getTime())) {
-        return forbidden("Invalid date format.");
+        return fail("Invalid date format.", 400);
       }
       data.date = parsedDate;
     }

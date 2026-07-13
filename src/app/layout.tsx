@@ -15,10 +15,10 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Radiograph — Dental Practice Management",
+  title: "Dental System — Dental Practice Management",
   description: "Comprehensive dental practice management system for dentists, cashiers, and patients. Manage patients, appointments, treatments, and billing.",
-  keywords: ["dental", "practice management", "appointments", "billing", "dental chart", "Radiograph"],
-  authors: [{ name: "Radiograph" }],
+  keywords: ["dental", "practice management", "appointments", "billing", "dental chart", "Dental System"],
+  authors: [{ name: "Dental System" }],
   icons: {
     icon: "/logo.svg",
   },

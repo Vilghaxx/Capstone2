@@ -292,6 +292,12 @@ export function OralCavityChart({
                           : "drop-shadow(0 1px 1px rgba(0,0,0,0.2))",
                       }}
                       onClick={() => onSelectTooth(num)}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter" || e.key === " ") {
+                          e.preventDefault();
+                          onSelectTooth(num);
+                        }
+                      }}
                       onMouseEnter={() => setHovered(num)}
                       onMouseLeave={() => setHovered(null)}
                       role="button"

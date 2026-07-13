@@ -4,6 +4,7 @@ import { getUserFromRequest, requireRole } from "@/lib/auth";
 import { ROLES } from "@/lib/constants";
 import { toothUpdateSchema } from "@/lib/schemas/billing-schema";
 import {
+  fail,
   ok,
   unauthorized,
   forbidden,
@@ -66,7 +67,9 @@ export const PUT = withErrors(
       return notFound("Invalid tooth number");
     }
 
-    const body = await req.json();
+    const body = await req.json().catch(() => null);
+    if (body === null) return fail("Invalid JSON body", 400);
+
     const parsed = toothUpdateSchema.safeParse(body);
     if (!parsed.success) return handleZodError(parsed.error);
 

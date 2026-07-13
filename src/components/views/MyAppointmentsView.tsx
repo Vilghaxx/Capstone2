@@ -80,7 +80,7 @@ function AppointmentCard({ appointment }: { appointment: Appointment }) {
           </span>
           <span className="inline-flex items-center gap-1.5">
             <Clock className="h-4 w-4 text-emerald-600" aria-hidden="true" />
-            <span>{appointment.time}</span>
+            <span>{appointment.time || "—"}</span>
           </span>
         </div>
 

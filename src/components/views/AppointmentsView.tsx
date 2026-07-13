@@ -243,7 +243,7 @@ function ListTab({
   const patientMap = usePatientMap();
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const filters = statusFilter === "all" ? undefined : { status: statusFilter };
-  const { data, isLoading } = useAppointments(filters);
+  const { data, isLoading, isError } = useAppointments(filters);
 
   const updateAppt = useUpdateAppointment();
   const deleteAppt = useDeleteAppointment();
@@ -284,10 +284,11 @@ function ListTab({
     try {
       await deleteAppt.mutateAsync(deleteTarget.id);
       toast.success("Appointment deleted");
+      setDeleteTarget(null);
     } catch (err) {
       reportError(err, "Failed to delete appointment");
-    } finally {
-      setDeleteTarget(null);
+      // Re-throw so ConfirmDialog keeps the dialog open for retry.
+      throw err;
     }
   };
 
@@ -321,6 +322,11 @@ function ListTab({
 
       {isLoading ? (
         <LoadingSpinner text="Loading appointments…" />
+      ) : isError ? (
+        <EmptyState
+          title="Could not load appointments"
+          message="Something went wrong while fetching appointments. Please try again later."
+        />
       ) : totalCount === 0 ? (
         <EmptyState
           title="No appointments"
@@ -463,7 +469,7 @@ function ScheduleTab({
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
   const selectedYMD = localToYMD(selectedDate);
 
-  const { data, isLoading } = useAppointments({ date: selectedYMD });
+  const { data, isLoading, isError } = useAppointments({ date: selectedYMD });
 
   // Map time → appointments; collect off-grid appointments separately.
   // Only show appointments that belong on the schedule (scheduled or
@@ -517,6 +523,11 @@ function ScheduleTab({
       <div className="flex-1">
         {isLoading ? (
           <LoadingSpinner text="Loading schedule…" />
+        ) : isError ? (
+          <EmptyState
+            title="Could not load schedule"
+            message="Something went wrong while fetching appointments. Please try again later."
+          />
         ) : (
           <div className="flex flex-col gap-2">
             {TIME_SLOTS.map((time) => {
@@ -600,7 +611,7 @@ function ScheduleTab({
 
 function RequestsTab() {
   const patientMap = usePatientMap();
-  const { data, isLoading } = useAppointments({ status: "pending" });
+  const { data, isLoading, isError } = useAppointments({ status: "pending" });
   const updateAppt = useUpdateAppointment();
 
   const sorted = useMemo(() => {
@@ -631,6 +642,15 @@ function RequestsTab() {
   };
 
   if (isLoading) return <LoadingSpinner text="Loading requests…" />;
+
+  if (isError) {
+    return (
+      <EmptyState
+        title="Could not load requests"
+        message="Something went wrong while fetching pending requests. Please try again later."
+      />
+    );
+  }
 
   if (sorted.length === 0) {
     return (
@@ -895,6 +915,7 @@ function NewAppointmentDialog({
               type="button"
               variant="outline"
               onClick={() => onOpenChange(false)}
+              disabled={createAppt.isPending}
             >
               Cancel
             </Button>

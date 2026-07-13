@@ -7,6 +7,7 @@ import {
 import {
   fail,
   handleZodError,
+  notFound,
   ok,
   unauthorized,
   withErrors,
@@ -42,7 +43,11 @@ export const GET = withErrors(async (req: NextRequest) => {
   const where: Record<string, unknown> = {};
 
   if (user!.role === ROLES.PATIENT) {
-    where.patientId = user!.patientRef ?? undefined;
+    // Patients are sandboxed to their own appointments. If the patient
+    // account is not linked to a patient record, return an empty result set
+    // rather than accidentally listing everyone's appointments.
+    if (!user!.patientRef) return ok([]);
+    where.patientId = user!.patientRef;
   }
 
   if (status) {
@@ -119,6 +124,10 @@ export const POST = withErrors(async (req: NextRequest) => {
   if (Number.isNaN(parsedDate.getTime())) {
     return fail("Invalid date format.", 400);
   }
+
+  // Verify the patient exists (no FK in schema, so we check explicitly).
+  const patient = await db.patient.findUnique({ where: { id: patientId } });
+  if (!patient) return notFound("Patient not found");
 
   const created = await db.appointment.create({
     data: {

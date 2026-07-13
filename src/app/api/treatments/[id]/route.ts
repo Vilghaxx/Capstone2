@@ -2,6 +2,7 @@ import { NextRequest } from "next/server";
 import { db } from "@/lib/db";
 import { getUserFromRequest, requireRole } from "@/lib/auth";
 import {
+  fail,
   ok,
   unauthorized,
   forbidden,
@@ -64,7 +65,9 @@ export const PUT = withErrors(
     const existing = await db.treatment.findUnique({ where: { id } });
     if (!existing) return notFound("Treatment not found");
 
-    const body = await req.json();
+    const body = await req.json().catch(() => null);
+    if (body === null) return fail("Invalid JSON body", 400);
+
     const parsed = treatmentUpdateSchema.safeParse(body);
     if (!parsed.success) {
       return handleZodError(parsed.error);

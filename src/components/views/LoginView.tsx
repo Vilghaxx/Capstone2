@@ -90,7 +90,7 @@ export default function LoginView() {
             <div className="space-y-1.5">
               <CardTitle className="text-2xl">Welcome back</CardTitle>
               <CardDescription>
-                Sign in to your Radiograph account
+                Sign in to your Dental System account
               </CardDescription>
             </div>
           </CardHeader>
