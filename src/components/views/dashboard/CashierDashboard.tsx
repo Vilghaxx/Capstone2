@@ -119,7 +119,7 @@ export function CashierDashboard() {
           label="Today's Appointments"
           value={todaysAppointments.length}
           icon={CalendarDays}
-          accent="bg-teal-500"
+          accent="bg-sky-500"
           hint="Scheduled for today"
           loading={apptsQuery.isLoading}
           onClick={() => navigate("appointments")}
@@ -137,7 +137,7 @@ export function CashierDashboard() {
           label="Total Revenue"
           value={formatCurrency(billing?.totalRevenue ?? 0)}
           icon={Wallet}
-          accent="bg-emerald-500"
+          accent="bg-blue-500"
           hint="All billed treatments"
           loading={billingQuery.isLoading}
           onClick={() => navigate("billing")}
@@ -169,14 +169,14 @@ export function CashierDashboard() {
             title: "Manage Appointments",
             description: "Schedule and approve appointments.",
             icon: CalendarPlus,
-            accent: "bg-teal-500",
+            accent: "bg-sky-500",
             onClick: () => navigate("appointments"),
           },
           {
             title: "View Patients",
             description: "Look up patient records.",
             icon: Users,
-            accent: "bg-emerald-500",
+            accent: "bg-blue-500",
             onClick: () => navigate("patients"),
           },
         ]}

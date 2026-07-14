@@ -92,7 +92,7 @@ export default function RegisterView() {
   };
 
   return (
-    <div className="relative flex min-h-screen w-full items-center justify-center bg-gradient-to-br from-emerald-50 via-background to-teal-50 p-4 py-8 dark:from-emerald-950/20 dark:via-background dark:to-teal-950/20">
+    <div className="relative flex min-h-screen w-full items-center justify-center bg-gradient-to-br from-blue-50 via-background to-sky-50 p-4 py-8 dark:from-blue-950/20 dark:via-background dark:to-sky-950/20">
       <div className="absolute right-4 top-4">
         <ThemeToggle />
       </div>

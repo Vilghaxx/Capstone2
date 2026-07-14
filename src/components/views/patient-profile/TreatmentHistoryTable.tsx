@@ -76,7 +76,7 @@ export function TreatmentHistoryTable({
                   variant={treatment.paid ? "default" : "outline"}
                   className={
                     treatment.paid
-                      ? "bg-emerald-600 text-white hover:bg-emerald-600"
+                      ? "bg-blue-600 text-white hover:bg-blue-600"
                       : "text-amber-700 dark:text-amber-400"
                   }
                 >

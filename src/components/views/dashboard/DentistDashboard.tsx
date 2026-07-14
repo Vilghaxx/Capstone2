@@ -80,7 +80,7 @@ export function DentistDashboard() {
           label="Total Patients"
           value={totalPatients}
           icon={Users}
-          accent="bg-emerald-500"
+          accent="bg-blue-500"
           hint="Registered in the clinic"
           loading={patientsQuery.isLoading}
           onClick={() => navigate("patients")}
@@ -89,7 +89,7 @@ export function DentistDashboard() {
           label="Upcoming Appointments"
           value={upcomingCount}
           icon={CalendarDays}
-          accent="bg-teal-500"
+          accent="bg-sky-500"
           hint="Pending or scheduled"
           loading={apptsQuery.isLoading}
           onClick={() => navigate("appointments")}
@@ -121,14 +121,14 @@ export function DentistDashboard() {
             title: "Manage Patients",
             description: "View, add, and edit patient records.",
             icon: Users,
-            accent: "bg-emerald-500",
+            accent: "bg-blue-500",
             onClick: () => navigate("patients"),
           },
           {
             title: "Schedule Appointment",
             description: "Create and manage appointments.",
             icon: CalendarPlus,
-            accent: "bg-teal-500",
+            accent: "bg-sky-500",
             onClick: () => navigate("appointments"),
           },
           {

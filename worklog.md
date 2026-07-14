@@ -1239,3 +1239,23 @@ Stage Summary:
 - Codebase fully refactored: YAGNI (dead code removed), modularity (930→109 lines, 887→60 lines, 1039→198 lines, 287→7 files), self-documenting names throughout.
 - UI/UX elevated with dental-inspired split-screen login (8/10 VLM rating both desktop + mobile).
 - Reading the code now immediately explains what's happening — no debugging needed to understand variable purpose.
+
+---
+Task ID: 20
+Agent: main (orchestrator)
+Task: Change primary color from green (emerald/teal) to blue
+
+Work Log:
+- Updated globals.css color tokens: all `--primary`, `--ring`, `--sidebar-primary`, `--accent`, `--background`, `--foreground`, `--secondary`, `--muted`, `--border`, `--input`, `--sidebar-*` hues changed from 150-170 (emerald/teal) to 240-255 (blue) in both `:root` (light) and `.dark` (dark mode). Light primary = oklch(0.55 0.16 255), dark primary = oklch(0.7 0.15 255).
+- Updated text selection color: oklch hue 150 → 255.
+- Bulk-replaced 46 Tailwind color class references across all view/common/layout files: emerald-* → blue-*, teal-* → sky-* (sky is a lighter complement to blue, used for secondary accents like the cashier dashboard cards).
+- Updated BillingView type: CardColor "emerald" | "teal" → "blue" | "sky".
+- Updated OralCavityChart TOOTH_STATUS_COLORS: healthy tooth fill/stroke changed from #10b981/#059669 (emerald) to #3b82f6/#2563eb (blue).
+- Updated constants.ts TOOTH_STATUS_META and APPOINTMENT_STATUS_META color classes: emerald → blue.
+- Updated favicon public/logo.svg: gradient from #3b82f6 → #0284c7 (blue).
+- Verified via VLM: login (light + dark), dashboard, dental chart all confirmed blue primary color. Healthy teeth now render blue.
+
+Stage Summary:
+- Primary color changed from green (emerald/teal) to blue throughout the entire app — CSS tokens, Tailwind classes, hardcoded hex values in the chart, favicon, and selection color.
+- Light mode: blue-600 primary. Dark mode: brighter blue (oklch 0.7 lightness). Secondary accents use sky (lighter blue).
+- Lint clean. No emerald/teal references remain in src/.

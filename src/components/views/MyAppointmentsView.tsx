@@ -75,11 +75,11 @@ function AppointmentCard({ appointment }: { appointment: Appointment }) {
 
         <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5 text-sm text-muted-foreground">
           <span className="inline-flex items-center gap-1.5">
-            <CalendarClock className="h-4 w-4 text-emerald-600" aria-hidden="true" />
+            <CalendarClock className="h-4 w-4 text-blue-600" aria-hidden="true" />
             <span>{formatWithWeekday(appointment.date)}</span>
           </span>
           <span className="inline-flex items-center gap-1.5">
-            <Clock className="h-4 w-4 text-emerald-600" aria-hidden="true" />
+            <Clock className="h-4 w-4 text-blue-600" aria-hidden="true" />
             <span>{appointment.time || "—"}</span>
           </span>
         </div>
@@ -126,7 +126,7 @@ export default function MyAppointmentsView() {
     <div className="mx-auto max-w-4xl px-4 py-8">
       <header className="mb-6 flex flex-wrap items-center justify-between gap-3">
         <div className="space-y-1">
-          <h1 className="text-2xl font-semibold tracking-tight text-emerald-700 dark:text-emerald-300">
+          <h1 className="text-2xl font-semibold tracking-tight text-blue-700 dark:text-blue-300">
             My Appointments
           </h1>
           <p className="text-sm text-muted-foreground">
@@ -136,7 +136,7 @@ export default function MyAppointmentsView() {
         <Button
           type="button"
           onClick={() => navigate("book")}
-          className="bg-emerald-600 text-white hover:bg-emerald-700"
+          className="bg-blue-600 text-white hover:bg-blue-700"
         >
           <CalendarPlus className="h-4 w-4" aria-hidden="true" />
           Book New

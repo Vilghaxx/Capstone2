@@ -123,16 +123,16 @@ export default function BookAppointmentView() {
   if (submitted) {
     return (
       <div className="mx-auto w-full max-w-[90vw] sm:max-w-2xl px-4 py-10">
-        <Card className="border-emerald-200 bg-emerald-50/60 dark:border-emerald-900/50 dark:bg-emerald-950/30">
+        <Card className="border-blue-200 bg-blue-50/60 dark:border-blue-900/50 dark:bg-blue-950/30">
           <CardContent className="flex flex-col items-center gap-4 px-6 py-12 text-center">
-            <div className="flex h-16 w-16 items-center justify-center rounded-full bg-emerald-100 text-emerald-600 dark:bg-emerald-900/60 dark:text-emerald-300">
+            <div className="flex h-16 w-16 items-center justify-center rounded-full bg-blue-100 text-blue-600 dark:bg-blue-900/60 dark:text-blue-300">
               <CheckCircle2 className="h-9 w-9" aria-hidden="true" />
             </div>
             <div className="space-y-2">
-              <h2 className="text-xl font-semibold text-emerald-900 dark:text-emerald-100">
+              <h2 className="text-xl font-semibold text-blue-900 dark:text-blue-100">
                 Request submitted!
               </h2>
-              <p className="mx-auto max-w-md text-sm text-emerald-800/80 dark:text-emerald-200/80">
+              <p className="mx-auto max-w-md text-sm text-blue-800/80 dark:text-blue-200/80">
                 Your appointment request has been submitted and is pending
                 approval. We&apos;ll confirm it shortly.
               </p>
@@ -149,7 +149,7 @@ export default function BookAppointmentView() {
               <Button
                 type="button"
                 onClick={() => navigate("my-appointments")}
-                className="bg-emerald-600 text-white hover:bg-emerald-700"
+                className="bg-blue-600 text-white hover:bg-blue-700"
               >
                 View My Appointments
               </Button>
@@ -163,7 +163,7 @@ export default function BookAppointmentView() {
   return (
     <div className="mx-auto w-full max-w-[90vw] sm:max-w-md px-4 py-8">
       <header className="mb-6 space-y-1">
-        <h1 className="text-2xl font-semibold tracking-tight text-emerald-700 dark:text-emerald-300">
+        <h1 className="text-2xl font-semibold tracking-tight text-blue-700 dark:text-blue-300">
           Book an Appointment
         </h1>
         <p className="text-sm text-muted-foreground">
@@ -175,7 +175,7 @@ export default function BookAppointmentView() {
         <CardHeader>
           <CardTitle className="flex items-center gap-2 text-lg">
             <ClipboardList
-              className="h-5 w-5 text-emerald-600"
+              className="h-5 w-5 text-blue-600"
               aria-hidden="true"
             />
             Appointment details
@@ -296,7 +296,7 @@ export default function BookAppointmentView() {
             <Button
               type="submit"
               disabled={isSubmitting}
-              className="bg-emerald-600 text-white hover:bg-emerald-700"
+              className="bg-blue-600 text-white hover:bg-blue-700"
             >
               {isSubmitting && (
                 <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />

@@ -71,16 +71,16 @@ import {
 import { LoadingSpinner } from "@/components/common/LoadingSpinner";
 import { EmptyState } from "@/components/common/EmptyState";
 
-type CardColor = "emerald" | "teal" | "amber" | "rose";
+type CardColor = "blue" | "sky" | "amber" | "rose";
 
 const COLOR_STYLES: Record<CardColor, { icon: string; value: string }> = {
-  emerald: {
-    icon: "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400",
-    value: "text-emerald-600 dark:text-emerald-400",
+  blue: {
+    icon: "bg-blue-500/10 text-blue-600 dark:text-blue-400",
+    value: "text-blue-600 dark:text-blue-400",
   },
-  teal: {
-    icon: "bg-teal-500/10 text-teal-600 dark:text-teal-400",
-    value: "text-teal-600 dark:text-teal-400",
+  sky: {
+    icon: "bg-sky-500/10 text-sky-600 dark:text-sky-400",
+    value: "text-sky-600 dark:text-sky-400",
   },
   amber: {
     icon: "bg-amber-500/10 text-amber-600 dark:text-amber-400",
@@ -189,13 +189,13 @@ export default function BillingView() {
     {
       label: "Total Revenue",
       icon: Wallet,
-      color: "emerald",
+      color: "blue",
       value: summary ? formatCurrency(summary.totalRevenue) : "—",
     },
     {
       label: "Collected",
       icon: CheckCircle,
-      color: "teal",
+      color: "sky",
       value: summary ? formatCurrency(summary.collected) : "—",
     },
     {
@@ -382,7 +382,7 @@ export default function BillingView() {
                       </TableCell>
                       <TableCell>
                         {r.paid ? (
-                          <Badge className="bg-emerald-100 text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-300">
+                          <Badge className="bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-blue-300">
                             Paid
                           </Badge>
                         ) : (
@@ -459,7 +459,7 @@ export default function BillingView() {
               </div>
               <div className="mt-1 flex items-center justify-between">
                 <span className="text-muted-foreground">Amount due</span>
-                <span className="font-semibold text-emerald-600 dark:text-emerald-400">
+                <span className="font-semibold text-blue-600 dark:text-blue-400">
                   {formatCurrency(selected.cost)}
                 </span>
               </div>

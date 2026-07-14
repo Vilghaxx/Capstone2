@@ -66,8 +66,8 @@ export const TOOTH_STATUS_META: Record<
 > = {
   healthy: {
     label: "Healthy",
-    color: "bg-emerald-500",
-    ring: "ring-emerald-500/40",
+    color: "bg-blue-500",
+    ring: "ring-blue-500/40",
     description: "No issues detected",
   },
   treated: {
@@ -117,7 +117,7 @@ export const APPOINTMENT_STATUS_META: Record<
   completed: {
     label: "Completed",
     className:
-      "bg-emerald-100 text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-300",
+      "bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-blue-300",
   },
   cancelled: {
     label: "Cancelled",

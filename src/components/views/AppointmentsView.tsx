@@ -20,7 +20,7 @@ import type { NewAppointmentPreset } from "./appointments/types";
  * (List / Schedule / Requests), and the shared New Appointment dialog. The
  * actual tab logic lives in `./appointments/*` so each concern is isolated.
  *
- * Dentist (emerald pill) can delete appointments; cashier (amber pill)
+ * Dentist (blue pill) can delete appointments; cashier (amber pill)
  * cannot. No indigo/blue per project rule.
  */
 export default function AppointmentsView() {
@@ -38,7 +38,7 @@ export default function AppointmentsView() {
     ? {
         label: "Dentist",
         className:
-          "bg-emerald-100 text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-300",
+          "bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-blue-300",
       }
     : isCashier
       ? {

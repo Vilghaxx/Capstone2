@@ -63,7 +63,7 @@ export function PatientDashboard() {
   return (
     <div className="space-y-6">
       {/* Welcome / hero card with primary CTAs */}
-      <Card className="bg-gradient-to-br from-emerald-500/10 via-teal-500/5 to-transparent">
+      <Card className="bg-gradient-to-br from-blue-500/10 via-sky-500/5 to-transparent">
         <CardHeader>
           <CardTitle className="text-lg">
             Your dental health at a glance
@@ -95,7 +95,7 @@ export function PatientDashboard() {
           label="Upcoming Appointments"
           value={upcomingCount}
           icon={CalendarDays}
-          accent="bg-emerald-500"
+          accent="bg-blue-500"
           hint="Pending or scheduled"
           loading={loading}
           onClick={() => navigate("my-appointments")}
@@ -104,7 +104,7 @@ export function PatientDashboard() {
           label="Next Appointment"
           value={nextAppointmentDate}
           icon={Clock}
-          accent="bg-teal-500"
+          accent="bg-sky-500"
           hint={upcoming[0]?.time ? `at ${upcoming[0].time}` : undefined}
           loading={loading}
           onClick={() => navigate("my-appointments")}

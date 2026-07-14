@@ -113,7 +113,7 @@ export default function LoginView() {
       </div>
 
       {/* ===== Branded hero panel (desktop only) ===== */}
-      <div className="relative hidden w-1/2 flex-col justify-between overflow-hidden bg-gradient-to-br from-emerald-600 via-teal-600 to-emerald-700 p-12 lg:flex">
+      <div className="relative hidden w-1/2 flex-col justify-between overflow-hidden bg-gradient-to-br from-blue-600 via-sky-600 to-blue-700 p-12 lg:flex">
         {/* Decorative background pattern */}
         <div
           className="absolute inset-0 opacity-10"
@@ -193,7 +193,7 @@ export default function LoginView() {
       </div>
 
       {/* ===== Login form panel ===== */}
-      <div className="flex w-full items-center justify-center bg-gradient-to-br from-emerald-50 via-background to-teal-50 p-4 dark:from-emerald-950/20 dark:via-background dark:to-teal-950/20 lg:w-1/2">
+      <div className="flex w-full items-center justify-center bg-gradient-to-br from-blue-50 via-background to-sky-50 p-4 dark:from-blue-950/20 dark:via-background dark:to-sky-950/20 lg:w-1/2">
         <motion.div
           initial={{ opacity: 0, y: 12, scale: 0.98 }}
           animate={{ opacity: 1, y: 0, scale: 1 }}
@@ -309,8 +309,8 @@ export default function LoginView() {
               </Form>
 
               {/* Demo credentials */}
-              <div className="mt-5 rounded-lg border border-emerald-200/60 bg-emerald-50/60 p-3 dark:border-emerald-900/40 dark:bg-emerald-950/20">
-                <p className="mb-2 text-sm font-medium text-emerald-900 dark:text-emerald-100">
+              <div className="mt-5 rounded-lg border border-blue-200/60 bg-blue-50/60 p-3 dark:border-blue-900/40 dark:bg-blue-950/20">
+                <p className="mb-2 text-sm font-medium text-blue-900 dark:text-blue-100">
                   Demo credentials — click to autofill
                 </p>
                 <div className="flex flex-col xs:flex-row xs:flex-wrap gap-2">
@@ -321,7 +321,7 @@ export default function LoginView() {
                       onClick={() =>
                         fillDemoCredentials(cred.username, cred.password)
                       }
-                      className="inline-flex items-center gap-1.5 rounded-full border border-emerald-300/60 bg-background px-3 py-1 text-xs font-medium text-emerald-900 shadow-sm transition-colors hover:bg-emerald-100/80 dark:border-emerald-800/60 dark:text-emerald-100 dark:hover:bg-emerald-900/30"
+                      className="inline-flex items-center gap-1.5 rounded-full border border-blue-300/60 bg-background px-3 py-1 text-xs font-medium text-blue-900 shadow-sm transition-colors hover:bg-blue-100/80 dark:border-blue-800/60 dark:text-blue-100 dark:hover:bg-blue-900/30"
                       aria-label={`Fill ${cred.role} demo credentials: ${cred.username} / ${cred.password}`}
                     >
                       <span className="font-semibold">{cred.role}:</span>
