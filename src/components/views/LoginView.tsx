@@ -8,7 +8,6 @@ import {
   Lock,
   Eye,
   EyeOff,
-  Sparkles,
   ShieldCheck,
   CalendarCheck,
   HeartPulse,
@@ -20,7 +19,6 @@ import { toast } from "sonner";
 import { loginFormSchema, type LoginFormValues } from "@/lib/schemas/auth-schema";
 import { useAuth } from "@/lib/auth-store";
 import { useNav } from "@/lib/nav";
-import { apiClient } from "@/lib/api";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -41,11 +39,6 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { ThemeToggle } from "@/components/common/ThemeToggle";
-
-const DEMO_CREDENTIALS = [
-  { role: "Dentist", username: "dentist", password: "dentist123" },
-  { role: "Cashier", username: "cashier", password: "cashier123" },
-];
 
 const TRUST_SIGNALS = [
   {
@@ -69,7 +62,6 @@ export default function LoginView() {
   const login = useAuth((state) => state.login);
   const navigate = useNav((state) => state.navigate);
   const [showPassword, setShowPassword] = useState(false);
-  const [isSeedingDemoData, setIsSeedingDemoData] = useState(false);
 
   const loginForm = useForm<LoginFormValues>({
     resolver: zodResolver(loginFormSchema),
@@ -85,23 +77,6 @@ export default function LoginView() {
       navigate("dashboard");
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Sign in failed");
-    }
-  }
-
-  function fillDemoCredentials(username: string, password: string) {
-    loginForm.setValue("username", username, { shouldDirty: true });
-    loginForm.setValue("password", password, { shouldDirty: true });
-  }
-
-  async function seedDemoData() {
-    setIsSeedingDemoData(true);
-    try {
-      await apiClient.post("/api/auth/seed");
-      toast.success("Demo data seeded. You can use the credentials below.");
-    } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Seed failed");
-    } finally {
-      setIsSeedingDemoData(false);
     }
   }
 
@@ -307,47 +282,6 @@ export default function LoginView() {
                   </Button>
                 </form>
               </Form>
-
-              {/* Demo credentials */}
-              <div className="mt-5 rounded-lg border border-blue-200/60 bg-blue-50/60 p-3 dark:border-blue-900/40 dark:bg-blue-950/20">
-                <p className="mb-2 text-sm font-medium text-blue-900 dark:text-blue-100">
-                  Demo credentials — click to autofill
-                </p>
-                <div className="flex flex-col xs:flex-row xs:flex-wrap gap-2">
-                  {DEMO_CREDENTIALS.map((cred) => (
-                    <button
-                      key={cred.username}
-                      type="button"
-                      onClick={() =>
-                        fillDemoCredentials(cred.username, cred.password)
-                      }
-                      className="inline-flex items-center gap-1.5 rounded-full border border-blue-300/60 bg-background px-3 py-1 text-xs font-medium text-blue-900 shadow-sm transition-colors hover:bg-blue-100/80 dark:border-blue-800/60 dark:text-blue-100 dark:hover:bg-blue-900/30"
-                      aria-label={`Fill ${cred.role} demo credentials: ${cred.username} / ${cred.password}`}
-                    >
-                      <span className="font-semibold">{cred.role}:</span>
-                      <span className="text-muted-foreground">
-                        {cred.username} / {cred.password}
-                      </span>
-                    </button>
-                  ))}
-                </div>
-                <div className="mt-3 flex items-center justify-between gap-2">
-                  <p className="text-xs text-muted-foreground">
-                    Reset the DB? Seed demo data.
-                  </p>
-                  <Button
-                    type="button"
-                    variant="link"
-                    size="sm"
-                    className="h-auto gap-1 px-0 text-xs"
-                    onClick={seedDemoData}
-                    disabled={isSeedingDemoData}
-                  >
-                    <Sparkles className="size-3" />
-                    {isSeedingDemoData ? "Seeding…" : "Seed demo data"}
-                  </Button>
-                </div>
-              </div>
             </CardContent>
 
             <CardFooter className="justify-center">

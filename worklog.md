@@ -1259,3 +1259,29 @@ Stage Summary:
 - Primary color changed from green (emerald/teal) to blue throughout the entire app — CSS tokens, Tailwind classes, hardcoded hex values in the chart, favicon, and selection color.
 - Light mode: blue-600 primary. Dark mode: brighter blue (oklch 0.7 lightness). Secondary accents use sky (lighter blue).
 - Lint clean. No emerald/teal references remain in src/.
+
+---
+Task ID: 21
+Agent: main (orchestrator)
+Task: Remove demo files + make deployment-ready
+
+Work Log:
+- Deleted demo/seed artifacts:
+  - src/lib/seed.ts (the demo seedDatabase function with sample patients/appointments)
+  - src/app/api/auth/seed/route.ts (the public seed API endpoint)
+  - examples/ folder (websocket demo, not part of the app)
+  - download/ folder (stale README)
+- Removed `seed` function from src/lib/api.ts (authApi.seed).
+- Removed all demo credential UI from LoginView.tsx: DEMO_CREDENTIALS array, fillDemoCredentials function, seedDemoData function, isSeedingDemoData state, the "Demo credentials — click to autofill" box, the "Seed demo data" button, the Sparkles + apiClient imports. Login is now a clean production form.
+- Created prisma/seed.ts — a production CLI seed script that creates initial dentist + cashier accounts (idempotent, supports env var overrides for credentials).
+- Updated package.json: name → "dental-system", version → "1.0.0", added db:seed + setup scripts, fixed dev/build/start scripts (removed tee/dev.log artifacts, standard Next.js commands), removed z-ai-web-dev-sdk dependency (unused).
+- Created .env.example with DATABASE_URL, JWT_SECRET, NODE_ENV documentation.
+- Updated .gitignore: allow .env.example to be committed, ignore db/*.db database files.
+- Created README.md — full deployment guide: quick start, default credentials, production deployment (PostgreSQL switch, Vercel, Docker), npm scripts table, roles/permissions matrix, project structure.
+- Verified: seed script runs correctly (idempotent), lint clean, app loads, login page has no demo/seed UI.
+
+Stage Summary:
+- All demo/test artifacts removed. The system is deployment-ready.
+- Production seed via `bun run db:seed` (CLI, not an API endpoint) — creates staff accounts with env-var-overridable credentials.
+- Full deployment documentation in README.md (Vercel, Docker, PostgreSQL migration).
+- Package.json is clean: standard Next.js scripts, no dev.log tee artifacts, proper name/version.

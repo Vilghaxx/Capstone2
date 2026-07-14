@@ -90,8 +90,6 @@ export const authApi = {
       payload
     ),
   me: () => apiClient.get<{ user: AuthUser }>("/api/auth/me"),
-  seed: () =>
-    apiClient.post<{ message: string; results: unknown }>("/api/auth/seed"),
 };
 
 /** Show a toast for a caught API error. */
