@@ -44,17 +44,12 @@ export const GET = withErrors(async (req: NextRequest) => {
       ? Math.min(Math.floor(rawLimit), PAGINATION_DEFAULTS.MAX_LIMIT)
       : PAGINATION_DEFAULTS.LIMIT;
 
-  // SQLite is case-insensitive for ASCII by default with `contains`, so we
-  // do NOT use mode: "insensitive" (not supported by the SQLite connector).
-  const where = searchParam
-    ? {
-        OR: [
-          { name: { contains: searchParam } },
-          { email: { contains: searchParam } },
-          { phone: { contains: searchParam } },
-        ],
-      }
-    : {};
+  const where: Record<string, unknown> = {};
+  if (searchParam) {
+    // Firestore has no OR — search the primary field client-side.
+    // For a dental clinic dataset (<500 patients) this is fine.
+    where.name = { contains: searchParam };
+  }
 
   const [total, patients] = await Promise.all([
     db.patient.count({ where }),
