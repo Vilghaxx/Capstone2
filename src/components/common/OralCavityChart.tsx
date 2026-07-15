@@ -20,7 +20,7 @@ const ALL_TOOTH_STATUSES = Object.values(TOOTH_STATUSES) as ToothStatus[];
  */
 const TOOTH_STATUS_COLORS: Record<ToothStatus, { fill: string; stroke: string }> = {
   healthy: { fill: "#3b82f6", stroke: "#2563eb" },
-  treated: { fill: "#0ea5e9", stroke: "#0284c7" },
+  treated: { fill: "#22c55e", stroke: "#16a34a" },
   "needs-attention": { fill: "#f59e0b", stroke: "#d97706" },
   urgent: { fill: "#f43f5e", stroke: "#e11d48" },
 };

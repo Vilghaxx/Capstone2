@@ -72,8 +72,8 @@ export const TOOTH_STATUS_META: Record<
   },
   treated: {
     label: "Treated",
-    color: "bg-sky-500",
-    ring: "ring-sky-500/40",
+    color: "bg-green-500",
+    ring: "ring-green-500/40",
     description: "Procedure completed",
   },
   "needs-attention": {

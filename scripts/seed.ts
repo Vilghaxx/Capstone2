@@ -1,17 +1,18 @@
 import { initializeApp, getApps, cert } from 'firebase-admin/app'
-import { getFirestore, Timestamp } from 'firebase-admin/firestore'
+import { getDatabase } from 'firebase-admin/database'
 import { readFileSync } from 'fs'
 import * as path from 'path'
 import bcrypt from 'bcryptjs'
 
 const KEY_PATH = path.join(process.cwd(), 'capstone-f6c32-firebase-adminsdk-fbsvc-9540650b6a.json')
+const DATABASE_URL = process.env.FIREBASE_DATABASE_URL ?? 'https://capstone-f6c32-default-rtdb.firebaseio.com'
 
 if (!getApps().length) {
   const sa = JSON.parse(readFileSync(KEY_PATH, 'utf-8'))
-  initializeApp({ credential: cert(sa) })
+  initializeApp({ credential: cert(sa), databaseURL: DATABASE_URL })
 }
 
-const firestore = getFirestore()
+const db = getDatabase()
 
 async function main() {
   console.log('Seeding staff accounts...\n')
@@ -33,18 +34,20 @@ async function main() {
 
   let created = 0
   for (const s of staff) {
-    const snap = await firestore.collection('users').where('username', '==', s.username).limit(1).get()
-    if (!snap.empty) {
+    const snap = await db.ref('users').orderByChild('username').equalTo(s.username).limitToFirst(1).once('value')
+    if (snap.exists()) {
       console.log(`  ${s.role} "${s.username}" already exists — skip`)
       continue
     }
     const hashed = bcrypt.hashSync(s.password, 10)
-    await firestore.collection('users').add({
+    const userRef = db.ref('users').push()
+    await userRef.set({
       username: s.username,
       password: hashed,
       role: s.role,
       name: s.name,
-      createdAt: Timestamp.now(),
+      id: userRef.key,
+      createdAt: new Date().toISOString(),
     })
     console.log(`  + Created ${s.role} "${s.username}" (${s.name})`)
     created++

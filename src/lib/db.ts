@@ -1,5 +1,5 @@
 import { initializeApp, getApps, cert } from 'firebase-admin/app'
-import { getFirestore, Timestamp } from 'firebase-admin/firestore'
+import { getDatabase } from 'firebase-admin/database'
 import { readFileSync } from 'fs'
 import path from 'path'
 
@@ -7,11 +7,15 @@ const KEY_PATH =
   process.env.FIREBASE_KEY_PATH ??
   path.join(process.cwd(), 'capstone-f6c32-firebase-adminsdk-fbsvc-9540650b6a.json')
 
+const DATABASE_URL =
+  process.env.FIREBASE_DATABASE_URL ??
+  'https://capstone-f6c32-default-rtdb.firebaseio.com'
+
 if (!getApps().length) {
   try {
     const sa = JSON.parse(readFileSync(KEY_PATH, 'utf-8'))
-    initializeApp({ credential: cert(sa) })
-    console.log('[firebase] Admin SDK initialized')
+    initializeApp({ credential: cert(sa), databaseURL: DATABASE_URL })
+    console.log('[firebase] Admin SDK initialized (RTDB)')
   } catch (err: unknown) {
     const msg = err instanceof Error ? err.message : String(err)
     console.error(`[firebase] Init failed: ${msg}`)
@@ -19,49 +23,89 @@ if (!getApps().length) {
   }
 }
 
-const firestore = getFirestore()
+const rtdb = getDatabase()
 
 type Doc = Record<string, unknown>
 type Where = Record<string, unknown>
 type Order = Record<string, 'asc' | 'desc'> | Array<{ field: string; direction: 'asc' | 'desc' }>
 
-function docData<T>(doc: FirebaseFirestore.DocumentSnapshot): T | null {
-  if (!doc.exists) return null
-  const d = doc.data()!
-  const out: Record<string, unknown> = { id: doc.id }
-  for (const [k, v] of Object.entries(d)) {
-    out[k] = v instanceof Timestamp ? v.toDate().toISOString() : v
-  }
-  return out as T
-}
-
 function now() {
-  return Timestamp.now()
+  return new Date().toISOString()
 }
 
-function resolveCompound(where: Where): Array<{ key: string; val: unknown }> {
-  const out: Array<{ key: string; val: unknown }> = []
-  for (const [k, v] of Object.entries(where)) {
-    if (v && typeof v === 'object' && !Array.isArray(v) && !(v instanceof Date)) {
-      for (const [ik, iv] of Object.entries(v as Record<string, unknown>)) {
-        out.push({ key: ik, val: iv })
+function docData<T>(snap: any): T | null {
+  if (!snap.exists()) return null
+  const val = snap.val()
+  if (typeof val !== 'object' || val === null) return { id: snap.key, value: val } as T
+  return { id: snap.key, ...val } as T
+}
+
+function allDocData<T>(snap: any): T[] {
+  if (!snap.exists()) return []
+  const results: T[] = []
+  snap.forEach((child: any) => {
+    results.push(docData<T>(child))
+  })
+  return results
+}
+
+function toPrimitive(v: unknown): unknown {
+  if (v instanceof Date) return v.toISOString()
+  return v
+}
+
+function deepToPrimitive(data: Doc): Doc {
+  const out: Doc = {}
+  for (const [k, v] of Object.entries(data)) {
+    if (k === 'id') continue
+    if (v instanceof Date) { out[k] = v.toISOString(); continue }
+    if (v && typeof v === 'object' && !Array.isArray(v)) {
+      const nested: Record<string, unknown> = {}
+      for (const [nk, nv] of Object.entries(v as Doc)) {
+        nested[nk] = toPrimitive(nv)
       }
+      out[k] = nested
     } else {
-      out.push({ key: k, val: v })
+      out[k] = v
     }
   }
   return out
 }
 
 function collection(name: string) {
-  const ref = () => firestore.collection(name)
+  const collRef = () => rtdb.ref(name)
 
   async function findUnique({ where }: { where: Where }) {
-    const compounds = resolveCompound(where)
-    let q: FirebaseFirestore.Query = ref()
-    for (const { key, val } of compounds) q = q.where(key, '==', val)
-    const snap = await q.limit(2).get()
-    return snap.empty ? null : docData<any>(snap.docs[0])
+    const keys = Object.keys(where)
+    if (keys.length === 1 && keys[0] === 'id') {
+      const snap = await collRef().child(String(where.id)).once('value')
+      return docData<any>(snap)
+    }
+
+    if (keys.length === 1 && keys[0].includes('_')) {
+      const v = where[keys[0]] as Doc
+      const entries = Object.entries(v)
+      const snap = await collRef().orderByChild(entries[0][0]).equalTo(toPrimitive(entries[0][1])).once('value')
+      const docs = allDocData<any>(snap)
+      if (docs.length === 0) return null
+      if (entries.length === 1) return docs[0]
+      return docs.find(d => entries.slice(1).every(([k, kv]) => d[k] === toPrimitive(kv))) ?? null
+    }
+
+    if (keys.length === 1) {
+      const [field, value] = Object.entries(where)[0]
+      const snap = await collRef().orderByChild(field).equalTo(toPrimitive(value)).limitToFirst(1).once('value')
+      if (!snap.exists()) return null
+      const val = snap.val()
+      const childKey = Object.keys(val)[0]
+      return { id: childKey, ...val[childKey] } as any
+    }
+
+    const entries = Object.entries(where)
+    const [firstField, firstVal] = entries[0]
+    const snap = await collRef().orderByChild(firstField).equalTo(toPrimitive(firstVal)).once('value')
+    const docs = allDocData<any>(snap)
+    return docs.find(d => entries.slice(1).every(([k, kv]) => d[k] === toPrimitive(kv))) ?? null
   }
 
   async function findMany({
@@ -71,149 +115,274 @@ function collection(name: string) {
     take,
     select,
   }: { where?: Where; orderBy?: Order; skip?: number; take?: number; select?: Record<string, true> } = {}) {
-    let q: FirebaseFirestore.Query = ref()
-
+    const eqFields: Record<string, unknown> = {}
+    const opFields: Record<string, Record<string, unknown>> = {}
     const containsFilters: Array<{ key: string; val: string }> = []
+    let inFilter: { key: string; vals: unknown[] } | null = null
+
     if (where) {
       for (const [k, v] of Object.entries(where)) {
-        if (v && typeof v === 'object' && !Array.isArray(v) && !(v instanceof Date) && !(v instanceof Timestamp)) {
+        if (k.includes('_') && v && typeof v === 'object' && !Array.isArray(v) && !(v instanceof Date)) {
+          for (const [nk, nv] of Object.entries(v as Record<string, unknown>)) {
+            eqFields[nk] = nv
+          }
+          continue
+        }
+        if (v && typeof v === 'object' && !Array.isArray(v) && !(v instanceof Date)) {
           const obj = v as Record<string, unknown>
           if ('contains' in obj) { containsFilters.push({ key: k, val: obj.contains as string }); continue }
-          if ('in' in obj && Array.isArray(obj.in)) { q = q.where(k, 'in', obj.in); continue }
-          if ('gte' in obj) { const val: any = obj.gte; q = obj.lt !== undefined ? q.where(k, '>=', val).where(k, '<', obj.lt) : q.where(k, '>=', val); continue }
-          if ('gt' in obj) { q = q.where(k, '>', obj.gt); continue }
-          if ('lte' in obj) { q = q.where(k, '<=', obj.lte); continue }
-          if ('lt' in obj) { q = q.where(k, '<', obj.lt); continue }
-        } else {
-          q = q.where(k, '==', v)
+          if ('in' in obj && Array.isArray(obj.in)) { inFilter = { key: k, vals: obj.in }; continue }
+          if ('gte' in obj || 'gt' in obj || 'lte' in obj || 'lt' in obj) {
+            opFields[k] = obj as Record<string, unknown>
+            continue
+          }
         }
+        eqFields[k] = v
       }
+    }
+
+    let docs: any[]
+
+    if (inFilter && inFilter.key === 'id' && Object.keys(eqFields).length === 0 && Object.keys(opFields).length === 0 && containsFilters.length === 0) {
+      const results: any[] = []
+      for (const id of inFilter.vals) {
+        const snap = await collRef().child(String(id)).once('value')
+        if (snap.exists()) results.push({ id: snap.key!, ...snap.val() })
+      }
+      docs = results
+    } else if (Object.keys(eqFields).length > 0) {
+      const eqEntries = Object.entries(eqFields)
+      const [field, value] = eqEntries[0]
+      const snap = await collRef().orderByChild(field).equalTo(toPrimitive(value)).once('value')
+      docs = allDocData<any>(snap)
+      for (let i = 1; i < eqEntries.length; i++) {
+        const [k, v] = eqEntries[i]
+        const pv = toPrimitive(v)
+        docs = docs.filter(d => d[k] === pv)
+      }
+    } else {
+      const snap = await collRef().once('value')
+      docs = allDocData<any>(snap)
+    }
+
+    for (const [k, obj] of Object.entries(opFields)) {
+      if ('gte' in obj) {
+        const val = toPrimitive(obj.gte) as string
+        docs = docs.filter(d => d[k] >= val)
+      }
+      if ('gt' in obj) {
+        const val = toPrimitive(obj.gt) as string
+        docs = docs.filter(d => d[k] > val)
+      }
+      if ('lte' in obj) {
+        const val = toPrimitive(obj.lte) as string
+        docs = docs.filter(d => d[k] <= val)
+      }
+      if ('lt' in obj) {
+        const val = toPrimitive(obj.lt) as string
+        docs = docs.filter(d => d[k] < val)
+      }
+    }
+
+    if (inFilter) {
+      docs = docs.filter(d => inFilter!.vals.includes(d[inFilter!.key]))
+    }
+
+    for (const { key, val } of containsFilters) {
+      const search = val.toLowerCase()
+      docs = docs.filter(d => String(d[key] ?? '').toLowerCase().includes(search))
     }
 
     if (orderBy) {
       const orders = Array.isArray(orderBy) ? orderBy : [orderBy]
       for (const o of orders) {
-        const e = Object.entries(o)[0]
-        if (e) q = q.orderBy(e[0], e[1] as any)
+        const [field, dir] = Object.entries(o)[0]
+        if (dir === 'asc') {
+          docs.sort((a, b) => a[field] < b[field] ? -1 : a[field] > b[field] ? 1 : 0)
+        } else {
+          docs.sort((a, b) => a[field] > b[field] ? -1 : a[field] < b[field] ? 1 : 0)
+        }
       }
     }
 
-    if (skip) q = q.offset(skip)
-    if (take) q = q.limit(take)
-
-    const snap = await q.get()
-    let results = snap.docs.map(d => docData<any>(d)!)
-
-    for (const { key, val } of containsFilters) {
-      const search = val.toLowerCase()
-      results = results.filter(r => String((r as any)[key] ?? '').toLowerCase().includes(search))
-    }
+    if (skip) docs = docs.slice(skip)
+    if (take) docs = docs.slice(0, take)
 
     if (select) {
       const keys = Object.keys(select)
-      results = results.map(r => {
+      docs = docs.map((r: any) => {
         const out: Record<string, unknown> = {}
-        for (const k of keys) out[k] = (r as any)[k]
-        return out as any
+        for (const k of keys) out[k] = r[k]
+        return out
       })
     }
 
-    return results
+    return docs
   }
 
   async function create({ data }: { data: Doc }) {
-    const d = ref().doc()
-    const saved: Doc = { ...data, id: d.id, createdAt: now(), updatedAt: now() }
-    delete saved.id
-    await d.set({ ...data, id: d.id, createdAt: now(), updatedAt: now() } as Doc)
-    return docData<any>(await d.get())!
+    const docRef = collRef().push()
+    const id = docRef.key!
+    const saved: Doc = { ...deepToPrimitive(data), id, createdAt: now(), updatedAt: now() }
+    await docRef.set(saved)
+    return { ...saved } as any
   }
 
   async function update({ where, data }: { where: Where; data: Doc }) {
-    const compounds = resolveCompound(where)
-    let q: FirebaseFirestore.Query = ref()
-    for (const { key, val } of compounds) q = q.where(key, '==', val)
-    const snap = await q.limit(2).get()
-    if (snap.empty) throw new Error('Record not found')
-    const doc = snap.docs[0]
-    const upd: Doc = { ...data, updatedAt: now() }
-    delete upd.id
-    await doc.ref.update(upd)
-    return docData<any>(await doc.ref.get())!
+    const existing = await findUnique({ where })
+    if (!existing) throw new Error('Record not found')
+    const id = existing.id
+    const upd: Doc = {}
+    for (const [k, v] of Object.entries(data)) {
+      if (k !== 'id') upd[k] = toPrimitive(v)
+    }
+    upd.updatedAt = now()
+    await collRef().child(id).update(upd)
+    const snap = await collRef().child(id).once('value')
+    return docData<any>(snap)!
   }
 
   async function remove({ where }: { where: Where }) {
-    const compounds = resolveCompound(where)
-    let q: FirebaseFirestore.Query = ref()
-    for (const { key, val } of compounds) q = q.where(key, '==', val)
-    const snap = await q.limit(2).get()
-    if (snap.empty) throw new Error('Record not found')
-    await snap.docs[0].ref.delete()
+    const existing = await findUnique({ where })
+    if (!existing) throw new Error('Record not found')
+    await collRef().child(existing.id).remove()
   }
 
   async function count({ where }: { where?: Where } = {}) {
     if (!where || Object.keys(where).length === 0) {
-      const snap = await ref().count().get()
-      return snap.data().count
+      const snap = await collRef().once('value')
+      return snap.exists() ? Object.keys(snap.val()).length : 0
     }
-    let q: FirebaseFirestore.Query = ref()
-    for (const [k, v] of Object.entries(where)) {
-      q = q.where(k, '==', v)
+    const eqFields: Record<string, unknown> = {}
+    const opFields: Record<string, Record<string, unknown>> = {}
+    const containsFilters: Array<{ key: string; val: string }> = []
+    if (where) {
+      for (const [k, v] of Object.entries(where)) {
+        if (k.includes('_') && v && typeof v === 'object' && !Array.isArray(v) && !(v instanceof Date)) {
+          for (const [nk, nv] of Object.entries(v as Record<string, unknown>)) {
+            eqFields[nk] = nv
+          }
+          continue
+        }
+        if (v && typeof v === 'object' && !Array.isArray(v) && !(v instanceof Date)) {
+          const obj = v as Record<string, unknown>
+          if ('contains' in obj) { containsFilters.push({ key: k, val: obj.contains as string }); continue }
+          if ('gte' in obj || 'gt' in obj || 'lte' in obj || 'lt' in obj) {
+            opFields[k] = obj as Record<string, unknown>
+            continue
+          }
+        }
+        eqFields[k] = v
+      }
     }
-    const snap = await q.count().get()
-    return snap.data().count
+    let docs: any[]
+    if (Object.keys(eqFields).length > 0) {
+      const eqEntries = Object.entries(eqFields)
+      const [field, value] = eqEntries[0]
+      const snap = await collRef().orderByChild(field).equalTo(toPrimitive(value)).once('value')
+      docs = allDocData<any>(snap)
+      for (let i = 1; i < eqEntries.length; i++) {
+        const [k, v] = eqEntries[i]
+        docs = docs.filter(d => d[k] === toPrimitive(v))
+      }
+    } else {
+      const snap = await collRef().once('value')
+      docs = allDocData<any>(snap)
+    }
+    for (const [k, obj] of Object.entries(opFields)) {
+      if ('gte' in obj) { const val = toPrimitive(obj.gte) as string; docs = docs.filter(d => d[k] >= val) }
+      if ('gt' in obj) { const val = toPrimitive(obj.gt) as string; docs = docs.filter(d => d[k] > val) }
+      if ('lte' in obj) { const val = toPrimitive(obj.lte) as string; docs = docs.filter(d => d[k] <= val) }
+      if ('lt' in obj) { const val = toPrimitive(obj.lt) as string; docs = docs.filter(d => d[k] < val) }
+    }
+    for (const { key, val } of containsFilters) {
+      const search = val.toLowerCase()
+      docs = docs.filter(d => String(d[key] ?? '').toLowerCase().includes(search))
+    }
+    return docs.length
   }
 
   async function createMany({ data }: { data: Doc[] }) {
-    const batch = firestore.batch()
+    const updates: Record<string, unknown> = {}
     for (const item of data) {
-      const d = ref().doc()
-      batch.set(d, { ...item, id: d.id, createdAt: now() })
+      const id = collRef().push().key!
+      updates[`${name}/${id}`] = { ...deepToPrimitive(item), id, createdAt: now() }
     }
-    await batch.commit()
+    await rtdb.ref().update(updates)
   }
 
   async function upsert({ where, update: upd, create: cr }: { where: Where; update: Doc; create: Doc }) {
-    const compounds = resolveCompound(where)
-    let q: FirebaseFirestore.Query = ref()
-    for (const { key, val } of compounds) q = q.where(key, '==', val)
-    const snap = await q.limit(2).get()
-
-    if (snap.empty) {
-      const d = ref().doc()
-      const toCreate: Doc = { ...cr, id: d.id, createdAt: now(), updatedAt: now() }
-      await d.set(toCreate)
-      return docData<any>(await d.get())!
+    const existing = await findUnique({ where })
+    if (existing) {
+      const toUpdate: Doc = {}
+      for (const [k, v] of Object.entries(upd)) {
+        if (k !== 'id') toUpdate[k] = toPrimitive(v)
+      }
+      toUpdate.updatedAt = now()
+      await collRef().child(existing.id).update(toUpdate)
+      const snap = await collRef().child(existing.id).once('value')
+      return docData<any>(snap)!
     }
-
-    const doc = snap.docs[0]
-    const toUpdate: Doc = { ...upd, updatedAt: now() }
-    delete toUpdate.id
-    await doc.ref.update(toUpdate)
-    return docData<any>(await doc.ref.get())!
+    const docRef = collRef().push()
+    const id = docRef.key!
+    const nowVal = now()
+    const toCreate: Doc = { ...deepToPrimitive(cr), id, createdAt: nowVal, updatedAt: nowVal }
+    await docRef.set(toCreate)
+    return { ...toCreate } as any
   }
 
-  async function aggregate({ _sum, _count: doCount, where }: { _sum?: Record<string, true>; _count?: boolean; where?: Where }) {
-    let q: FirebaseFirestore.Query = ref()
-    if (where) {
-      for (const [k, v] of Object.entries(where)) q = q.where(k, '==', v)
+  async function aggregate({
+    _sum,
+    _count: doCount,
+    where,
+  }: { _sum?: Record<string, true>; _count?: boolean; where?: Where } = {}) {
+    let docs: any[]
+    if (where && Object.keys(where).length > 0) {
+      const eqFields: Record<string, unknown> = {}
+      const opFields: Record<string, Record<string, unknown>> = {}
+      for (const [k, v] of Object.entries(where)) {
+        if (v && typeof v === 'object' && !Array.isArray(v) && !(v instanceof Date)) {
+          const obj = v as Record<string, unknown>
+          if ('gte' in obj || 'gt' in obj || 'lte' in obj || 'lt' in obj) {
+            opFields[k] = obj as Record<string, unknown>
+            continue
+          }
+        }
+        eqFields[k] = v
+      }
+      if (Object.keys(eqFields).length > 0) {
+        const eqEntries = Object.entries(eqFields)
+        const [field, value] = eqEntries[0]
+        const snap = await collRef().orderByChild(field).equalTo(toPrimitive(value)).once('value')
+        docs = allDocData<any>(snap)
+        for (let i = 1; i < eqEntries.length; i++) {
+          const [k, v] = eqEntries[i]
+          docs = docs.filter(d => d[k] === toPrimitive(v))
+        }
+      } else {
+        const snap = await collRef().once('value')
+        docs = allDocData<any>(snap)
+      }
+      for (const [k, obj] of Object.entries(opFields)) {
+        if ('gte' in obj) { const val = toPrimitive(obj.gte) as string; docs = docs.filter(d => d[k] >= val) }
+        if ('lt' in obj) { const val = toPrimitive(obj.lt) as string; docs = docs.filter(d => d[k] < val) }
+      }
+    } else {
+      const snap = await collRef().once('value')
+      docs = allDocData<any>(snap)
     }
-    const snap = await q.get()
     const result: Record<string, unknown> = {}
-
     if (_sum) {
       const sums: Record<string, number> = {}
       for (const field of Object.keys(_sum)) {
-        sums[field] = snap.docs.reduce((acc, d) => {
-          const v = d.data()[field]
+        sums[field] = docs.reduce((acc: number, d: any) => {
+          const v = d[field]
           return acc + (typeof v === 'number' ? v : 0)
         }, 0)
       }
       result._sum = sums
     }
-
-    if (doCount) result._count = snap.size
-
+    if (doCount) result._count = docs.length
     return result
   }
 
@@ -224,12 +393,13 @@ function collection(name: string) {
     update,
     delete: remove,
     deleteMany: async ({ where }: { where: Where }) => {
-      let q: FirebaseFirestore.Query = ref()
-      for (const [k, v] of Object.entries(where)) q = q.where(k, '==', v)
-      const snap = await q.get()
-      const batch = firestore.batch()
-      snap.docs.forEach(d => batch.delete(d.ref))
-      await batch.commit()
+      const docs = await findMany({ where })
+      if (docs.length === 0) return
+      const updates: Record<string, null> = {}
+      for (const doc of docs) {
+        updates[`${name}/${doc.id}`] = null
+      }
+      await rtdb.ref().update(updates)
     },
     count,
     createMany,
@@ -245,99 +415,94 @@ export const db = {
   treatment: collection('treatments'),
   appointment: collection('appointments'),
   $transaction: async <T>(fn: (tx: typeof db) => Promise<T>): Promise<T> => {
-    return await firestore.runTransaction(async (txn) => {
-      const txDb = {
-        user: txCollection('users', txn),
-        patient: txCollection('patients', txn),
-        tooth: txCollection('teeth', txn),
-        treatment: txCollection('treatments', txn),
-        appointment: txCollection('appointments', txn),
-      }
-      return await fn(txDb as any)
-    })
-  },
-}
+    const txWrites: Record<string, unknown> = {}
 
-function txCollection(name: string, txn: FirebaseFirestore.Transaction) {
-  const ref = () => firestore.collection(name)
-  return {
-    findUnique: async ({ where }: { where: Where }) => {
-      const compounds = resolveCompound(where)
-      let q: FirebaseFirestore.Query = ref()
-      for (const { key, val } of compounds) q = q.where(key, '==', val)
-      const snap = await txn.get(q.limit(2))
-      return snap.empty ? null : docData<any>(snap.docs[0])
-    },
-    findMany: async ({ where, orderBy }: { where?: Where; orderBy?: Order } = {}) => {
-      let q: FirebaseFirestore.Query = ref()
-      if (where) {
-        for (const [k, v] of Object.entries(where)) {
-          if (v && typeof v === 'object' && !Array.isArray(v) && !(v instanceof Date) && !(v instanceof Timestamp)) {
-            const obj = v as Record<string, unknown>
-            if ('contains' in obj) { continue }
-            if ('in' in obj && Array.isArray(obj.in)) { q = q.where(k, 'in', obj.in); continue }
-            if ('gte' in obj) { q = q.where(k, '>=', obj.gte); if (obj.lt !== undefined) q = q.where(k, '<', obj.lt); continue }
-          } else {
-            q = q.where(k, '==', v)
+    function readFromTx<T>(name: string, where: Where): T | null {
+      const prefix = `${name}/`
+      for (const [path, data] of Object.entries(txWrites)) {
+        if (!path.startsWith(prefix)) continue
+        const doc = data as Doc
+        if (where.id !== undefined && path === `${prefix}${where.id}`) return doc as T
+        if (where.username !== undefined && doc.username === where.username) return doc as T
+        if (where.patientId_toothNumber) {
+          const comp = where.patientId_toothNumber as Doc
+          if (doc.patientId === comp.patientId && doc.toothNumber === comp.toothNumber) return doc as T
+        }
+      }
+      return null
+    }
+
+    function txFindUnique(name: string, where: Where) {
+      const pending = readFromTx<any>(name, where)
+      return pending ?? collection(name).findUnique({ where })
+    }
+
+    function txCollection(name: string) {
+      const collRef = () => rtdb.ref(name)
+      return {
+        findUnique: async ({ where }: { where: Where }) => txFindUnique(name, where),
+        findMany: async ({ where, orderBy }: { where?: Where; orderBy?: Order } = {}) => {
+          return collection(name).findMany({ where, orderBy })
+        },
+        create: async ({ data }: { data: Doc }) => {
+          const id = collRef().push().key!
+          const nowVal = now()
+          const saved: Doc = { ...deepToPrimitive(data), id, createdAt: nowVal, updatedAt: nowVal }
+          txWrites[`${name}/${id}`] = saved
+          return { ...saved } as any
+        },
+        update: async ({ where, data }: { where: Where; data: Doc }) => {
+          const existing = await txFindUnique<any>(name, where)
+          if (!existing) throw new Error('Record not found')
+          const upd: Doc = {}
+          for (const [k, v] of Object.entries(data)) {
+            if (k !== 'id') upd[k] = toPrimitive(v)
           }
-        }
+          upd.updatedAt = now()
+          const merged = { ...existing, ...upd, id: existing.id }
+          txWrites[`${name}/${existing.id}`] = merged
+          return { ...merged } as any
+        },
+        upsert: async ({ where, update: upd, create: cr }: { where: Where; update: Doc; create: Doc }) => {
+          const existing = await txFindUnique<any>(name, where)
+          const nowVal = now()
+          if (existing) {
+            const merged: Doc = { ...existing }
+            for (const [k, v] of Object.entries(upd)) {
+              if (k !== 'id') merged[k] = toPrimitive(v)
+            }
+            merged.updatedAt = nowVal
+            txWrites[`${name}/${existing.id}`] = merged
+            return { ...merged } as any
+          }
+          const id = collRef().push().key!
+          const created: Doc = { ...deepToPrimitive(cr), id, createdAt: nowVal, updatedAt: nowVal }
+          txWrites[`${name}/${id}`] = created
+          return { ...created } as any
+        },
+        createMany: async ({ data }: { data: Doc[] }) => {
+          for (const item of data) {
+            const id = collRef().push().key!
+            txWrites[`${name}/${id}`] = { ...deepToPrimitive(item), id, createdAt: now() }
+          }
+        },
       }
-      if (orderBy) {
-        const orders = Array.isArray(orderBy) ? orderBy : [orderBy]
-        for (const o of orders) {
-          const e = Object.entries(o)[0]
-          if (e) q = q.orderBy(e[0], e[1] as any)
-        }
-      }
-      const snap = await txn.get(q)
-      return snap.docs.map(d => docData<any>(d)!)
-    },
-    create: async ({ data }: { data: Doc }) => {
-      const d = ref().doc()
-      const saved: Doc = { ...data, id: d.id, createdAt: now(), updatedAt: now() }
-      txn.set(d, saved)
-      return { ...saved } as any
-    },
-    update: async ({ where, data }: { where: Where; data: Doc }) => {
-      const compounds = resolveCompound(where)
-      let q: FirebaseFirestore.Query = ref()
-      for (const { key, val } of compounds) q = q.where(key, '==', val)
-      const snap = await txn.get(q.limit(2))
-      if (snap.empty) throw new Error('Record not found')
-      const doc = snap.docs[0]
-      const upd: Doc = { ...data, updatedAt: now() }
-      delete upd.id
-      txn.update(doc.ref, upd)
-      return { id: doc.id, ...doc.data(), ...upd } as any
-    },
-    upsert: async ({ where, update: upd, create: cr }: { where: Where; update: Doc; create: Doc }) => {
-      const compounds = resolveCompound(where)
-      let q: FirebaseFirestore.Query = ref()
-      for (const { key, val } of compounds) q = q.where(key, '==', val)
-      const snap = await txn.get(q.limit(2))
-      if (snap.empty) {
-        const d = ref().doc()
-        const toCreate: Doc = { ...cr, id: d.id, createdAt: now(), updatedAt: now() }
-        txn.set(d, toCreate)
-        return toCreate as any
-      }
-      const doc = snap.docs[0]
-      const toUpdate: Doc = { ...upd, updatedAt: now() }
-      delete toUpdate.id
-      txn.update(doc.ref, toUpdate)
-      return { id: doc.id, ...doc.data(), ...toUpdate } as any
-    },
-    createMany: async ({ data }: { data: Doc[] }) => {
-      for (const item of data) {
-        const d = ref().doc()
-        txn.set(d, { ...item, id: d.id, createdAt: now() })
-      }
-    },
-    deleteMany: async ({ where }: { where: Where }) => {
-      let q: FirebaseFirestore.Query = ref()
-      for (const [k, v] of Object.entries(where)) q = q.where(k, '==', v)
-      const snap = await txn.get(q)
-      snap.docs.forEach(d => txn.delete(d.ref))
-    },
-  }
+    }
+
+    const txDb = {
+      user: txCollection('users'),
+      patient: txCollection('patients'),
+      tooth: txCollection('teeth'),
+      treatment: txCollection('treatments'),
+      appointment: txCollection('appointments'),
+    }
+
+    const result = await fn(txDb as any)
+
+    if (Object.keys(txWrites).length > 0) {
+      await rtdb.ref().update(txWrites)
+    }
+
+    return result
+  },
 }

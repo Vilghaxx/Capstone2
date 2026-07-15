@@ -1,0 +1,21 @@
+{
+  "rules": {
+    ".read": true,
+    ".write": true,
+    "users": {
+      ".indexOn": ["username"]
+    },
+    "patients": {
+      ".indexOn": ["createdAt", "name"]
+    },
+    "teeth": {
+      ".indexOn": ["patientId", "toothNumber"]
+    },
+    "treatments": {
+      ".indexOn": ["patientId", "toothNumber", "date", "paid"]
+    },
+    "appointments": {
+      ".indexOn": ["patientId", "date", "status"]
+    }
+  }
+}
