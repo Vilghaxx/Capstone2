@@ -47,18 +47,35 @@ export async function apiFetch<T = unknown>(
   }
 
   const text = await res.text();
-  const data = text ? JSON.parse(text) : null;
+  let data: unknown = null;
+  try {
+    data = text ? JSON.parse(text) : null;
+  } catch {
+    // ponytail: non-JSON response (e.g. raw "Internal Server Error")
+  }
 
   if (!res.ok) {
     const message =
-      (data && (data.error || data.message)) || `Request failed (${res.status})`;
+      sanitizeErrorText(text) ||
+      (data && (typeof data === "object" && data !== null
+        ? ((data as Record<string, unknown>).error as string) ||
+          ((data as Record<string, unknown>).message as string)
+        : undefined)) ||
+      `Request failed (${res.status})`;
     const err = new Error(message) as ApiError;
     err.status = res.status;
-    err.details = data?.details;
+    err.details = data && typeof data === "object" ? (data as Record<string, unknown>).details : undefined;
     throw err;
   }
 
   return data as T;
+}
+
+function sanitizeErrorText(text: string): string | undefined {
+  if (!text) return;
+  const clean = text.trim();
+  if (clean.startsWith("<") || clean.startsWith("{")) return;
+  return clean.length > 200 ? clean.slice(0, 200) + "…" : clean;
 }
 
 /** Convenience verbs — the API client used across the app. */
