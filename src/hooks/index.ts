@@ -9,6 +9,8 @@ export {
   useCreatePatient,
   useUpdatePatient,
   useDeletePatient,
+  useMyProfile,
+  useUpdateMyProfile,
 } from "@/hooks/use-patients";
 export { useTeeth, useUpdateTooth } from "@/hooks/use-teeth";
 export {
@@ -23,6 +25,7 @@ export {
   useCreateAppointment,
   useUpdateAppointment,
   useDeleteAppointment,
+  useDeleteAppointments,
 } from "@/hooks/use-appointments";
 export {
   useBilling,

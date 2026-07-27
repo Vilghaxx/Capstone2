@@ -7,10 +7,9 @@ import type { AuthUser, Role } from "@/lib/types";
 interface AuthState {
   user: AuthUser | null;
   token: string | null;
-  loading: boolean; // true while restoring session on mount
-  initialized: boolean; // true once the first session-restore attempt finishes
-  login: (username: string, password: string) => Promise<AuthUser>;
-  register: (payload: Record<string, unknown>) => Promise<AuthUser>;
+  loading: boolean;
+  initialized: boolean;
+  googleLogin: (credential: string) => Promise<AuthUser>;
   logout: () => void;
   restore: () => Promise<void>;
 }
@@ -21,15 +20,8 @@ export const useAuth = create<AuthState>((set) => ({
   loading: true,
   initialized: false,
 
-  login: async (username, password) => {
-    const { token, user } = await authApi.login(username, password);
-    setToken(token);
-    set({ user, token, initialized: true });
-    return user;
-  },
-
-  register: async (payload) => {
-    const { token, user } = await authApi.register(payload);
+  googleLogin: async (credential) => {
+    const { token, user } = await authApi.googleLogin(credential);
     setToken(token);
     set({ user, token, initialized: true });
     return user;

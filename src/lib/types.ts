@@ -2,7 +2,7 @@
 
 export type Role = "dentist" | "cashier" | "patient";
 
-export type ToothStatus = "healthy" | "treated" | "needs-attention" | "urgent";
+export type ToothStatus = "healthy" | "treated" | "needs-attention" | "missing";
 
 export type AppointmentStatus =
   | "pending"

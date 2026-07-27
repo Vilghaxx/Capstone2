@@ -23,7 +23,7 @@ import { ConfirmDialog } from "@/components/common/ConfirmDialog";
 import { OralCavityChart } from "@/components/common/OralCavityChart";
 
 import { PatientInfoCard } from "@/components/views/patient-profile/PatientInfoCard";
-import { EditPatientDialog } from "@/components/views/patient-profile/EditPatientDialog";
+import { NotesDialog } from "@/components/views/patient-profile/EditPatientDialog";
 import { ToothModal } from "@/components/views/patient-profile/ToothModal";
 import { TreatmentHistoryTable } from "@/components/views/patient-profile/TreatmentHistoryTable";
 
@@ -39,7 +39,7 @@ export default function PatientProfileView() {
   const teethQuery = useTeeth(patientId);
   const treatmentsQuery = useTreatments(patientId);
 
-  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [isNotesDialogOpen, setIsNotesDialogOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [selectedToothNumber, setSelectedToothNumber] =
     useState<number | null>(null);
@@ -120,7 +120,7 @@ export default function PatientProfileView() {
       <PatientInfoCard
         patient={patient}
         canManage={canManage}
-        onEdit={() => setIsEditDialogOpen(true)}
+        onNotes={() => setIsNotesDialogOpen(true)}
         onDelete={() => setIsDeleteDialogOpen(true)}
       />
 
@@ -171,10 +171,10 @@ export default function PatientProfileView() {
       </Card>
 
       {/* Dialogs */}
-      <EditPatientDialog
+      <NotesDialog
         patient={patient}
-        open={isEditDialogOpen}
-        onOpenChange={setIsEditDialogOpen}
+        open={isNotesDialogOpen}
+        onOpenChange={setIsNotesDialogOpen}
       />
       <ConfirmDialog
         open={isDeleteDialogOpen}

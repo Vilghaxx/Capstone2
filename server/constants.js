@@ -8,7 +8,7 @@ const TOOTH_STATUSES = {
   HEALTHY: 'healthy',
   TREATED: 'treated',
   NEEDS_ATTENTION: 'needs-attention',
-  URGENT: 'urgent',
+  MISSING: 'missing',
 }
 
 const APPOINTMENT_STATUSES = {

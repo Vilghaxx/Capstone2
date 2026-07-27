@@ -3,10 +3,10 @@
     ".read": true,
     ".write": true,
     "users": {
-      ".indexOn": ["username"]
+      ".indexOn": ["username", "googleId", "patientRef"]
     },
     "patients": {
-      ".indexOn": ["createdAt", "name"]
+      ".indexOn": ["createdAt", "name", "email"]
     },
     "teeth": {
       ".indexOn": ["patientId", "toothNumber"]
@@ -15,7 +15,7 @@
       ".indexOn": ["patientId", "toothNumber", "date", "paid"]
     },
     "appointments": {
-      ".indexOn": ["patientId", "date", "status"]
+      ".indexOn": ["patientId", "date", "status", "time"]
     }
   }
 }

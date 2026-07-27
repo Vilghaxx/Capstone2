@@ -22,7 +22,7 @@ const TOOTH_STATUS_COLORS: Record<ToothStatus, { fill: string; stroke: string }>
   healthy: { fill: "#3b82f6", stroke: "#2563eb" },
   treated: { fill: "#22c55e", stroke: "#16a34a" },
   "needs-attention": { fill: "#f59e0b", stroke: "#d97706" },
-  urgent: { fill: "#f43f5e", stroke: "#e11d48" },
+  missing: { fill: "#1f2937", stroke: "#111827" },
 };
 
 /** Props for the {@link OralCavityChart} component. */
@@ -147,7 +147,7 @@ export function OralCavityChart({
                   const toothNumber = Number(toothNumberString);
                   const tooth = teethByToothNumber.get(toothNumber);
                   const status: ToothStatus = tooth?.status ?? "healthy";
-                  const statusColors = TOOTH_STATUS_COLORS[status];
+                  const statusColors = TOOTH_STATUS_COLORS[status] ?? { fill: "#1f2937", stroke: "#111827" };
                   const isHovered = hoveredToothNumber === toothNumber;
                   const isSelected = selectedTooth === toothNumber;
                   const statusDisplayInfo = TOOTH_STATUS_META[status];
@@ -270,6 +270,11 @@ function ToothTooltip({ toothNumber, toothRecord }: ToothTooltipProps) {
       {toothRecord?.lastTreatment && (
         <p className="mt-0.5 max-w-[180px] truncate text-[11px] text-muted-foreground/80">
           {toothRecord.lastTreatment}
+        </p>
+      )}
+      {toothRecord?.notes && (
+        <p className="mt-0.5 max-w-[180px] truncate text-[11px] italic text-muted-foreground/60">
+          {toothRecord.notes}
         </p>
       )}
     </div>

@@ -2,6 +2,7 @@
 
 import React, { useEffect, useState } from "react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { GoogleOAuthProvider } from "@react-oauth/google";
 import { Toaster } from "@/components/ui/sonner";
 import { ErrorBoundary } from "@/components/common/ErrorBoundary";
 import { useAuth } from "@/lib/auth-store";
@@ -37,9 +38,11 @@ export function Providers({ children }: { children: React.ReactNode }) {
   }, [restore]);
 
   return (
-    <QueryClientProvider client={queryClient}>
-      <ErrorBoundary>{children}</ErrorBoundary>
-      <Toaster richColors position="top-right" />
-    </QueryClientProvider>
+    <GoogleOAuthProvider clientId="397113028490-mceosup2ro2mm7utkl2il1cpo21pk2v6.apps.googleusercontent.com">
+      <QueryClientProvider client={queryClient}>
+        <ErrorBoundary>{children}</ErrorBoundary>
+        <Toaster richColors position="top-right" />
+      </QueryClientProvider>
+    </GoogleOAuthProvider>
   );
 }

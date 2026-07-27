@@ -51,6 +51,7 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
+import { CharCount } from "@/components/common/CharCount";
 import { LoadingSpinner } from "@/components/common/LoadingSpinner";
 
 type TreatmentFormInput = z.input<typeof treatmentFormSchema>;
@@ -300,6 +301,7 @@ export function ToothModal({
                     placeholder="Add clinical notes…"
                     className="min-h-[60px]"
                   />
+                  <CharCount current={notesDraft.length} />
                 </div>
               </div>
               <Button
@@ -461,6 +463,7 @@ export function ToothModal({
                             {...field}
                           />
                         </FormControl>
+                        <CharCount current={(field.value ?? "").length} />
                         <FormMessage />
                       </FormItem>
                     )}

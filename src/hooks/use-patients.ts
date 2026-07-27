@@ -54,6 +54,29 @@ export function useUpdatePatient() {
   });
 }
 
+export function useMyProfile() {
+  return useQuery({
+    queryKey: ["my-profile"],
+    queryFn: () =>
+      apiClient.get<{ patient: Patient }>("/api/auth/profile"),
+  });
+}
+
+export function useUpdateMyProfile() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (data: Record<string, unknown>) =>
+      apiClient.put<Patient>("/api/auth/profile", data),
+    onSuccess: (patient) => {
+      queryClient.invalidateQueries({ queryKey: ["my-profile"] });
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.patientDetail(patient.id),
+      });
+      queryClient.invalidateQueries({ queryKey: ["patients"] });
+    },
+  });
+}
+
 export function useDeletePatient() {
   const queryClient = useQueryClient();
   return useMutation({

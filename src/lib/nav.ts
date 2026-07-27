@@ -19,7 +19,7 @@ export type ViewName =
   | "billing"
   | "book"
   | "my-appointments"
-  | "register";
+  | "my-profile";
 
 interface NavState {
   view: ViewName;

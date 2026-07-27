@@ -96,16 +96,10 @@ export const apiClient = {
 
 /** Auth API helpers. */
 export const authApi = {
-  login: (username: string, password: string) =>
-    apiClient.post<{ token: string; user: AuthUser }>("/api/auth/login", {
-      username,
-      password,
+  googleLogin: (credential: string) =>
+    apiClient.post<{ token: string; user: AuthUser }>("/api/auth/google", {
+      credential,
     }),
-  register: (payload: Record<string, unknown>) =>
-    apiClient.post<{ token: string; user: AuthUser }>(
-      "/api/auth/register",
-      payload
-    ),
   me: () => apiClient.get<{ user: AuthUser }>("/api/auth/me"),
 };
 

@@ -12,7 +12,7 @@ export const TOOTH_STATUSES = {
   HEALTHY: "healthy",
   TREATED: "treated",
   NEEDS_ATTENTION: "needs-attention",
-  URGENT: "urgent",
+  MISSING: "missing",
 } as const;
 
 export type ToothStatus = (typeof TOOTH_STATUSES)[keyof typeof TOOTH_STATUSES];
@@ -82,11 +82,11 @@ export const TOOTH_STATUS_META: Record<
     ring: "ring-amber-500/40",
     description: "Monitor or schedule follow-up",
   },
-  urgent: {
-    label: "Urgent",
-    color: "bg-rose-500",
-    ring: "ring-rose-500/40",
-    description: "Requires immediate care",
+  missing: {
+    label: "Missing",
+    color: "bg-gray-900",
+    ring: "ring-gray-900/40",
+    description: "Tooth is missing",
   },
 };
 

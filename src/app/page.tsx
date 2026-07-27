@@ -9,14 +9,14 @@ import { useAuth } from "@/lib/auth-store";
 import { useNav, type ViewName } from "@/lib/nav";
 
 import LoginView from "@/components/views/LoginView";
-import RegisterView from "@/components/views/RegisterView";
 import DashboardView from "@/components/views/DashboardView";
 import PatientsView from "@/components/views/PatientsView";
 import PatientProfileView from "@/components/views/PatientProfileView";
 import AppointmentsView from "@/components/views/AppointmentsView";
 import BillingView from "@/components/views/BillingView";
-import BookAppointmentView from "@/components/views/BookAppointmentView";
+import PatientBookView from "@/components/views/PatientBookView";
 import MyAppointmentsView from "@/components/views/MyAppointmentsView";
+import PatientProfileEditView from "@/components/views/patient-profile/PatientProfileEditView";
 
 /** Views that require the user to be authenticated. */
 const AUTHED_VIEWS: ViewName[] = [
@@ -27,13 +27,12 @@ const AUTHED_VIEWS: ViewName[] = [
   "billing",
   "book",
   "my-appointments",
+  "my-profile",
 ];
 
 /** Map nav view name → component. */
 function renderView(view: ViewName) {
   switch (view) {
-    case "register":
-      return <RegisterView />;
     case "dashboard":
       return <DashboardView />;
     case "patients":
@@ -45,9 +44,11 @@ function renderView(view: ViewName) {
     case "billing":
       return <BillingView />;
     case "book":
-      return <BookAppointmentView />;
+      return <PatientBookView />;
     case "my-appointments":
       return <MyAppointmentsView />;
+    case "my-profile":
+      return <PatientProfileEditView />;
     default:
       return <LoginView />;
   }
@@ -72,26 +73,24 @@ function AppContent() {
     );
   }
 
-  // Unauthenticated → only Login / Register are accessible.
-  // Both views render their own full-screen layout, so no wrapper needed.
   if (!user) {
     return (
       <AnimatePresence mode="wait">
         <motion.div
-          key={view === "register" ? "register" : "login"}
+          key="login"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
           transition={{ duration: 0.2, ease: "easeOut" }}
         >
-          {view === "register" ? <RegisterView /> : <LoginView />}
+          <LoginView />
         </motion.div>
       </AnimatePresence>
     );
   }
 
-  // Authenticated but somehow on the login/register view → go to dashboard.
-  if (view === "register" || !AUTHED_VIEWS.includes(view)) {
+  // Authenticated on a non-authed view → go to dashboard.
+  if (!AUTHED_VIEWS.includes(view)) {
     return (
       <AppShell>
         <ViewTransition view="dashboard">
@@ -127,7 +126,7 @@ function AppContent() {
   // access them because they have no patient profile to book against.
   if (
     (user.role === "dentist" || user.role === "cashier") &&
-    (view === "book" || view === "my-appointments")
+    (view === "book" || view === "my-appointments" || view === "my-profile")
   ) {
     return (
       <AppShell>

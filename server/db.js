@@ -25,6 +25,17 @@ if (!getApps().length) {
 
 const rtdb = getDatabase()
 
+const DB_TIMEOUT_MS = 120_000
+
+function withTimeout(promise, ms = DB_TIMEOUT_MS) {
+  return Promise.race([
+    promise,
+    new Promise((_, reject) =>
+      setTimeout(() => reject(new Error('Firebase query timed out')), ms)
+    ),
+  ])
+}
+
 function now() {
   return new Date().toISOString()
 }
@@ -71,17 +82,21 @@ function deepToPrimitive(data) {
 function collection(name) {
   const collRef = () => rtdb.ref(name)
 
+  function refOnce(ref) {
+    return withTimeout(ref.once('value'))
+  }
+
   async function findUnique({ where }) {
     const keys = Object.keys(where)
     if (keys.length === 1 && keys[0] === 'id') {
-      const snap = await collRef().child(String(where.id)).once('value')
+      const snap = await refOnce(collRef().child(String(where.id)))
       return docData(snap)
     }
 
     if (keys.length === 1 && keys[0].includes('_')) {
       const v = where[keys[0]]
       const entries = Object.entries(v)
-      const snap = await collRef().orderByChild(entries[0][0]).equalTo(toPrimitive(entries[0][1])).once('value')
+      const snap = await refOnce(collRef().orderByChild(entries[0][0]).equalTo(toPrimitive(entries[0][1])))
       const docs = allDocData(snap)
       if (docs.length === 0) return null
       if (entries.length === 1) return docs[0]
@@ -90,7 +105,7 @@ function collection(name) {
 
     if (keys.length === 1) {
       const [field, value] = Object.entries(where)[0]
-      const snap = await collRef().orderByChild(field).equalTo(toPrimitive(value)).limitToFirst(1).once('value')
+      const snap = await refOnce(collRef().orderByChild(field).equalTo(toPrimitive(value)).limitToFirst(1))
       if (!snap.exists()) return null
       const val = snap.val()
       const childKey = Object.keys(val)[0]
@@ -99,7 +114,7 @@ function collection(name) {
 
     const entries = Object.entries(where)
     const [firstField, firstVal] = entries[0]
-    const snap = await collRef().orderByChild(firstField).equalTo(toPrimitive(firstVal)).once('value')
+    const snap = await refOnce(collRef().orderByChild(firstField).equalTo(toPrimitive(firstVal)))
     const docs = allDocData(snap)
     return docs.find(d => entries.slice(1).every(([k, kv]) => d[k] === toPrimitive(kv))) ?? null
   }
@@ -142,14 +157,14 @@ function collection(name) {
     if (inFilter && inFilter.key === 'id' && Object.keys(eqFields).length === 0 && Object.keys(opFields).length === 0 && containsFilters.length === 0) {
       const results = []
       for (const id of inFilter.vals) {
-        const snap = await collRef().child(String(id)).once('value')
+        const snap = await refOnce(collRef().child(String(id)))
         if (snap.exists()) results.push({ id: snap.key, ...snap.val() })
       }
       docs = results
     } else if (Object.keys(eqFields).length > 0) {
       const eqEntries = Object.entries(eqFields)
       const [field, value] = eqEntries[0]
-      const snap = await collRef().orderByChild(field).equalTo(toPrimitive(value)).once('value')
+      const snap = await refOnce(collRef().orderByChild(field).equalTo(toPrimitive(value)))
       docs = allDocData(snap)
       for (let i = 1; i < eqEntries.length; i++) {
         const [k, v] = eqEntries[i]
@@ -157,7 +172,7 @@ function collection(name) {
         docs = docs.filter(d => d[k] === pv)
       }
     } else {
-      const snap = await collRef().once('value')
+      const snap = await refOnce(collRef())
       docs = allDocData(snap)
     }
 
@@ -234,7 +249,7 @@ function collection(name) {
     }
     upd.updatedAt = now()
     await collRef().child(id).update(upd)
-    const snap = await collRef().child(id).once('value')
+    const snap = await refOnce(collRef().child(id))
     return docData(snap)
   }
 
@@ -246,7 +261,7 @@ function collection(name) {
 
   async function count({ where } = {}) {
     if (!where || Object.keys(where).length === 0) {
-      const snap = await collRef().once('value')
+      const snap = await refOnce(collRef())
       return snap.exists() ? Object.keys(snap.val()).length : 0
     }
     const eqFields = {}
@@ -275,14 +290,14 @@ function collection(name) {
     if (Object.keys(eqFields).length > 0) {
       const eqEntries = Object.entries(eqFields)
       const [field, value] = eqEntries[0]
-      const snap = await collRef().orderByChild(field).equalTo(toPrimitive(value)).once('value')
+      const snap = await refOnce(collRef().orderByChild(field).equalTo(toPrimitive(value)))
       docs = allDocData(snap)
       for (let i = 1; i < eqEntries.length; i++) {
         const [k, v] = eqEntries[i]
         docs = docs.filter(d => d[k] === toPrimitive(v))
       }
     } else {
-      const snap = await collRef().once('value')
+      const snap = await refOnce(collRef())
       docs = allDocData(snap)
     }
     for (const [k, obj] of Object.entries(opFields)) {
@@ -314,7 +329,7 @@ function collection(name) {
       }
       toUpdate.updatedAt = now()
       await collRef().child(existing.id).update(toUpdate)
-      const snap = await collRef().child(existing.id).once('value')
+      const snap = await refOnce(collRef().child(existing.id))
       return docData(snap)
     }
     const docRef = collRef().push()
@@ -347,22 +362,28 @@ function collection(name) {
       if (Object.keys(eqFields).length > 0) {
         const eqEntries = Object.entries(eqFields)
         const [field, value] = eqEntries[0]
-        const snap = await collRef().orderByChild(field).equalTo(toPrimitive(value)).once('value')
+        const snap = await refOnce(collRef().orderByChild(field).equalTo(toPrimitive(value)))
         docs = allDocData(snap)
         for (let i = 1; i < eqEntries.length; i++) {
           const [k, v] = eqEntries[i]
           docs = docs.filter(d => d[k] === toPrimitive(v))
         }
-      } else {
-        const snap = await collRef().once('value')
-        docs = allDocData(snap)
-      }
+    } else if (orderBy && take) {
+      const orders = Array.isArray(orderBy) ? orderBy : [orderBy]
+      const [field] = Object.entries(orders[0])
+      const fetchSize = take + (skip || 0)
+      const snap = await refOnce(collRef().orderByChild(field).limitToLast(fetchSize))
+      docs = allDocData(snap)
+    } else {
+      const snap = await refOnce(collRef())
+      docs = allDocData(snap)
+    }
       for (const [k, obj] of Object.entries(opFields)) {
         if ('gte' in obj) { const val = toPrimitive(obj.gte); docs = docs.filter(d => d[k] >= val) }
         if ('lt' in obj) { const val = toPrimitive(obj.lt); docs = docs.filter(d => d[k] < val) }
       }
     } else {
-      const snap = await collRef().once('value')
+      const snap = await refOnce(collRef())
       docs = allDocData(snap)
     }
     const result = {}

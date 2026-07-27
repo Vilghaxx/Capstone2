@@ -1,5 +1,13 @@
+require('dotenv').config()
 const express = require('express')
 const cors = require('cors')
+
+process.on('uncaughtException', (err) => {
+  console.error('[FATAL] Uncaught exception:', err)
+})
+process.on('unhandledRejection', (reason) => {
+  console.error('[FATAL] Unhandled rejection:', reason)
+})
 
 const authRoutes = require('./routes/auth')
 const patientRoutes = require('./routes/patients')
@@ -30,6 +38,8 @@ app.use((err, _req, res, _next) => {
   res.status(500).json({ error: 'Internal server error' })
 })
 
-app.listen(PORT, () => {
+const server = app.listen(PORT, () => {
   console.log(`[server] Express API running on http://localhost:${PORT}`)
 })
+server.timeout = 60_000
+server.keepAliveTimeout = 60_000

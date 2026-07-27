@@ -15,7 +15,8 @@ import {
 
 import { useAuth } from "@/lib/auth-store";
 import { useNav } from "@/lib/nav";
-import { useCreateAppointment } from "@/hooks";
+import { useCreateAppointment, useMyProfile } from "@/hooks";
+import { CharCount } from "@/components/common/CharCount";
 import { appointmentFormSchema } from "@/lib/schemas/appointment-schema";
 import {
   APPOINTMENT_TYPES,
@@ -32,6 +33,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { Skeleton } from "@/components/ui/skeleton";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
@@ -56,10 +58,21 @@ function todayStr(): string {
   return `${y}-${m}-${day}`;
 }
 
+/** Date 30 days from now as YYYY-MM-DD, used as date input `max`. */
+function oneMonthFromToday(): string {
+  const d = new Date();
+  d.setDate(d.getDate() + 30);
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return `${y}-${m}-${day}`;
+}
+
 export default function BookAppointmentView() {
   const user = useAuth((state) => state.user);
   const navigate = useNav((s) => s.navigate);
   const createAppointment = useCreateAppointment();
+  const { data: profileData, isLoading: profileLoading } = useMyProfile();
   const [submitted, setSubmitted] = useState(false);
 
   const {
@@ -83,6 +96,7 @@ export default function BookAppointmentView() {
 
   const typeValue = useWatch({ control, name: "type" });
   const timeValue = useWatch({ control, name: "time" });
+  const notesValue = useWatch({ control, name: "notes" });
 
   async function onSubmit(values: AppointmentFormInput) {
     if (!user?.patientRef) {
@@ -160,6 +174,55 @@ export default function BookAppointmentView() {
     );
   }
 
+  // Guard: patient must have a phone number on their profile to book
+  if (profileLoading) {
+    return (
+      <div className="mx-auto w-full max-w-[90vw] sm:max-w-md px-4 py-8">
+        <Skeleton className="h-8 w-48 mb-6" />
+        <Skeleton className="h-72 w-full rounded-xl" />
+      </div>
+    );
+  }
+
+  if (profileData?.patient && !profileData.patient.phone) {
+    return (
+      <div className="mx-auto w-full max-w-[90vw] sm:max-w-2xl px-4 py-10">
+        <Card className="border-amber-200 bg-amber-50/60 dark:border-amber-900/50 dark:bg-amber-950/30">
+          <CardContent className="flex flex-col items-center gap-4 px-6 py-12 text-center">
+            <div className="flex h-16 w-16 items-center justify-center rounded-full bg-amber-100 text-amber-600 dark:bg-amber-900/60 dark:text-amber-300">
+              <Info className="h-9 w-9" aria-hidden="true" />
+            </div>
+            <div className="space-y-2">
+              <h2 className="text-xl font-semibold text-amber-900 dark:text-amber-100">
+                Complete your profile
+              </h2>
+              <p className="mx-auto max-w-md text-sm text-amber-800/80 dark:text-amber-200/80">
+                Please add a phone number to your profile before booking an
+                appointment. This helps us contact you about your visit.
+              </p>
+            </div>
+            <div className="mt-4 flex flex-col gap-2 sm:flex-row">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => navigate("dashboard")}
+              >
+                Back to Dashboard
+              </Button>
+              <Button
+                type="button"
+                onClick={() => navigate("my-profile")}
+                className="bg-amber-600 text-white hover:bg-amber-700"
+              >
+                Go to My Profile
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
   return (
     <div className="mx-auto w-full max-w-[90vw] sm:max-w-md px-4 py-8">
       <header className="mb-6 space-y-1">
@@ -226,7 +289,7 @@ export default function BookAppointmentView() {
               <Input
                 id="appt-date"
                 type="date"
-                min={todayStr()}
+                min={todayStr()} max={oneMonthFromToday()}
                 aria-invalid={!!errors.date}
                 {...register("date")}
               />
@@ -279,7 +342,7 @@ export default function BookAppointmentView() {
                 aria-invalid={!!errors.notes}
                 {...register("notes")}
               />
-              <p className="text-xs text-muted-foreground">Optional.</p>
+              <CharCount current={(notesValue ?? "").length} />
             </div>
 
             {/* Info note */}

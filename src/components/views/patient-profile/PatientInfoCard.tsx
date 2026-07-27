@@ -4,7 +4,6 @@ import {
   Calendar,
   Mail,
   MapPin,
-  Pencil,
   Phone,
   StickyNote,
   Trash2,
@@ -31,17 +30,17 @@ function getInitials(name: string): string {
 /**
  * Header card for the patient profile view. Shows the patient's avatar,
  * name, "patient since" date, contact details, demographics, and notes.
- * Edit + Delete actions are gated by the `canManage` flag (any staff role).
+ * Notes + Delete actions are gated by the `canManage` flag (any staff role).
  */
 export function PatientInfoCard({
   patient,
   canManage,
-  onEdit,
+  onNotes,
   onDelete,
 }: {
   patient: Patient;
   canManage: boolean;
-  onEdit: () => void;
+  onNotes: () => void;
   onDelete: () => void;
 }) {
   return (
@@ -62,9 +61,9 @@ export function PatientInfoCard({
         </div>
         {canManage && (
           <div className="flex shrink-0 gap-2">
-            <Button variant="outline" size="sm" onClick={onEdit}>
-              <Pencil className="h-4 w-4" />
-              Edit
+            <Button variant="outline" size="sm" onClick={onNotes}>
+              <StickyNote className="h-4 w-4" />
+              Notes
             </Button>
             <Button
               variant="outline"

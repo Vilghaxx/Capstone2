@@ -19,6 +19,7 @@ import type { Patient } from "@/lib/types";
 import { formatDateToLocalYearMonthDay } from "@/lib/date-utils";
 
 import { Button } from "@/components/ui/button";
+import { CharCount } from "@/components/common/CharCount";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
@@ -110,6 +111,7 @@ export function NewAppointmentDialog({
   const patientId = useWatch({ control, name: "patientId" });
   const timeValue = useWatch({ control, name: "time" });
   const typeValue = useWatch({ control, name: "type" });
+  const notesValue = useWatch({ control, name: "notes" });
 
   const onSubmit = async (values: AppointmentFormValues) => {
     try {
@@ -247,6 +249,7 @@ export function NewAppointmentDialog({
               placeholder="Optional notes for the dentist or reception"
               {...register("notes")}
             />
+            <CharCount current={(notesValue ?? "").length} />
           </div>
 
           <DialogFooter>

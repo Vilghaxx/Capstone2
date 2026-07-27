@@ -47,7 +47,9 @@ export function PatientDashboard() {
 
   const nextAppointmentDate = useMemo(() => {
     const list = getUpcomingAppointments(apptsQuery.data);
-    return list.length > 0 ? formatDate(list[0].date) : "None scheduled";
+    if (list.length === 0) return "None scheduled";
+    if (list[0].status === "pending") return "Pending";
+    return formatDate(list[0].date);
   }, [apptsQuery.data]);
 
   const totalVisits = useMemo(
@@ -105,7 +107,7 @@ export function PatientDashboard() {
           value={nextAppointmentDate}
           icon={Clock}
           accent="bg-sky-500"
-          hint={upcoming[0]?.time ? `at ${upcoming[0].time}` : undefined}
+          hint={upcoming[0]?.status !== "pending" && upcoming[0]?.time ? `at ${upcoming[0].time}` : undefined}
           loading={loading}
           onClick={() => navigate("my-appointments")}
         />

@@ -60,3 +60,13 @@ export function useDeleteAppointment() {
     },
   });
 }
+
+export function useDeleteAppointments() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: () => apiClient.del("/api/appointments"),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["appointments"] });
+    },
+  });
+}
