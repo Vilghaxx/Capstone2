@@ -65,3 +65,6 @@ server.log
 # Database
 /db/*.db
 /db/*.db-journal
+
+# Personal worklog
+worklog.md
