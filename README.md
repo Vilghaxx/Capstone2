@@ -1,12 +1,13 @@
 # Dental System
 
-A full-stack dental practice management application built with Next.js 16, TypeScript, Prisma, and Tailwind CSS. Supports three user roles — dentist, cashier, and patient — with patient records, an interactive 32-tooth dental chart, appointments, treatments, and billing.
+A full-stack dental practice management application built with Next.js 16 + Express.js backend, TypeScript, Prisma, and Tailwind CSS. Supports three user roles — dentist, cashier, and patient — with patient records, an interactive 32-tooth dental chart, appointments, treatments, and billing.
 
 ## Tech Stack
 
-- **Framework**: Next.js 16 (App Router)
-- **Language**: Java Script
-- **Database**: Firebase RTDB
+- **Frontend**: Next.js 16 (App Router)
+- **Backend API**: Express.js
+- **Language**: TypeScript 5
+- **Database**: Firebase RTDB (chore: update README for hybrid Next+Express stack, add .gitattributes to flip GH language badge to JavaScript)
 - **Styling**: Tailwind CSS 4 + shadcn/ui component library
 - **State**: Zustand (auth), TanStack React Query (server state)
 - **Forms**: React Hook Form + Zod validation
