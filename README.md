@@ -6,7 +6,7 @@ A full-stack dental practice management application built with Next.js 16, TypeS
 
 - **Framework**: Next.js 16 (App Router)
 - **Language**: Java Script
-- **Database**: SQLite (development) / PostgreSQL (production) via Prisma ORM
+- **Database**: Firebase RTDB
 - **Styling**: Tailwind CSS 4 + shadcn/ui component library
 - **State**: Zustand (auth), TanStack React Query (server state)
 - **Forms**: React Hook Form + Zod validation
