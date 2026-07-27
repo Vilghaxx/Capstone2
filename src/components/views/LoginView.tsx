@@ -58,7 +58,7 @@ export default function LoginView() {
           </div>
           <div>
             <p className="text-xl font-bold leading-tight">Dental System</p>
-            <p className="text-sm text-white/70 leading-tight">Practice Management</p>
+             <p className="text-sm text-white/70 leading-tight">Patient Portal</p>
           </div>
         </motion.div>
         <motion.div
@@ -68,11 +68,11 @@ export default function LoginView() {
           className="relative space-y-6 text-white"
         >
           <h1 className="text-4xl font-bold leading-tight tracking-tight">
-            Manage your dental practice with confidence.
+            Your dental care, simplified.
           </h1>
           <p className="max-w-md text-lg text-white/80">
-            Patients, appointments, treatments, and billing — all in one
-            elegant, clinically-focused platform.
+            Schedule visits, track treatments, and stay on top of your oral
+            health — all in one place.
           </p>
         </motion.div>
         <p className="relative text-sm text-white/50">
@@ -93,7 +93,7 @@ export default function LoginView() {
             </div>
             <div>
               <p className="text-lg font-bold leading-tight">Dental System</p>
-              <p className="text-xs text-muted-foreground leading-tight">Practice Management</p>
+              <p className="text-xs text-muted-foreground leading-tight">Patient Portal</p>
             </div>
           </div>
 
