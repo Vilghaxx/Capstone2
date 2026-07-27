@@ -7,7 +7,7 @@ A full-stack dental practice management application built with Next.js 16 + Expr
 - **Frontend**: Next.js 16 (App Router)
 - **Backend API**: Express.js
 - **Language**: TypeScript 5
-- **Database**: Firebase RTDB (chore: update README for hybrid Next+Express stack, add .gitattributes to flip GH language badge to JavaScript)
+- **Database**: Firebase RTDB (chore: update README for hybrid Next+Express stack.)
 - **Styling**: Tailwind CSS 4 + shadcn/ui component library
 - **State**: Zustand (auth), TanStack React Query (server state)
 - **Forms**: React Hook Form + Zod validation
