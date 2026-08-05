@@ -1,16 +1,16 @@
 # Dental System
 
-A full-stack dental practice management application built with Next.js 16 + Express.js backend, TypeScript, Prisma, and Tailwind CSS. Supports three user roles — dentist, cashier, and patient — with patient records, an interactive 32-tooth dental chart, appointments, treatments, and billing.
+A full-stack dental practice management application built with Next.js 16 + Express.js backend, JavaScript, Firebase RTDB, and Tailwind CSS. Supports three user roles — dentist, cashier, and patient — with patient records, an interactive 32-tooth dental chart, appointments, treatments, and billing.
 
 ## Tech Stack
 
-- **Frontend**: Next.js 16 (App Router)
-- **Backend API**: Express.js
-- **Database**: Firebase RTDB (chore: update README for hybrid Next+Express stack.)
+- **Frontend**: Next.js 16 (App Router, client-side hash routing)
+- **Backend API**: Express.js (port 3001)
+- **Database**: Firebase Realtime Database (RTDB)
 - **Styling**: Tailwind CSS 4 + shadcn/ui component library
 - **State**: Zustand (auth), TanStack React Query (server state)
 - **Forms**: React Hook Form + Zod validation
-- **Auth**: JWT + bcrypt password hashing
+- **Auth**: JWT + Google OAuth sign-in
 - **Animations**: Framer Motion
 
 ## Quick Start (Development)
@@ -18,110 +18,51 @@ A full-stack dental practice management application built with Next.js 16 + Expr
 ```bash
 # 1. Install dependencies
 bun install
+# or: npm install
 
-# 2. Copy environment config
+# 2. Create .env
 cp .env.example .env
-# Edit .env — set JWT_SECRET to a random string (openssl rand -base64 32)
-
-# 3. Set up the database + seed initial staff accounts
-bun run setup
-# This runs: prisma db push && bun prisma/seed.ts
-
-# 4. Start the dev server
-bun run dev
 ```
 
-The app runs on `http://localhost:3000`.
-
-## Default Staff Credentials
-
-Created by `bun run db:seed` (change these after first login in production):
-
-| Role    | Username  | Password    |
-|---------|-----------|-------------|
-| Dentist | `dentist` | `dentist123`|
-| Cashier | `cashier` | `cashier123`|
-
-Override during seeding with environment variables:
-```bash
-SEED_DENTIST_USERNAME=dr.smith SEED_DENTIST_PASSWORD=securepass bun run db:seed
-```
-
-Patients can self-register via the Register page.
-
-## Production Deployment
-
-### 1. Environment Variables
-
-Set these in your production environment:
+If you don't have `.env.example`, create `.env` manually:
 
 ```env
-DATABASE_URL="postgresql://user:password@host:5432/dental_system?schema=public"
+FIREBASE_KEY_PATH="capstone-f6c32-firebase-adminsdk-fbsvc-9540650b6a.json"
+FIREBASE_DATABASE_URL="https://<your-project>-default-rtdb.firebaseio.com"
 JWT_SECRET="your-long-random-secret-here"
-NODE_ENV="production"
+GOOGLE_CLIENT_ID="your-google-oauth-client-id"
 ```
 
-### 2. Database Setup (PostgreSQL)
-
-For production, switch from SQLite to PostgreSQL:
-
-1. Update `prisma/schema.prisma`:
-   ```prisma
-   datasource db {
-     provider = "postgresql"  # was "sqlite"
-     url      = env("DATABASE_URL")
-   }
-   ```
-2. Run migrations:
-   ```bash
-   bun run db:push
-   bun run db:seed
-   ```
-
-### 3. Build & Start
+`FIREBASE_KEY_PATH` is a service-account JSON downloaded from the Firebase console. `GOOGLE_CLIENT_ID` comes from a Google Cloud OAuth 2.0 client.
 
 ```bash
-bun install
-bun run build
-bun run start   # starts next start on port 3000
+# 3. Seed the database (optional but recommended)
+npm run seed
+
+# 4. Start both servers (Express API + Next.js)
+npm run dev:all
 ```
 
-### Deploy to Vercel
+The app runs on `http://localhost:3000`, with the Express API on `http://localhost:3001` (Next.js rewrites `/api/*` to it).
 
-```bash
-npm i -g vercel
-vercel
-```
+## Authentication
 
-Set the environment variables in the Vercel dashboard. Note: SQLite won't work on Vercel (serverless, no persistent filesystem) — use PostgreSQL (e.g. Vercel Postgres, Supabase, or Neon).
-
-### Deploy with Docker
-
-```dockerfile
-FROM oven/bun:1 AS base
-WORKDIR /app
-COPY package.json bun.lock ./
-RUN bun install --frozen-lockfile
-COPY . .
-RUN bun run build
-EXPOSE 3000
-CMD ["bun", "run", "start"]
-```
+Users sign in with Google OAuth. The first Google sign-in after seeding is granted the **dentist** role; later sign-ins default to **patient**. Role changes are managed in the database (`users` node).
 
 ## NPM Scripts
 
 | Script | Description |
 |--------|-------------|
 | `dev` | Start Next.js dev server (port 3000) |
-| `build` | Production build |
-| `start` | Start production server (port 3000) |
+| `dev:server` | Start Express API only (port 3001) |
+| `dev:all` | Start Express API + Next.js dev server |
+| `build` | Production build (Next.js) |
+| `start` | Start production Next.js server (port 3000) |
+| `start:server` | Start production Express API |
 | `lint` | Run ESLint |
-| `setup` | Push DB schema + seed staff accounts |
-| `db:push` | Push Prisma schema to database |
-| `db:generate` | Generate Prisma client |
-| `db:migrate` | Create + apply a migration |
-| `db:seed` | Seed initial dentist + cashier accounts |
-| `db:reset` | Reset database (destructive) |
+| `wipe` | Wipe all Firebase RTDB data (destructive, requires confirm) |
+| `seed` | Seed patients, teeth, appointments, treatments |
+| `seed:busy` | Seed with more heap (large datasets) |
 
 ## User Roles & Permissions
 
@@ -143,9 +84,9 @@ CMD ["bun", "run", "start"]
 ```
 src/
 ├── app/                    # Next.js App Router
-│   ├── api/               # API routes (auth, patients, teeth, treatments, appointments, billing)
-│   ├── layout.tsx         # Root layout + ThemeProvider
-│   └── page.tsx           # Client-side router (hash-based)
+│   ├── globals.css        # Tailwind 4 + theme tokens
+│   ├── layout.jsx         # Root layout + ThemeProvider
+│   └── page.jsx           # Client-side router (hash-based)
 ├── components/
 │   ├── common/            # OralCavityChart, ToothIcon, ThemeToggle, ConfirmDialog, etc.
 │   ├── layout/            # AppShell (sidebar + mobile nav)
@@ -155,12 +96,31 @@ src/
 │       ├── dashboard/     # Role-specific dashboards
 │       └── patient-profile/ # Patient profile sub-components
 ├── hooks/                 # React Query hooks (use-patients, use-appointments, etc.)
-├── lib/                   # Shared utilities (auth, db, api, constants, types, schemas)
-│   └── schemas/           # Zod validation schemas
-└── prisma/
-    ├── schema.prisma      # Database schema
-    └── seed.ts            # Staff account seeder
+└── lib/                   # Shared utilities (api, auth-store, constants, schemas)
+    └── schemas/           # Zod validation schemas
+
+server/                    # Express API
+├── routes/                # auth, patients, teeth, treatments, appointments, billing
+├── db.js                  # Firebase Admin SDK setup
+├── auth.js                # JWT auth middleware
+├── validate.js            # Validation helpers
+└── index.js               # Express entrypoint
+
+scripts/
+├── seed.ts                # Database seeder (faker data)
+└── wipe.ts                # Destructive wipe (requires confirm)
 ```
+
+## Production Deployment
+
+```bash
+bun install
+npm run build
+npm run start      # Next.js on port 3000
+npm run start:server  # Express API on port 3001
+```
+
+`next.config.mjs` is set to `output: "standalone"`, so the build produces a self-contained `.next/standalone` bundle you can copy to a server with Node.js.
 
 ## License
 
