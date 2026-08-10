@@ -140,7 +140,7 @@ npm run start          # Next.js on port 3000
 npm run start:server   # Express API on port 3001
 ```
 
-`next.config.mjs` sets `output: "standalone"`, so the build produces a self-contained `.next/standalone` bundle that can be copied to a server with Node.js. The included `Caddyfile` reverse-proxies port 3000 (and can proxy an arbitrary port via the `?port=` query) behind Caddy.
+`next.config.mjs` sets `output: "standalone"`, so the build produces a self-contained `.next/standalone` bundle that can be copied to a server with Node.js.
 
 ## License
 
