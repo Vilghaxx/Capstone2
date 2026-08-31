@@ -5,7 +5,18 @@ const path = require('path')
 
 const KEY_PATH =
   process.env.FIREBASE_KEY_PATH ??
-  path.join(process.cwd(), 'capstone-f6c32-firebase-adminsdk-fbsvc-9540650b6a.json')
+  (() => {
+    const possiblePaths = [
+      path.join(process.cwd(), 'capstone-f6c32-firebase-adminsdk-fbsvc-9540650b6a.json'),
+      path.join(__dirname, 'capstone-f6c32-firebase-adminsdk-fbsvc-9540650b6a.json'),
+      path.join(__dirname, '..', 'capstone-f6c32-firebase-adminsdk-fbsvc-9540650b6a.json'),
+      path.join(__dirname, '..', '..', 'capstone-f6c32-firebase-adminsdk-fbsvc-9540650b6a.json'),
+    ]
+    for (const p of possiblePaths) {
+      try { require('fs').accessSync(p); return p } catch {}
+    }
+    return possiblePaths[0]
+  })()
 
 const DATABASE_URL =
   process.env.FIREBASE_DATABASE_URL ??
