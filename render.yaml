@@ -7,7 +7,7 @@ services:
     env: node
     region: oregon # or frankfurt, singapore, etc.
     plan: starter # or standard, pro based on needs
-    buildCommand: bun install && bun run build
+    buildCommand: npm install && npm run build && cp -r .next/static .next/standalone/.next/static && cp -r public .next/standalone/public
     startCommand: node server/index.js
     healthCheckPath: /api
     envVars:
