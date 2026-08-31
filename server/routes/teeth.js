@@ -1,7 +1,7 @@
 const { Router } = require('express')
 const { db } = require('../db')
 const { authenticate, requireRole, withErrors } = require('../middleware')
-const { toothUpdateSchema, handleValidationError } = require('../validate')
+const { toothUpdateSchema, handleValidationError } = require('../validate').default
 const { ROLES } = require('../constants')
 
 const router = Router()

@@ -1,7 +1,7 @@
 const { Router } = require('express')
 const { db } = require('../db')
 const { authenticate, requireRole, withErrors } = require('../middleware')
-const { patientFormSchema, handleValidationError } = require('../validate')
+const { patientFormSchema, handleValidationError } = require('../validate').default
 const { PAGINATION_DEFAULTS, ROLES, TOTAL_TEETH, TOOTH_STATUSES } = require('../constants')
 
 const router = Router()

@@ -1,7 +1,7 @@
 const { Router } = require('express')
 const { db } = require('../db')
 const { signToken } = require('../auth')
-const { googleCredentialSchema, profileUpdateSchema, handleValidationError } = require('../validate')
+const { googleCredentialSchema, profileUpdateSchema, handleValidationError } = require('../validate').default
 const { ROLES, TOOTH_STATUSES, TOTAL_TEETH } = require('../constants')
 const { authenticate, withErrors } = require('../middleware')
 const { OAuth2Client } = require('google-auth-library')

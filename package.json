@@ -12,7 +12,8 @@
     "lint": "eslint .",
     "wipe": "NODE_OPTIONS='--max-old-space-size=4096' tsx scripts/wipe.ts",
     "seed": "tsx scripts/seed.ts",
-    "seed:busy": "NODE_OPTIONS='--max-old-space-size=4096' tsx scripts/seed.ts"
+    "seed:busy": "NODE_OPTIONS='--max-old-space-size=4096' tsx scripts/seed.ts",
+    "deploy:help": "bash scripts/render-deploy.sh"
   },
   "dependencies": {
     "@dnd-kit/core": "^6.3.1",

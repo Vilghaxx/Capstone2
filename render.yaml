@@ -1,0 +1,34 @@
+# render.yaml - Infrastructure as Code for Render deployment
+# Usage: render deploy (requires Render CLI) or use as reference for manual setup
+
+services:
+  - type: web
+    name: dental-system
+    env: node
+    region: oregon # or frankfurt, singapore, etc.
+    plan: starter # or standard, pro based on needs
+    buildCommand: bun install && bun run build
+    startCommand: node server/index.js
+    healthCheckPath: /api
+    envVars:
+      - key: FIREBASE_KEY_PATH
+        value: capstone-f6c32-firebase-adminsdk-fbsvc-9540650b6a.json
+      - key: FIREBASE_DATABASE_URL
+        value: https://capstone-f6c32-default-rtdb.firebaseio.com
+      - key: JWT_SECRET
+        generateValue: true
+      - key: GOOGLE_CLIENT_ID
+        value: 397113028490-mceosup2ro2mm7utkl2il1cpo21pk2v6
+      - key: NEXT_PUBLIC_API_URL
+        value: https://dental-system.onrender.com # update with your service URL
+      - key: NODE_OPTIONS
+        value: --max-old-space-size=4096
+
+# Optional: Add a cron job for database seeding/wiping if needed
+# cronJobs:
+#   - name: seed-database
+#     schedule: "0 2 * * 0" # Weekly on Sunday at 2 AM
+#     command: bun run seed
+#     envVars:
+#       - key: FIREBASE_KEY_PATH
+#         value: capstone-f6c32-firebase-adminsdk-fbsvc-9540650b6a.json

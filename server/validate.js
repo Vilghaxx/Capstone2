@@ -1,4 +1,4 @@
-const { z } = require('zod')
+import { z } from 'zod'
 
 const patientFormSchema = z.object({
   name: z.string().min(2, 'Name must be at least 2 characters'),
@@ -82,7 +82,7 @@ function handleValidationError(res, error) {
   })
 }
 
-module.exports = {
+export default {
   googleCredentialSchema,
   patientFormSchema,
   profileUpdateSchema,

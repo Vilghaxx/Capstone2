@@ -1,7 +1,7 @@
 const { Router } = require('express')
 const { db } = require('../db')
 const { authenticate, requireRole, withErrors } = require('../middleware')
-const { appointmentFormSchema, appointmentUpdateSchema, patientAppointmentUpdateSchema, handleValidationError } = require('../validate')
+const { appointmentFormSchema, appointmentUpdateSchema, patientAppointmentUpdateSchema, handleValidationError } = require('../validate').default
 const { APPOINTMENT_STATUSES, ROLES } = require('../constants')
 
 async function hasSlotConflict(date, time, excludeId) {
