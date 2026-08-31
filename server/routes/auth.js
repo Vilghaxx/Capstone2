@@ -26,7 +26,8 @@ router.post('/google', withErrors(async (req, res) => {
       audience: process.env.GOOGLE_CLIENT_ID,
     })
     googlePayload = ticket.getPayload()
-  } catch {
+  } catch (err) {
+    console.error('[google auth]', err.message)
     return res.status(401).json({ error: 'Invalid Google credential' })
   }
 
