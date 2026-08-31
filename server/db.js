@@ -1,22 +1,31 @@
 const { initializeApp, getApps, cert } = require('firebase-admin/app')
 const { getDatabase } = require('firebase-admin/database')
-const { readFileSync } = require('fs')
+const { readFileSync, accessSync } = require('fs')
 const path = require('path')
 
-const KEY_PATH =
-  process.env.FIREBASE_KEY_PATH ??
-  (() => {
-    const possiblePaths = [
-      path.join(process.cwd(), 'capstone-f6c32-firebase-adminsdk-fbsvc-9540650b6a.json'),
-      path.join(__dirname, 'capstone-f6c32-firebase-adminsdk-fbsvc-9540650b6a.json'),
-      path.join(__dirname, '..', 'capstone-f6c32-firebase-adminsdk-fbsvc-9540650b6a.json'),
-      path.join(__dirname, '..', '..', 'capstone-f6c32-firebase-adminsdk-fbsvc-9540650b6a.json'),
-    ]
-    for (const p of possiblePaths) {
-      try { require('fs').accessSync(p); return p } catch {}
-    }
-    return possiblePaths[0]
-  })()
+const DB_FILE = 'capstone-f6c32-firebase-adminsdk-fbsvc-9540650b6a.json'
+
+function findKeyFile() {
+  const envPath = process.env.FIREBASE_KEY_PATH
+  if (envPath) {
+    try {
+      accessSync(envPath)
+      return envPath
+    } catch {}
+  }
+  const possiblePaths = [
+    path.join(process.cwd(), DB_FILE),
+    path.join(__dirname, DB_FILE),
+    path.join(__dirname, '..', DB_FILE),
+    path.join(__dirname, '..', '..', DB_FILE),
+  ]
+  for (const p of possiblePaths) {
+    try { accessSync(p); return p } catch {}
+  }
+  return path.join(process.cwd(), DB_FILE)
+}
+
+const KEY_PATH = findKeyFile()
 
 const DATABASE_URL =
   process.env.FIREBASE_DATABASE_URL ??
