@@ -5,14 +5,19 @@ const path = require('path')
 
 const DB_FILE = 'capstone-f6c32-firebase-adminsdk-fbsvc-9540650b6a.json'
 
-function findKeyFile() {
+function loadServiceAccount() {
+  // Option 1: base64-encoded JSON in env var (Render-safe, no file needed)
+  const b64 = process.env.FIREBASE_SERVICE_ACCOUNT
+  if (b64) {
+    try { return JSON.parse(Buffer.from(b64, 'base64').toString('utf-8')) } catch {}
+  }
+
+  // Option 2: find the file on disk
   const envPath = process.env.FIREBASE_KEY_PATH
   if (envPath) {
-    try {
-      accessSync(envPath)
-      return envPath
-    } catch {}
+    try { return JSON.parse(readFileSync(envPath, 'utf-8')) } catch {}
   }
+
   const possiblePaths = [
     path.join(process.cwd(), DB_FILE),
     path.join(__dirname, DB_FILE),
@@ -20,12 +25,11 @@ function findKeyFile() {
     path.join(__dirname, '..', '..', DB_FILE),
   ]
   for (const p of possiblePaths) {
-    try { accessSync(p); return p } catch {}
+    try { return JSON.parse(readFileSync(p, 'utf-8')) } catch {}
   }
-  return path.join(process.cwd(), DB_FILE)
-}
 
-const KEY_PATH = findKeyFile()
+  throw new Error('Firebase service account not found. Set FIREBASE_SERVICE_ACCOUNT (base64) or FIREBASE_KEY_PATH env var.')
+}
 
 const DATABASE_URL =
   process.env.FIREBASE_DATABASE_URL ??
@@ -33,13 +37,12 @@ const DATABASE_URL =
 
 if (!getApps().length) {
   try {
-    const sa = JSON.parse(readFileSync(KEY_PATH, 'utf-8'))
+    const sa = loadServiceAccount()
     initializeApp({ credential: cert(sa), databaseURL: DATABASE_URL })
     console.log('[firebase] Admin SDK initialized (RTDB)')
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err)
     console.error(`[firebase] Init failed: ${msg}`)
-    console.error(`[firebase] Check key at: ${KEY_PATH}`)
   }
 }
 
