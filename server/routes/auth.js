@@ -224,6 +224,8 @@ router.put('/profile', authenticate, withErrors(async (req, res) => {
       email: parsed.data.email,
       dateOfBirth: parsed.data.dateOfBirth,
       address: parsed.data.address ?? '',
+      allergies: parsed.data.allergies ?? '',
+      specialCondition: parsed.data.specialCondition ?? '',
     },
   })
 

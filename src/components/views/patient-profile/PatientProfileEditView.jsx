@@ -20,6 +20,8 @@ const profileFormSchema = z.object({
     email: z.string().email("Invalid email address"),
     dateOfBirth: z.string().min(1, "Date of birth is required"),
     address: z.string().optional().default(""),
+    allergies: z.string().optional().default(""),
+    specialCondition: z.string().optional().default(""),
 });
 export default function PatientProfileEditView() {
     const navigate = useNav((s) => s.navigate);
@@ -34,10 +36,12 @@ export default function PatientProfileEditView() {
             email: "",
             dateOfBirth: "",
             address: "",
+            allergies: "",
+            specialCondition: "",
         },
     });
     useEffect(() => {
-        var _a;
+        var _a, _b, _c;
         if (patient) {
             form.reset({
                 name: patient.name,
@@ -45,6 +49,8 @@ export default function PatientProfileEditView() {
                 email: patient.email,
                 dateOfBirth: patient.dateOfBirth,
                 address: (_a = patient.address) !== null && _a !== void 0 ? _a : "",
+                allergies: (_b = patient.allergies) !== null && _b !== void 0 ? _b : "",
+                specialCondition: (_c = patient.specialCondition) !== null && _c !== void 0 ? _c : "",
             });
         }
     }, [patient, form]);
@@ -123,6 +129,22 @@ export default function PatientProfileEditView() {
                     </FormControl>
                     <FormMessage />
                   </FormItem>)}/>
+              <div className="grid gap-4 sm:grid-cols-2">
+                <FormField control={form.control} name="allergies" render={({ field }) => (<FormItem>
+                      <FormLabel>Allergies (optional)</FormLabel>
+                      <FormControl>
+                        <Input placeholder="e.g. Penicillin, Latex" {...field}/>
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>)}/>
+                <FormField control={form.control} name="specialCondition" render={({ field }) => (<FormItem>
+                      <FormLabel>Special Condition (optional)</FormLabel>
+                      <FormControl>
+                        <Input placeholder="e.g. PWD, Asthma, Diabetes" {...field}/>
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>)}/>
+              </div>
               <div className="flex gap-3 pt-2">
                 <Button type="button" variant="outline" onClick={() => navigate("dashboard")} disabled={updateProfile.isPending}>
                   Cancel
