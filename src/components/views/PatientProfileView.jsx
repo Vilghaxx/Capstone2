@@ -17,7 +17,6 @@ import { PatientInfoCard } from "@/components/views/patient-profile/PatientInfoC
 import { NotesDialog } from "@/components/views/patient-profile/EditPatientDialog";
 import { ToothModal } from "@/components/views/patient-profile/ToothModal";
 import { TreatmentHistoryTable } from "@/components/views/patient-profile/TreatmentHistoryTable";
-import { TreatmentPlan } from "@/components/views/patient-profile/TreatmentPlan";
 /** Patient profile view — composes the info card, dental chart, treatment history, and edit/delete/tooth dialogs. */
 export default function PatientProfileView() {
     var _a, _b, _c;
@@ -103,19 +102,6 @@ export default function PatientProfileView() {
           {teethQuery.isLoading ? (<LoadingSpinner text="Loading dental chart…"/>) : teethQuery.isError ? (<EmptyState title="Could not load dental chart" message="Please try again later."/>) : (<div className="mx-auto max-w-[400px] xs:max-w-[480px] sm:max-w-[520px]">
               <OralCavityChart teeth={teeth} onSelectTooth={setSelectedToothNumber} selectedTooth={selectedToothNumber}/>
             </div>)}
-        </CardContent>
-      </Card>
-
-      {/* Treatment Plan */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Treatment Plan</CardTitle>
-          <p className="text-sm text-muted-foreground">
-            Standard phased approach — the dentist will customize based on clinical findings.
-          </p>
-        </CardHeader>
-        <CardContent>
-          <TreatmentPlan />
         </CardContent>
       </Card>
 
