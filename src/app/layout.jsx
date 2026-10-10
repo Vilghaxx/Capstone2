@@ -10,12 +10,12 @@ const geistMono = Geist_Mono({
     subsets: ["latin"],
 });
 export const metadata = {
-    title: "Dental System — Dental Practice Management",
+    title: "Sonido Dental Clinic — Dental Practice Management",
     description: "Comprehensive dental practice management system for dentists, cashiers, and patients. Manage patients, appointments, treatments, and billing.",
-    keywords: ["dental", "practice management", "appointments", "billing", "dental chart", "Dental System"],
+    keywords: ["dental", "practice management", "appointments", "billing", "dental chart", "Sonido Dental Clinic"],
     authors: [{ name: "Dental System" }],
     icons: {
-        icon: "/logo.svg",
+        icon: "/sonido-logo.jpg",
     },
 };
 export default function RootLayout({ children, }) {
