@@ -3,8 +3,14 @@ const { db } = require('../db')
 const { authenticate, requireRole, withErrors } = require('../middleware')
 const { toothUpdateSchema, handleValidationError } = require('../validate').default
 const { ROLES } = require('../constants')
+const fs = require('fs')
+const path = require('path')
+const crypto = require('crypto')
 
 const router = Router()
+
+const XRAY_DIR = path.join(__dirname, '..', 'public', 'xrays')
+if (!fs.existsSync(XRAY_DIR)) fs.mkdirSync(XRAY_DIR, { recursive: true })
 
 // GET /api/teeth/:patientId
 router.get('/:patientId', authenticate, requireRole(ROLES.DENTIST, ROLES.CASHIER, ROLES.PATIENT), withErrors(async (req, res) => {
@@ -50,7 +56,16 @@ router.put('/:patientId/:toothNumber', authenticate, requireRole(ROLES.DENTIST),
   const parsed = toothUpdateSchema.safeParse(body)
   if (!parsed.success) return handleValidationError(res, parsed.error)
 
-  const { status, notes, treatmentPlan } = parsed.data
+  const { status, notes, treatmentPlan, xrayData, xrayFilename } = parsed.data
+
+  let xrayUrl
+  if (xrayData) {
+    const ext = (xrayFilename || '').match(/\.(png|jpe?g|webp)$/i)?.[0]?.toLowerCase() || '.png'
+    const fname = `tooth_${patientId}_${toothNumberNum}_${crypto.randomBytes(6).toString('hex')}${ext}`
+    const base64 = xrayData.replace(/^data:image\/\w+;base64,/, '')
+    fs.writeFileSync(path.join(XRAY_DIR, fname), Buffer.from(base64, 'base64'))
+    xrayUrl = `/xrays/${fname}`
+  }
 
   const tooth = await db.tooth.upsert({
     where: { patientId_toothNumber: { patientId, toothNumber: toothNumberNum } },
@@ -58,6 +73,7 @@ router.put('/:patientId/:toothNumber', authenticate, requireRole(ROLES.DENTIST),
       status,
       notes: notes ?? null,
       treatmentPlan: treatmentPlan ?? null,
+      ...(xrayUrl && { xrayUrl }),
       updatedAt: new Date(),
     },
     create: {
@@ -66,6 +82,7 @@ router.put('/:patientId/:toothNumber', authenticate, requireRole(ROLES.DENTIST),
       status,
       notes: notes ?? null,
       treatmentPlan: treatmentPlan ?? null,
+      xrayUrl: xrayUrl ?? null,
     },
   })
 

@@ -46,6 +46,10 @@ if (fs.existsSync(staticDir)) {
 if (fs.existsSync(publicDir)) {
   app.use(express.static(publicDir, { maxAge: '1h' }))
 }
+const xraysDir = path.join(__dirname, '..', 'public', 'xrays')
+if (fs.existsSync(xraysDir)) {
+  app.use('/xrays', express.static(xraysDir, { maxAge: '7d' }))
+}
 
 app.get('*', (req, res) => {
   if (fs.existsSync(indexPath)) {
