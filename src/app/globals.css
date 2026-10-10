@@ -4,6 +4,19 @@
 @custom-variant dark (&:is(.dark *));
 
 @theme inline {
+  /* ===== Override blue palette → magenta (RGB 197,27,145) ===== */
+  --color-blue-50: #fdf2f9;
+  --color-blue-100: #fce7f3;
+  --color-blue-200: #fbcfe8;
+  --color-blue-300: #f9a8d4;
+  --color-blue-400: #f472b6;
+  --color-blue-500: #c51b91;
+  --color-blue-600: #a01574;
+  --color-blue-700: #8b1264;
+  --color-blue-800: #6b0e4f;
+  --color-blue-900: #4a0a37;
+  --color-blue-950: #2d0622;
+
   /* ===== SOTA breakpoints — cover every screen size ===== */
   /* xs:  480px  — small phones (iPhone SE, older Androids)      */
   /* sm:  640px  — large phones (iPhone Pro, Galaxy S)            */
