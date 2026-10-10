@@ -160,7 +160,7 @@ export function ToothModal({ patientId, toothNumber, open, onOpenChange, }) {
                 : ""}`
             : "No procedures recorded for this tooth yet."}
             {(tooth === null || tooth === void 0 ? void 0 : tooth.notes) ? (<span className="mt-1 block text-foreground">
-                Notes: {tooth.notes}
+                Progress Notes: {tooth.notes}
               </span>) : null}
           </DialogDescription>
         </DialogHeader>
@@ -203,9 +203,9 @@ export function ToothModal({ patientId, toothNumber, open, onOpenChange, }) {
                 </div>
                 <div className="space-y-1.5">
                   <label htmlFor="tooth-notes-textarea" className="text-xs font-medium text-muted-foreground">
-                    Clinical notes
+                    Progress Notes
                   </label>
-                  <Textarea id="tooth-notes-textarea" value={notesDraft} onChange={(e) => setNotesDraft(e.target.value)} placeholder="Add clinical notes…" className="min-h-[60px]"/>
+                  <Textarea id="tooth-notes-textarea" value={notesDraft} onChange={(e) => setNotesDraft(e.target.value)} placeholder="Add progress notes…" className="min-h-[60px]"/>
                   <CharCount current={notesDraft.length}/>
                 </div>
               </div>
