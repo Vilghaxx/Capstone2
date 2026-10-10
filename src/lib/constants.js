@@ -17,6 +17,9 @@ export const APPOINTMENT_TYPES = {
     EXTRACTION: "extraction",
     ROOT_CANAL: "root-canal",
     CROWN: "crown",
+    TEETH_WHITENING: "teeth-whitening",
+    BRACES_ADJUSTMENT: "braces-adjustment",
+    RETAINER: "retainer",
     OTHER: "other",
 };
 export const APPOINTMENT_STATUSES = {
@@ -73,6 +76,9 @@ export const APPOINTMENT_TYPE_META = {
     extraction: "Extraction",
     "root-canal": "Root Canal",
     crown: "Crown",
+    "teeth-whitening": "Teeth Whitening",
+    "braces-adjustment": "Braces & Adjustment",
+    retainer: "Retainer",
     other: "Other",
 };
 export const APPOINTMENT_STATUS_META = {
