@@ -19,7 +19,15 @@ const appointmentFormSchema = z.object({
   type: z.string().min(1, 'Type is required'),
   notes: z.string().max(1000, 'Notes must be under 1000 characters').optional().default(''),
   status: z.string().optional().default('scheduled'),
-})
+  paymentMethod: z.enum(['pay', 'hmo']).optional().default('pay'),
+  hmoCompany: z.string().max(200).optional().default(''),
+  hmoInsuranceNo: z.string().max(100).optional().default(''),
+  hmoAccountNo: z.string().max(100).optional().default(''),
+  hmoBirthDate: z.string().optional().default(''),
+}).refine(
+  (d) => d.paymentMethod !== 'hmo' || (d.hmoCompany && d.hmoInsuranceNo && d.hmoAccountNo && d.hmoBirthDate),
+  { message: 'All HMO fields are required', path: ['hmoCompany'] }
+)
 
 const appointmentUpdateSchema = z.object({
   status: z.string().min(1).optional(),

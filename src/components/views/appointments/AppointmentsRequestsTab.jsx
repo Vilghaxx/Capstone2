@@ -87,6 +87,15 @@ export function AppointmentsRequestsTab() {
                 {formatYearMonthDayForDisplay(formatAppointmentDateToYearMonthDay(appointment.date))}{" "}
                 at {appointment.time || "—"}
               </span>
+              <span className="text-xs">
+                {appointment.paymentMethod === "hmo" ? (<span className="rounded bg-blue-500/10 px-1.5 py-0.5 font-medium text-blue-600">HMO</span>) : (<span className="rounded bg-green-500/10 px-1.5 py-0.5 font-medium text-green-600">Pay</span>)}
+              </span>
+              {appointment.paymentMethod === "hmo" && (<div className="mt-1 rounded-md border border-border bg-muted/30 p-2 text-xs text-muted-foreground">
+                  {appointment.hmoCompany && <p><span className="font-medium">Company:</span> {appointment.hmoCompany}</p>}
+                  {appointment.hmoInsuranceNo && <p><span className="font-medium">Insurance No.:</span> {appointment.hmoInsuranceNo}</p>}
+                  {appointment.hmoAccountNo && <p><span className="font-medium">Account No.:</span> {appointment.hmoAccountNo}</p>}
+                  {appointment.hmoBirthDate && <p><span className="font-medium">Birth Date:</span> {appointment.hmoBirthDate}</p>}
+                </div>)}
               {appointment.notes ? (<span className="text-xs italic text-muted-foreground">
                   &ldquo;{appointment.notes}&rdquo;
                 </span>) : null}

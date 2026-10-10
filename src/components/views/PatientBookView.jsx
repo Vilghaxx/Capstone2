@@ -13,6 +13,7 @@ import { Card, CardContent, CardHeader, CardTitle, } from "@/components/ui/card"
 import { Calendar } from "@/components/ui/calendar";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Label } from "@/components/ui/label";
+import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue, } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, } from "@/components/ui/dialog";
@@ -52,6 +53,11 @@ export default function PatientBookView() {
     const [bookTime, setBookTime] = useState("");
     const [bookType, setBookType] = useState("");
     const [bookNotes, setBookNotes] = useState("");
+    const [bookPayMethod, setBookPayMethod] = useState("pay");
+    const [hmoCompany, setHmoCompany] = useState("");
+    const [hmoInsuranceNo, setHmoInsuranceNo] = useState("");
+    const [hmoAccountNo, setHmoAccountNo] = useState("");
+    const [hmoBirthDate, setHmoBirthDate] = useState("");
     const selectedDateStr = formatDateToLocalYearMonthDay(selectedDate);
     // Fetch schedule when date changes
     useEffect(() => {
@@ -80,11 +86,20 @@ export default function PatientBookView() {
         setBookTime(time);
         setBookType("");
         setBookNotes("");
+        setBookPayMethod("pay");
+        setHmoCompany("");
+        setHmoInsuranceNo("");
+        setHmoAccountNo("");
+        setHmoBirthDate("");
         setDialogOpen(true);
     }
     async function handleSubmitBooking() {
         if (!bookType) {
             toast.error("Please select an appointment type.");
+            return;
+        }
+        if (bookPayMethod === "hmo" && (!hmoCompany || !hmoInsuranceNo || !hmoAccountNo || !hmoBirthDate)) {
+            toast.error("Please fill in all HMO details.");
             return;
         }
         if (!(user === null || user === void 0 ? void 0 : user.patientRef)) {
@@ -99,6 +114,11 @@ export default function PatientBookView() {
                 time: bookTime,
                 type: bookType,
                 notes: bookNotes || "",
+                paymentMethod: bookPayMethod,
+                hmoCompany: bookPayMethod === "hmo" ? hmoCompany : "",
+                hmoInsuranceNo: bookPayMethod === "hmo" ? hmoInsuranceNo : "",
+                hmoAccountNo: bookPayMethod === "hmo" ? hmoAccountNo : "",
+                hmoBirthDate: bookPayMethod === "hmo" ? hmoBirthDate : "",
             });
             toast.success("Appointment requested!");
             setDialogOpen(false);
@@ -253,6 +273,37 @@ export default function PatientBookView() {
               <Label htmlFor="book-notes">Notes (optional)</Label>
               <Textarea id="book-notes" placeholder="Anything we should know?" rows={3} value={bookNotes} onChange={(e) => setBookNotes(e.target.value)}/>
             </div>
+            <div className="space-y-2">
+              <Label>Payment Method</Label>
+              <Select value={bookPayMethod} onValueChange={setBookPayMethod}>
+                <SelectTrigger className="w-full">
+                  <SelectValue placeholder="Select payment method"/>
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="pay">Pay (Out of Pocket)</SelectItem>
+                  <SelectItem value="hmo">HMO</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            {bookPayMethod === "hmo" && (<div className="space-y-3 rounded-md border border-border bg-muted/30 p-3">
+              <p className="text-sm font-medium">HMO Details</p>
+              <div className="space-y-2">
+                <Label htmlFor="hmo-company">Company</Label>
+                <Input id="hmo-company" placeholder="HMO company name" value={hmoCompany} onChange={(e) => setHmoCompany(e.target.value)}/>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="hmo-insurance">Insurance No.</Label>
+                <Input id="hmo-insurance" placeholder="Insurance number" value={hmoInsuranceNo} onChange={(e) => setHmoInsuranceNo(e.target.value)}/>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="hmo-account">Account No.</Label>
+                <Input id="hmo-account" placeholder="Account number" value={hmoAccountNo} onChange={(e) => setHmoAccountNo(e.target.value)}/>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="hmo-birthdate">Birth Date</Label>
+                <Input id="hmo-birthdate" type="date" value={hmoBirthDate} onChange={(e) => setHmoBirthDate(e.target.value)}/>
+              </div>
+            </div>)}
           </div>
           <DialogFooter>
             <Button type="button" variant="outline" onClick={() => setDialogOpen(false)} disabled={submitting}>

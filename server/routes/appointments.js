@@ -176,6 +176,11 @@ router.post('/', authenticate, requireRole(ROLES.DENTIST, ROLES.CASHIER, ROLES.P
       type: data.type,
       status,
       notes: data.notes ?? '',
+      paymentMethod: data.paymentMethod ?? 'pay',
+      hmoCompany: data.hmoCompany ?? '',
+      hmoInsuranceNo: data.hmoInsuranceNo ?? '',
+      hmoAccountNo: data.hmoAccountNo ?? '',
+      hmoBirthDate: data.hmoBirthDate ?? '',
       createdBy: req.user.sub,
     },
   })
