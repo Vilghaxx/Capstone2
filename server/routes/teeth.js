@@ -9,7 +9,7 @@ const crypto = require('crypto')
 
 const router = Router()
 
-const XRAY_DIR = path.join(__dirname, '..', 'public', 'xrays')
+const XRAY_DIR = path.join(__dirname, '..', '..', 'public', 'xrays')
 if (!fs.existsSync(XRAY_DIR)) fs.mkdirSync(XRAY_DIR, { recursive: true })
 
 // GET /api/teeth/:patientId
