@@ -18,6 +18,7 @@ import { NotesDialog } from "@/components/views/patient-profile/EditPatientDialo
 import { ToothModal } from "@/components/views/patient-profile/ToothModal";
 import { TreatmentHistoryTable } from "@/components/views/patient-profile/TreatmentHistoryTable";
 import { TreatmentPlan } from "@/components/views/patient-profile/TreatmentPlan";
+import { TOOTH_STATUS_META } from "@/lib/format";
 /** Patient profile view — composes the info card, dental chart, treatment history, and edit/delete/tooth dialogs. */
 export default function PatientProfileView() {
     var _a, _b, _c;
@@ -103,6 +104,27 @@ export default function PatientProfileView() {
           {teethQuery.isLoading ? (<LoadingSpinner text="Loading dental chart…"/>) : teethQuery.isError ? (<EmptyState title="Could not load dental chart" message="Please try again later."/>) : (<div className="mx-auto max-w-[400px] xs:max-w-[480px] sm:max-w-[520px]">
               <OralCavityChart teeth={teeth} onSelectTooth={setSelectedToothNumber} selectedTooth={selectedToothNumber}/>
             </div>)}
+          {!teethQuery.isLoading && !teethQuery.isError && (() => {
+            const counts = { treated: 0, "needs-attention": 0, missing: 0 };
+            for (const t of teeth)
+                if (t.status in counts)
+                    counts[t.status]++;
+            const entries = Object.entries(counts).filter(([, n]) => n > 0);
+            if (entries.length === 0)
+                return null;
+            return (<div className="mt-4 rounded-lg border border-border bg-muted/30 p-4">
+              <p className="mb-2 text-sm font-medium">Chart Summary</p>
+              <div className="flex flex-wrap gap-x-6 gap-y-2">
+                {entries.map(([status, count]) => (<div key={status} className="flex items-center gap-2 text-sm">
+                  <span className={`h-2.5 w-2.5 rounded-full ${TOOTH_STATUS_META[status].color}`}/>
+                  <span className="font-medium">{count}</span>
+                  <span className="text-muted-foreground">{TOOTH_STATUS_META[status].label}</span>
+                  {count > 1 && <span className="text-xs text-muted-foreground">teeth</span>}
+                  {count === 1 && <span className="text-xs text-muted-foreground">tooth</span>}
+                </div>))}
+              </div>
+            </div>);
+        })()}
         </CardContent>
       </Card>
 
