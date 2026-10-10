@@ -10,6 +10,10 @@ const nextConfig = {
         source: "/api/:path*",
         destination: "http://localhost:4000/api/:path*",
       },
+      {
+        source: "/xrays/:path*",
+        destination: "http://localhost:4000/xrays/:path*",
+      },
     ];
   },
 };
