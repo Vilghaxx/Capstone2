@@ -79,17 +79,24 @@ router.get('/schedule', authenticate, requireRole(ROLES.DENTIST, ROLES.CASHIER, 
   })
 
   const visible = appointments.filter(a => SCHEDULE_VISIBLE_STATUSES.has(a.status))
+  // Time slots blocked by pending appointments (hide entirely from schedule board)
+  const blockedSlots = new Set(
+    appointments
+      .filter(a => a.status === APPOINTMENT_STATUSES.PENDING)
+      .map(a => a.time)
+  )
 
   if (req.user.role === ROLES.PATIENT) {
-    return res.json(visible.map(a => ({
-      id: a.id,
-      time: a.time,
-      type: a.type,
-      status: a.status,
-    })))
+    return res.json({
+      appointments: visible.map(a => ({ id: a.id, time: a.time, type: a.type, status: a.status })),
+      blockedSlots: Array.from(blockedSlots),
+    })
   }
 
-  return res.json(visible)
+  return res.json({
+    appointments: visible,
+    blockedSlots: Array.from(blockedSlots),
+  })
 }))
 
 // POST /api/appointments

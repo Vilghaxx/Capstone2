@@ -54,3 +54,10 @@ export function useDeleteAppointments() {
         },
     });
 }
+export function useSchedule(date) {
+    return useQuery({
+        queryKey: ["schedule", date],
+        queryFn: () => apiClient.get(`/api/appointments/schedule?date=${date}`),
+        enabled: !!date,
+    });
+}

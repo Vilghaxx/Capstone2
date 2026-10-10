@@ -1,7 +1,7 @@
 "use client";
 import { useMemo, useState } from "react";
 import { Calendar as CalendarIcon, Plus } from "lucide-react";
-import { useAppointments } from "@/hooks";
+import { useAppointments, useSchedule } from "@/hooks";
 import { APPOINTMENT_TIME_SLOTS } from "@/lib/format";
 import { formatYearMonthDayForDisplay, formatDateToLocalYearMonthDay } from "@/lib/date-utils";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -21,19 +21,22 @@ const VISIBLE_SCHEDULE_STATUSES = new Set(["scheduled", "completed"]);
  * under that slot; appointments at other times appear in an "Other times"
  * panel below the grid. Only scheduled / completed appointments are shown
  * so the calendar reflects the confirmed day's agenda.
+ * Time slots with pending appointments are hidden entirely.
  */
 export function AppointmentsScheduleTab({ onNew, }) {
     const patientNameById = usePatientNameById();
     const [selectedDate, setSelectedDate] = useState(new Date());
     const selectedDateYearMonthDay = formatDateToLocalYearMonthDay(selectedDate);
-    const { data: appointmentsData, isLoading, isError, } = useAppointments({ date: selectedDateYearMonthDay });
+    const { data: scheduleData, isLoading, isError } = useSchedule(selectedDateYearMonthDay);
+    const appointmentsData = scheduleData?.appointments ?? [];
+    const blockedSlots = new Set(scheduleData?.blockedSlots ?? []);
     // Map time → appointments; collect off-grid appointments separately.
     const { appointmentsByTimeSlot, offGridAppointments } = useMemo(() => {
         var _a;
         const slotMap = new Map();
         const others = [];
         const slotSet = new Set(APPOINTMENT_TIME_SLOTS);
-        for (const appointment of appointmentsData !== null && appointmentsData !== void 0 ? appointmentsData : []) {
+        for (const appointment of appointmentsData) {
             if (!VISIBLE_SCHEDULE_STATUSES.has(appointment.status))
                 continue;
             const time = appointment.time || "";
@@ -71,6 +74,9 @@ export function AppointmentsScheduleTab({ onNew, }) {
       <div className="flex-1">
         {isLoading ? (<LoadingSpinner text="Loading schedule…"/>) : isError ? (<EmptyState title="Could not load schedule" message="Something went wrong while fetching appointments. Please try again later."/>) : (<div className="flex flex-col gap-2">
             {APPOINTMENT_TIME_SLOTS.map((time) => {
+                if (blockedSlots.has(time)) {
+                    return null;
+                }
                 var _a;
                 const items = (_a = appointmentsByTimeSlot.get(time)) !== null && _a !== void 0 ? _a : [];
                 return (<div key={time} className="flex gap-3 rounded-lg border border-border bg-card/30 p-2 xs:p-3 lg:p-4">
