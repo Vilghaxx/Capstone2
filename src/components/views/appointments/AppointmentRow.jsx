@@ -21,6 +21,7 @@ export function AppointmentRow({ appointment, patientName, isDentist, onStatusCh
           <span className="rounded-md bg-primary/10 px-2 py-0.5 text-xs font-medium text-primary">
             {formatAppointmentTypeLabel(appointment.type)}
           </span>
+          {appointment.paymentMethod === "hmo" ? (<span className="rounded bg-blue-500/10 px-1.5 py-0.5 text-xs font-medium text-blue-600">HMO</span>) : (<span className="rounded bg-green-500/10 px-1.5 py-0.5 text-xs font-medium text-green-600">Pay</span>)}
         </div>
         <div className="text-sm">
           <span className="font-medium">{patientName}</span>
@@ -28,6 +29,12 @@ export function AppointmentRow({ appointment, patientName, isDentist, onStatusCh
               {" "}— {appointment.notes}
             </span>) : null}
         </div>
+        {appointment.paymentMethod === "hmo" && (<div className="mt-1 rounded-md border border-border bg-muted/30 p-2 text-xs text-muted-foreground">
+            {appointment.hmoCompany && <p><span className="font-medium">Company:</span> {appointment.hmoCompany}</p>}
+            {appointment.hmoInsuranceNo && <p><span className="font-medium">Insurance No.:</span> {appointment.hmoInsuranceNo}</p>}
+            {appointment.hmoAccountNo && <p><span className="font-medium">Account No.:</span> {appointment.hmoAccountNo}</p>}
+            {appointment.hmoBirthDate && <p><span className="font-medium">Birth Date:</span> {appointment.hmoBirthDate}</p>}
+          </div>)}
       </div>
 
       <div className="flex flex-wrap items-center justify-end gap-2">
