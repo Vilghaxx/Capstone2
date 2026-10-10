@@ -1,5 +1,5 @@
 "use client";
-import { Calendar, Mail, MapPin, Phone, StickyNote, Trash2, } from "lucide-react";
+import { Calendar, Mail, MapPin, Phone, StickyNote } from "lucide-react";
 import { formatDate } from "@/lib/format";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -19,7 +19,7 @@ function getInitials(name) {
  * name, "patient since" date, contact details, demographics, and notes.
  * Notes + Delete actions are gated by the `canManage` flag (any staff role).
  */
-export function PatientInfoCard({ patient, canManage, onNotes, onDelete, }) {
+export function PatientInfoCard({ patient, canManage, onNotes, }) {
     return (<Card>
       <CardHeader className="flex-row items-start justify-between gap-4">
         <div className="flex items-start gap-4">
@@ -35,16 +35,10 @@ export function PatientInfoCard({ patient, canManage, onNotes, onDelete, }) {
             </p>
           </div>
         </div>
-        {canManage && (<div className="flex shrink-0 gap-2">
-            <Button variant="outline" size="sm" onClick={onNotes}>
+        {canManage && (<Button variant="outline" size="sm" onClick={onNotes}>
               <StickyNote className="h-4 w-4"/>
               Notes
-            </Button>
-            <Button variant="outline" size="sm" onClick={onDelete} className="text-destructive hover:bg-destructive/10 hover:text-destructive">
-              <Trash2 className="h-4 w-4"/>
-              Delete
-            </Button>
-          </div>)}
+            </Button>)}
       </CardHeader>
       <CardContent>
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
