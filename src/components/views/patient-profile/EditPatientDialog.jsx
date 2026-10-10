@@ -43,14 +43,14 @@ export function NotesDialog({ patient, open, onOpenChange, }) {
     return (<Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[520px]">
         <DialogHeader>
-          <DialogTitle>Patient Notes</DialogTitle>
+          <DialogTitle>Patient Progress Notes</DialogTitle>
           <DialogDescription>
             Allergies, medical conditions, and other clinical notes for{" "}
             {patient.name}.
           </DialogDescription>
         </DialogHeader>
         <div className="space-y-4">
-          <Label htmlFor="notes">Notes</Label>
+          <Label htmlFor="notes">Progress Notes</Label>
           <Textarea id="notes" value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="Allergies, medical conditions, etc." className="min-h-[150px]"/>
           <CharCount current={notes.length}/>
         </div>
@@ -59,7 +59,7 @@ export function NotesDialog({ patient, open, onOpenChange, }) {
             Cancel
           </Button>
           <Button type="button" onClick={handleSave} disabled={updatePatient.isPending}>
-            {updatePatient.isPending ? "Saving…" : "Save Notes"}
+            {updatePatient.isPending ? "Saving…" : "Save Progress Notes"}
           </Button>
         </DialogFooter>
       </DialogContent>

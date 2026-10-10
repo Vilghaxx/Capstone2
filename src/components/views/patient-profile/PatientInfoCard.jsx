@@ -37,7 +37,7 @@ export function PatientInfoCard({ patient, canManage, onNotes, }) {
         </div>
         {canManage && (<Button variant="outline" size="sm" onClick={onNotes}>
               <StickyNote className="h-4 w-4"/>
-              Notes
+              Progress Notes
             </Button>)}
       </CardHeader>
       <CardContent>
@@ -70,7 +70,7 @@ export function PatientInfoCard({ patient, canManage, onNotes, }) {
           </div>
           {patient.notes ? (<div className="space-y-1 sm:col-span-2 lg:col-span-1">
               <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
-                Notes
+                Progress Notes
               </p>
               <p className="flex items-start gap-2 text-sm">
                 <StickyNote className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground"/>
