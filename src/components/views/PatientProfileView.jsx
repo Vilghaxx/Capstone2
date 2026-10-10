@@ -1,6 +1,6 @@
 "use client";
 import { useState } from "react";
-import { ArrowLeft, AlertTriangle, HeartPulse, Trash2 } from "lucide-react";
+import { ArrowLeft, AlertTriangle, HeartPulse } from "lucide-react";
 import { toast } from "sonner";
 import { useIsDentist, useIsStaff } from "@/lib/auth-store";
 import { useNav } from "@/lib/nav";
@@ -78,7 +78,7 @@ export default function PatientProfileView() {
       </Button>
 
       {/* Patient info */}
-      <PatientInfoCard patient={patient} canManage={canManage} onNotes={() => setIsNotesDialogOpen(true)}/>
+      <PatientInfoCard patient={patient} canManage={canManage} onNotes={() => setIsNotesDialogOpen(true)} onDelete={() => setIsDeleteDialogOpen(true)}/>
 
       {/* Dental chart */}
       <Card>
@@ -131,12 +131,6 @@ export default function PatientProfileView() {
               </div>
             </div>);
         })()}
-          <div className="mt-4 flex justify-end">
-            <Button variant="outline" size="sm" onClick={() => setIsDeleteDialogOpen(true)} className="text-destructive hover:bg-destructive/10 hover:text-destructive">
-              <Trash2 className="h-4 w-4"/>
-              Delete Patient
-            </Button>
-          </div>
         </CardContent>
       </Card>
 

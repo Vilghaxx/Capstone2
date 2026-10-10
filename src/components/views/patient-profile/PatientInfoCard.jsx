@@ -1,5 +1,5 @@
 "use client";
-import { Calendar, Mail, MapPin, Phone, StickyNote } from "lucide-react";
+import { Calendar, Mail, MapPin, Phone, StickyNote, Trash2 } from "lucide-react";
 import { formatDate } from "@/lib/format";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -19,7 +19,7 @@ function getInitials(name) {
  * name, "patient since" date, contact details, demographics, and notes.
  * Notes + Delete actions are gated by the `canManage` flag (any staff role).
  */
-export function PatientInfoCard({ patient, canManage, onNotes, }) {
+export function PatientInfoCard({ patient, canManage, onNotes, onDelete, }) {
     return (<Card>
       <CardHeader className="flex-row items-start justify-between gap-4">
         <div className="flex items-start gap-4">
@@ -78,6 +78,12 @@ export function PatientInfoCard({ patient, canManage, onNotes, }) {
               </p>
             </div>) : null}
         </div>
+        {canManage && (<div className="mt-4 flex justify-end">
+            <Button variant="outline" size="sm" onClick={onDelete} className="text-destructive hover:bg-destructive/10 hover:text-destructive">
+              <Trash2 className="h-4 w-4"/>
+              Delete Patient
+            </Button>
+          </div>)}
       </CardContent>
     </Card>);
 }
