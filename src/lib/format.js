@@ -60,8 +60,8 @@ export function greetingFor(date = new Date()) {
         return "Good afternoon";
     return "Good evening";
 }
-/** Build a list of hour-slot labels for the schedule view (8am–6pm). */
-export const APPOINTMENT_TIME_SLOTS = Array.from({ length: 11 }, (_, i) => {
-    const h = i + 8;
+/** Build a list of hour-slot labels for the schedule view (9am–5pm). */
+export const APPOINTMENT_TIME_SLOTS = Array.from({ length: 8 }, (_, i) => {
+    const h = i + 9;
     return `${String(h).padStart(2, "0")}:00`;
 });
