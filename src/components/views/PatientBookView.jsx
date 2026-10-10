@@ -270,8 +270,8 @@ export default function PatientBookView() {
               </Select>
             </div>
             <div className="space-y-2">
-              <Label htmlFor="book-notes">Notes (optional)</Label>
-              <Textarea id="book-notes" placeholder="Anything we should know?" rows={3} value={bookNotes} onChange={(e) => setBookNotes(e.target.value)}/>
+              <Label htmlFor="book-notes">Complaint</Label>
+              <Textarea id="book-notes" placeholder="What brings you in?" rows={3} value={bookNotes} onChange={(e) => setBookNotes(e.target.value)}/>
             </div>
             <div className="space-y-2">
               <Label>Payment Method</Label>
