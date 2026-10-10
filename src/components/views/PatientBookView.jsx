@@ -43,6 +43,7 @@ export default function PatientBookView() {
     const { data: profile, isLoading: profileLoading } = useMyProfile();
     const [selectedDate, setSelectedDate] = useState(new Date());
     const [slots, setSlots] = useState([]);
+    const [blockedSlots, setBlockedSlots] = useState([]);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState(false);
     const [submitting, setSubmitting] = useState(false);
@@ -58,7 +59,10 @@ export default function PatientBookView() {
         setLoading(true);
         apiClient
             .get(`/api/appointments/schedule?date=${selectedDateStr}`)
-            .then(setSlots)
+            .then((data) => {
+                setSlots(data.appointments ?? []);
+                setBlockedSlots(data.blockedSlots ?? []);
+            })
             .catch(() => setError(true))
             .finally(() => setLoading(false));
     }, [selectedDateStr]);
@@ -70,6 +74,7 @@ export default function PatientBookView() {
         }
         return map;
     }, [slots]);
+    const blockedSet = useMemo(() => new Set(blockedSlots), [blockedSlots]);
     const typeValues = Object.values(APPOINTMENT_TYPES);
     function handleOpenBooking(time) {
         setBookTime(time);
@@ -99,7 +104,7 @@ export default function PatientBookView() {
             setDialogOpen(false);
             // Refetch schedule to reflect the new booking
             const updated = await apiClient.get(`/api/appointments/schedule?date=${selectedDateStr}`);
-            setSlots(updated);
+            setSlots(updated.appointments ?? []);
         }
         catch (err) {
             const message = err instanceof Error
@@ -181,6 +186,9 @@ export default function PatientBookView() {
         <div className="flex-1">
           {loading ? (<LoadingSpinner text="Loading schedule…"/>) : error ? (<EmptyState title="Could not load schedule" message="Something went wrong. Please try again later."/>) : (<div className="flex flex-col gap-2">
               {APPOINTMENT_TIME_SLOTS.map((time) => {
+                if (blockedSet.has(time)) {
+                    return null;
+                }
                 var _a;
                 const booked = slotByTime.get(time);
                 const disabled = selectedDateStr < today || selectedDateStr > maxDate;
