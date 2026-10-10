@@ -92,8 +92,13 @@ async function phasePatients(count: number) {
     const dateOfBirth = `${faker.number.int({ min: 1950, max: 2005 })}-${String(faker.number.int({ min: 1, max: 12 })).padStart(2, '0')}-${String(faker.number.int({ min: 1, max: 28 })).padStart(2, '0')}`
     const address = genPHAddress()
 
+    const ALLERGIES = ['None', 'Penicillin', 'Latex', 'Ibuprofen', 'Aspirin', 'Amoxicillin', 'Shellfish', 'Nuts', 'Codeine']
+    const SPECIAL_CONDITIONS = ['None', 'Hypertension', 'Diabetes', 'Asthma', 'Heart condition', 'Pregnant', 'Blood thinner medication', 'Previous stroke']
+    const allergies = Math.random() < 0.3 ? pick(ALLERGIES.slice(1)) : 'None'
+    const specialCondition = Math.random() < 0.25 ? pick(SPECIAL_CONDITIONS.slice(1)) : 'None'
+
     const pid = db.ref('patients').push().key
-    patientUpdates[`patients/${pid}`] = { id: pid, name, phone, email, dateOfBirth, address, notes: '', createdAt: nowStr, updatedAt: nowStr }
+    patientUpdates[`patients/${pid}`] = { id: pid, name, phone, email, dateOfBirth, address, notes: '', allergies, specialCondition, createdAt: nowStr, updatedAt: nowStr }
     patients.push({ patientId: pid!, userId: 'seed', name, username })
   }
 
@@ -113,7 +118,19 @@ async function phaseTeeth(patients: Array<{ patientId: string }>) {
   for (const p of patients) {
     for (let n = 1; n <= 32; n++) {
       const id = db.ref('teeth').push().key
-      updates[`teeth/${id}`] = { id, patientId: p.patientId, toothNumber: n, status: TOOTH_STATUSES.HEALTHY, notes: null, lastTreatment: null, lastTreatmentDate: null, createdAt: nowStr }
+      const TREATMENT_PLANS = [
+    'Composite filling on occlusal surface. Monitor at next visit.',
+    'Root canal completed. Crown placement scheduled in 2 weeks.',
+    'Extraction site healing well. No further treatment needed.',
+    'Scaling and polishing done. Advise regular oral hygiene.',
+    'Crown fitted. Avoid hard foods for 48 hours.',
+    'Whitening session completed. Results visible after 3-5 days.',
+    'Braces adjusted. Next tightening in 4 weeks.',
+    'Retainer fitted. Wear nightly for 6 months.',
+    'Gum treatment applied. Follow-up in 2 weeks.',
+    'Wisdom tooth partially erupted. Schedule extraction if symptomatic.',
+  ]
+      updates[`teeth/${id}`] = { id, patientId: p.patientId, toothNumber: n, status: TOOTH_STATUSES.HEALTHY, notes: null, treatmentPlan: Math.random() < 0.15 ? pick(TREATMENT_PLANS) : null, xrayUrl: null, lastTreatment: null, lastTreatmentDate: null, createdAt: nowStr }
     }
   }
   await db.ref().update(updates)
@@ -123,6 +140,7 @@ async function phaseTeeth(patients: Array<{ patientId: string }>) {
 function generateMonthSchedule(startDate: Date, patientIds: string[], userId: string) {
   const appointments: Array<{
     patientId: string; date: string; time: string; type: string; status: string; notes: string; createdBy: string
+    paymentMethod?: string; hmoCompany?: string; hmoInsuranceNo?: string; hmoAccountNo?: string; hmoBirthDate?: string
   }> = []
   const workingDays = 22
   const timeSlots = [
@@ -164,13 +182,16 @@ function generateMonthSchedule(startDate: Date, patientIds: string[], userId: st
       if (attempts >= 20) continue
 
       const typeWeight = weightedPick([
-        { value: 'checkup', weight: 20 },
-        { value: 'cleaning', weight: 25 },
-        { value: 'filling', weight: 20 },
-        { value: 'extraction', weight: 10 },
+        { value: 'checkup', weight: 15 },
+        { value: 'cleaning', weight: 20 },
+        { value: 'filling', weight: 15 },
+        { value: 'extraction', weight: 8 },
         { value: 'root-canal', weight: 5 },
         { value: 'crown', weight: 5 },
-        { value: 'other', weight: 15 },
+        { value: 'teeth-whitening', weight: 7 },
+        { value: 'braces-adjustment', weight: 10 },
+        { value: 'retainer', weight: 5 },
+        { value: 'other', weight: 10 },
       ])
 
       const statusRoll = Math.random()
@@ -190,7 +211,15 @@ function generateMonthSchedule(startDate: Date, patientIds: string[], userId: st
         ? pick(['Patient reported mild discomfort', 'Follow-up required in 2 weeks', 'Referred for X-ray', 'No notable issues', 'Slight gum inflammation detected', 'Patient advised on oral hygiene'])
         : ''
 
-      appointments.push({ patientId, date: dateStr, time, type: typeWeight, status, notes, createdBy: userId })
+      const paymentMethod = Math.random() < 0.3 ? 'hmo' : 'pay'
+      const hmo = paymentMethod === 'hmo' ? {
+        hmoCompany: pick(['Maxicare', 'Medicard', 'PhilCare', 'Intellicare', 'Pacific Cross']),
+        hmoInsuranceNo: `INS-${faker.number.int({ min: 100000, max: 999999 })}`,
+        hmoAccountNo: `ACC-${faker.number.int({ min: 10000, max: 99999 })}`,
+        hmoBirthDate: `${faker.number.int({ min: 1950, max: 2005 })}-${String(faker.number.int({ min: 1, max: 12 })).padStart(2, '0')}-${String(faker.number.int({ min: 1, max: 28 })).padStart(2, '0')}`,
+      } : {}
+
+      appointments.push({ patientId, date: dateStr, time, type: typeWeight, status, notes, paymentMethod, ...hmo, createdBy: userId })
     }
   }
 
