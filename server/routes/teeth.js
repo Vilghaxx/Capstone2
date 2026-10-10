@@ -56,7 +56,7 @@ router.put('/:patientId/:toothNumber', authenticate, requireRole(ROLES.DENTIST),
   const parsed = toothUpdateSchema.safeParse(body)
   if (!parsed.success) return handleValidationError(res, parsed.error)
 
-  const { status, notes, treatmentPlan, xrayData, xrayFilename } = parsed.data
+  const { status, notes, treatmentPlan, xrayData, xrayFilename, removeXray } = parsed.data
 
   let xrayUrl
   if (xrayData) {
@@ -73,6 +73,7 @@ router.put('/:patientId/:toothNumber', authenticate, requireRole(ROLES.DENTIST),
       status,
       notes: notes ?? null,
       treatmentPlan: treatmentPlan ?? null,
+      ...(removeXray && { xrayUrl: null }),
       ...(xrayUrl && { xrayUrl }),
       updatedAt: new Date(),
     },

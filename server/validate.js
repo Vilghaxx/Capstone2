@@ -51,6 +51,7 @@ const toothUpdateSchema = z.object({
   treatmentPlan: z.string().max(2000, 'Treatment plan must be under 2000 characters').nullable().optional(),
   xrayData: z.string().max(4_000_000, 'X-ray image too large').nullable().optional(),
   xrayFilename: z.string().max(255).nullable().optional(),
+  removeXray: z.boolean().optional(),
 })
 
 const treatmentFormSchema = z.object({

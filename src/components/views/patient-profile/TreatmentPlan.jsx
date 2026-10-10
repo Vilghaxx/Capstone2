@@ -24,6 +24,7 @@ export function TreatmentPlan({ patientId }) {
     const [xrayPreview, setXrayPreview] = useState(null);
     const [xrayData, setXrayData] = useState(null);
     const [xrayFilename, setXrayFilename] = useState(null);
+    const [xrayRemoved, setXrayRemoved] = useState(false);
     const [lightboxOpen, setLightboxOpen] = useState(false);
     const tooth = (teeth ?? []).find((t) => String(t.toothNumber) === selectedTooth);
     useEffect(() => {
@@ -31,6 +32,7 @@ export function TreatmentPlan({ patientId }) {
         setXrayPreview(tooth?.xrayUrl ?? null);
         setXrayData(null);
         setXrayFilename(null);
+        setXrayRemoved(false);
     }, [selectedTooth, tooth]);
     function handleFileChange(e) {
         const file = e.target.files?.[0];
@@ -45,6 +47,7 @@ export function TreatmentPlan({ patientId }) {
             setXrayData(reader.result);
             setXrayPreview(reader.result);
             setXrayFilename(file.name);
+            setXrayRemoved(false);
         };
         reader.readAsDataURL(file);
     }
@@ -52,6 +55,8 @@ export function TreatmentPlan({ patientId }) {
         setXrayData(null);
         setXrayFilename(null);
         setXrayPreview(null);
+        if (tooth?.xrayUrl)
+            setXrayRemoved(true);
         if (fileInputRef.current)
             fileInputRef.current.value = "";
     }
@@ -69,6 +74,7 @@ export function TreatmentPlan({ patientId }) {
                     notes: tooth?.notes ?? null,
                     treatmentPlan: planText || null,
                     ...(xrayData && { xrayData, xrayFilename }),
+                    ...(xrayRemoved && { removeXray: true }),
                 },
             });
             toast.success(`Treatment plan saved for Tooth #${selectedTooth}`);

@@ -27,7 +27,7 @@ const publicDir = path.join(standaloneDir, 'public')
 const indexPath = path.join(standaloneDir, '.next', 'server', 'app', 'index.html')
 
 app.use(cors())
-app.use(express.json())
+app.use(express.json({ limit: '5mb' }))
 
 app.get('/api', (_req, res) => {
   res.json({ message: 'Hello, world!' })
