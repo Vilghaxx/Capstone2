@@ -48,6 +48,7 @@ const paymentFormSchema = z.object({
 const toothUpdateSchema = z.object({
   status: z.string().min(1, 'Status is required'),
   notes: z.string().max(1000, 'Notes must be under 1000 characters').nullable().optional(),
+  treatmentPlan: z.string().max(2000, 'Treatment plan must be under 2000 characters').nullable().optional(),
 })
 
 const treatmentFormSchema = z.object({

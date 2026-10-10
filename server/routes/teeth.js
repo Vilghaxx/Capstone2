@@ -50,13 +50,14 @@ router.put('/:patientId/:toothNumber', authenticate, requireRole(ROLES.DENTIST),
   const parsed = toothUpdateSchema.safeParse(body)
   if (!parsed.success) return handleValidationError(res, parsed.error)
 
-  const { status, notes } = parsed.data
+  const { status, notes, treatmentPlan } = parsed.data
 
   const tooth = await db.tooth.upsert({
     where: { patientId_toothNumber: { patientId, toothNumber: toothNumberNum } },
     update: {
       status,
       notes: notes ?? null,
+      treatmentPlan: treatmentPlan ?? null,
       updatedAt: new Date(),
     },
     create: {
@@ -64,6 +65,7 @@ router.put('/:patientId/:toothNumber', authenticate, requireRole(ROLES.DENTIST),
       toothNumber: toothNumberNum,
       status,
       notes: notes ?? null,
+      treatmentPlan: treatmentPlan ?? null,
     },
   })
 
