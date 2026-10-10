@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 const TOOTH_OPTIONS = Array.from({ length: 32 }, (_, i) => ({
     value: String(i + 1),
     label: `Tooth #${i + 1}`,
@@ -23,6 +24,7 @@ export function TreatmentPlan({ patientId }) {
     const [xrayPreview, setXrayPreview] = useState(null);
     const [xrayData, setXrayData] = useState(null);
     const [xrayFilename, setXrayFilename] = useState(null);
+    const [lightboxOpen, setLightboxOpen] = useState(false);
     const tooth = (teeth ?? []).find((t) => String(t.toothNumber) === selectedTooth);
     useEffect(() => {
         setPlanText(tooth?.treatmentPlan ?? "");
@@ -115,7 +117,7 @@ export function TreatmentPlan({ patientId }) {
             <Label>X-Ray — Tooth #{selectedTooth}</Label>
             {isDentist && (<input ref={fileInputRef} type="file" accept="image/*" onChange={handleFileChange} className="hidden"/>)}
             {xrayPreview ? (<div className="relative inline-block">
-                <img src={xrayPreview} alt={`X-ray of tooth ${selectedTooth}`} className="max-h-48 rounded-lg border border-border object-contain"/>
+                <img src={xrayPreview} alt={`X-ray of tooth ${selectedTooth}`} onClick={() => setLightboxOpen(true)} className="max-h-48 cursor-zoom-in rounded-lg border border-border object-contain transition-opacity hover:opacity-90"/>
                 {isDentist && (<button type="button" onClick={handleRemoveXray} className="absolute -right-2 -top-2 rounded-full bg-destructive p-1 text-destructive-foreground" aria-label="Remove X-ray">
                     <X className="h-3 w-3"/>
                   </button>)}
@@ -128,6 +130,13 @@ export function TreatmentPlan({ patientId }) {
                 {xrayPreview ? "Replace X-ray" : "Attach X-ray"}
               </Button>)}
           </div>
-        </div>)}
+</div>)}
+      </div>)}
+      <Dialog open={lightboxOpen} onOpenChange={setLightboxOpen}>
+        <DialogContent className="max-w-[90vw] sm:max-w-[700px]">
+          <DialogTitle>X-Ray — Tooth #{selectedTooth}</DialogTitle>
+          <img src={xrayPreview} alt={`X-ray of tooth ${selectedTooth}`} className="w-full rounded-lg object-contain"/>
+        </DialogContent>
+      </Dialog>
     </div>);
 }
