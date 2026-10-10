@@ -131,7 +131,6 @@ export function TreatmentPlan({ patientId }) {
               </Button>)}
           </div>
 </div>)}
-      </div>)}
       <Dialog open={lightboxOpen} onOpenChange={setLightboxOpen}>
         <DialogContent className="max-w-[90vw] sm:max-w-[700px]">
           <DialogTitle>X-Ray — Tooth #{selectedTooth}</DialogTitle>
