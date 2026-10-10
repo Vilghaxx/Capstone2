@@ -11,7 +11,7 @@ const ALL_TOOTH_STATUSES = Object.values(TOOTH_STATUSES);
  * slightly darker outline used for the path border and the selection glow.
  */
 const TOOTH_STATUS_COLORS = {
-    healthy: { fill: "#c51b91", stroke: "#a01574" },
+    healthy: { fill: "#3b82f6", stroke: "#2563eb" },
     treated: { fill: "#22c55e", stroke: "#16a34a" },
     "needs-attention": { fill: "#f59e0b", stroke: "#d97706" },
     missing: { fill: "#1f2937", stroke: "#111827" },
