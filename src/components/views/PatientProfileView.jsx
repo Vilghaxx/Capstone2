@@ -105,22 +105,27 @@ export default function PatientProfileView() {
               <OralCavityChart teeth={teeth} onSelectTooth={setSelectedToothNumber} selectedTooth={selectedToothNumber}/>
             </div>)}
           {!teethQuery.isLoading && !teethQuery.isError && (() => {
-            const counts = { treated: [], "needs-attention": [], missing: [] };
+            const groups = { treated: [], "needs-attention": [], missing: [] };
             for (const t of teeth)
-                if (t.status in counts)
-                    counts[t.status].push(t.toothNumber);
-            const entries = Object.entries(counts).filter(([, nums]) => nums.length > 0);
+                if (t.status in groups)
+                    groups[t.status].push(t);
+            const entries = Object.entries(groups).filter(([, arr]) => arr.length > 0);
             if (entries.length === 0)
                 return null;
             return (<div className="mt-4 rounded-lg border border-border bg-muted/30 p-4">
               <p className="mb-2 text-sm font-medium">Chart Summary</p>
               <div className="flex flex-col gap-2">
-                {entries.map(([status, nums]) => (<div key={status} className="flex items-start gap-2 text-sm">
+                {entries.map(([status, items]) => (<div key={status} className="flex items-start gap-2 text-sm">
                   <span className={`mt-1 h-2.5 w-2.5 shrink-0 rounded-full ${TOOTH_STATUS_META[status].color}`}/>
                   <div>
-                    <span className="font-medium">{nums.length}</span>{" "}
-                    <span className="text-muted-foreground">{TOOTH_STATUS_META[status].label}</span>{" "}
-                    <span className="text-muted-foreground">({nums.map((n) => `#${n}`).join(", ")})</span>
+                    <span className="font-medium">{items.length}</span>{" "}
+                    <span className="text-muted-foreground">{TOOTH_STATUS_META[status].label}</span>
+                    <ul className="mt-0.5 list-none space-y-0.5">
+                      {items.map((t) => (<li key={t.toothNumber} className="text-muted-foreground">
+                        <span className="font-medium text-foreground">#{t.toothNumber}</span>
+                        {t.notes && <span className="text-xs"> — {t.notes}</span>}
+                      </li>))}
+                    </ul>
                   </div>
                 </div>))}
               </div>
