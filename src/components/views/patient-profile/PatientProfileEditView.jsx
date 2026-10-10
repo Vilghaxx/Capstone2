@@ -20,8 +20,8 @@ const profileFormSchema = z.object({
     email: z.string().email("Invalid email address"),
     dateOfBirth: z.string().min(1, "Date of birth is required"),
     address: z.string().optional().default(""),
-    allergies: z.string().optional().default(""),
-    specialCondition: z.string().optional().default(""),
+    allergies: z.string().max(100, "Must be under 100 characters").optional().default(""),
+    specialCondition: z.string().max(100, "Must be under 100 characters").optional().default(""),
 });
 export default function PatientProfileEditView() {
     const navigate = useNav((s) => s.navigate);

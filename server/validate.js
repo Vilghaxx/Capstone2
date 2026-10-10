@@ -68,8 +68,8 @@ const profileUpdateSchema = z.object({
   email: z.string().email('Invalid email address'),
   dateOfBirth: z.string().min(1, 'Date of birth is required'),
   address: z.string().optional().default(''),
-  allergies: z.string().max(500, 'Allergies must be under 500 characters').optional().default(''),
-  specialCondition: z.string().max(500, 'Special condition must be under 500 characters').optional().default(''),
+  allergies: z.string().max(100, 'Allergies must be under 100 characters').optional().default(''),
+  specialCondition: z.string().max(100, 'Special condition must be under 100 characters').optional().default(''),
 })
 
 const patientAppointmentUpdateSchema = z.object({
