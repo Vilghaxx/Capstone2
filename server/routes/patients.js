@@ -1,16 +1,46 @@
 const { Router } = require('express')
-const { db } = require('../db')
+const { db, loadServiceAccount } = require('../db')
 const { authenticate, requireRole, withErrors } = require('../middleware')
 const { patientFormSchema, patientXraySchema, handleValidationError } = require('../validate').default
 const { PAGINATION_DEFAULTS, ROLES, TOTAL_TEETH, TOOTH_STATUSES } = require('../constants')
-const fs = require('fs')
-const path = require('path')
+const { getStorage } = require('firebase-admin/storage')
 const crypto = require('crypto')
 
 const router = Router()
 
-const XRAY_DIR = path.join(__dirname, '..', '..', 'public', 'xrays')
-if (!fs.existsSync(XRAY_DIR)) fs.mkdirSync(XRAY_DIR, { recursive: true })
+const EXT_CONTENT_TYPES = {
+  '.png': 'image/png',
+  '.jpg': 'image/jpeg',
+  '.jpeg': 'image/jpeg',
+  '.webp': 'image/webp',
+}
+
+// Resolve the storage bucket lazily: env override, then the two possible
+// default bucket names. Cached after first success; retried after failure
+// so enabling Storage in the console works without a server restart.
+let bucketPromise = null
+function getBucket() {
+  if (!bucketPromise) {
+    bucketPromise = (async () => {
+      const sa = loadServiceAccount()
+      const candidates = [
+        process.env.FIREBASE_STORAGE_BUCKET,
+        `${sa.project_id}.firebasestorage.app`,
+        `${sa.project_id}.appspot.com`,
+      ].filter(Boolean)
+      for (const name of candidates) {
+        const bucket = getStorage().bucket(name)
+        const [exists] = await bucket.exists()
+        if (exists) return bucket
+      }
+      throw new Error('No Firebase Storage bucket found. Enable Storage in the Firebase console.')
+    })().catch((err) => {
+      bucketPromise = null
+      throw err
+    })
+  }
+  return bucketPromise
+}
 
 // GET /api/patients?search=&page=&limit=
 router.get('/', authenticate, withErrors(async (req, res) => {
@@ -137,10 +167,15 @@ router.put('/:id/xray', authenticate, requireRole(ROLES.DENTIST), withErrors(asy
   let xrayUrl
   if (xrayData) {
     const ext = (xrayFilename || '').match(/\.(png|jpe?g|webp)$/i)?.[0]?.toLowerCase() || '.png'
-    const fname = `patient_${id}_${crypto.randomBytes(6).toString('hex')}${ext}`
     const base64 = xrayData.replace(/^data:image\/\w+;base64,/, '')
-    fs.writeFileSync(path.join(XRAY_DIR, fname), Buffer.from(base64, 'base64'))
-    xrayUrl = `/xrays/${fname}`
+    const bucket = await getBucket()
+    const token = crypto.randomUUID()
+    const file = bucket.file(`xrays/patient_${id}_${crypto.randomBytes(6).toString('hex')}${ext}`)
+    await file.save(Buffer.from(base64, 'base64'), {
+      contentType: EXT_CONTENT_TYPES[ext] || 'image/png',
+      metadata: { metadata: { firebaseStorageDownloadTokens: token } },
+    })
+    xrayUrl = `https://firebasestorage.googleapis.com/v0/b/${bucket.name}/o/${encodeURIComponent(file.name)}?alt=media&token=${token}`
   }
 
   if (!xrayUrl && !removeXray) {
