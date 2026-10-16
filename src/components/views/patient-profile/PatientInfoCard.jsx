@@ -43,7 +43,7 @@ export function PatientInfoCard({ patient, canManage, isDentist, onNotes, onDele
             try {
                 await saveXray.mutateAsync({
                     id: patient.id,
-                    data: { xrayData: reader.result, xrayFilename: file.name },
+                    data: { xrayData: reader.result },
                 });
                 toast.success("X-ray saved");
             }

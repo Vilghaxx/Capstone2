@@ -545,4 +545,4 @@ const db = {
   },
 }
 
-module.exports = { db, loadServiceAccount }
+module.exports = { db }

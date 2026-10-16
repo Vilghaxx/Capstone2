@@ -55,8 +55,11 @@ const toothUpdateSchema = z.object({
 })
 
 const patientXraySchema = z.object({
-  xrayData: z.string().max(4_000_000, 'X-ray image too large').optional(),
-  xrayFilename: z.string().max(255).optional(),
+  xrayData: z
+    .string()
+    .max(4_200_000, 'X-ray image too large')
+    .refine((s) => s.startsWith('data:image/'), 'Invalid image data')
+    .optional(),
   removeXray: z.boolean().optional(),
 })
 
