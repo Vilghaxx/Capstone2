@@ -13,7 +13,7 @@ import { QuickActions } from "./QuickActionCard";
 import { AppointmentListCard } from "./AppointmentListCard";
 import { getTodaysAppointments, countPendingAppointments, } from "./dashboard-helpers";
 /* ------------------------------------------------------------------ */
-/* Cashier dashboard (financial + scheduling focus)                    */
+/* Assistant dashboard (financial + scheduling focus)                    */
 /* ------------------------------------------------------------------ */
 /** Single row in the recent unpaid bills list. */
 function UnpaidBillRow({ bill }) {
@@ -34,7 +34,7 @@ function UnpaidBillRow({ bill }) {
       </div>
     </div>);
 }
-export function CashierDashboard() {
+export function AssistantDashboard() {
     var _a, _b, _c, _d;
     const navigate = useNav((s) => s.navigate);
     const apptsQuery = useAppointments();

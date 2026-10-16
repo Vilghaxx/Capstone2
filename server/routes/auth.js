@@ -92,7 +92,7 @@ router.post('/google', withErrors(async (req, res) => {
   if (userCount === 0) {
     role = ROLES.DENTIST
   } else if (userCount === 1) {
-    role = ROLES.CASHIER
+    role = ROLES.ASSISTANT
   } else {
     role = ROLES.PATIENT
   }
@@ -105,7 +105,7 @@ router.post('/google', withErrors(async (req, res) => {
     username = `${baseUsername}${suffix}`
   }
 
-  if (role === ROLES.DENTIST || role === ROLES.CASHIER) {
+  if (role === ROLES.DENTIST || role === ROLES.ASSISTANT) {
     const newUser = await db.user.create({
       data: { username, role, name, email, googleId },
     })

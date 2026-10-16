@@ -11,7 +11,7 @@ const geistMono = Geist_Mono({
 });
 export const metadata = {
     title: "Sonido Dental Clinic — Dental Practice Management",
-    description: "Comprehensive dental practice management system for dentists, cashiers, and patients. Manage patients, appointments, treatments, and billing.",
+    description: "Comprehensive dental practice management system for dentists, assistants, and patients. Manage patients, appointments, treatments, and billing.",
     keywords: ["dental", "practice management", "appointments", "billing", "dental chart", "Sonido Dental Clinic"],
     authors: [{ name: "Dental System" }],
     icons: {

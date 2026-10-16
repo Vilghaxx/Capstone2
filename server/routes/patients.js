@@ -46,7 +46,7 @@ router.get('/', authenticate, withErrors(async (req, res) => {
 }))
 
 // POST /api/patients
-router.post('/', authenticate, requireRole(ROLES.DENTIST, ROLES.CASHIER), withErrors(async (req, res) => {
+router.post('/', authenticate, requireRole(ROLES.DENTIST, ROLES.ASSISTANT), withErrors(async (req, res) => {
   const body = req.body
   if (!body || Object.keys(body).length === 0) {
     return res.status(400).json({ error: 'Invalid JSON body' })
@@ -86,7 +86,7 @@ router.get('/:id', authenticate, withErrors(async (req, res) => {
 }))
 
 // PUT /api/patients/:id
-router.put('/:id', authenticate, requireRole(ROLES.DENTIST, ROLES.CASHIER), withErrors(async (req, res) => {
+router.put('/:id', authenticate, requireRole(ROLES.DENTIST, ROLES.ASSISTANT), withErrors(async (req, res) => {
   const { id } = req.params
 
   const existing = await db.patient.findUnique({ where: { id } })
@@ -145,7 +145,7 @@ router.put('/:id/xray', authenticate, requireRole(ROLES.DENTIST), withErrors(asy
 }))
 
 // DELETE /api/patients/:id
-router.delete('/:id', authenticate, requireRole(ROLES.DENTIST, ROLES.CASHIER), withErrors(async (req, res) => {
+router.delete('/:id', authenticate, requireRole(ROLES.DENTIST, ROLES.ASSISTANT), withErrors(async (req, res) => {
   const { id } = req.params
 
   const existing = await db.patient.findUnique({ where: { id } })

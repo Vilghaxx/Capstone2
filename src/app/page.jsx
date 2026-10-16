@@ -96,7 +96,7 @@ function AppContent() {
     }
     // Role-gate patient-only views (book + my-appointments) — staff cannot
     // access them because they have no patient profile to book against.
-    if ((user.role === "dentist" || user.role === "cashier") &&
+    if ((user.role === "dentist" || user.role === "assistant") &&
         (view === "book" || view === "my-appointments" || view === "my-profile")) {
         return (<AppShell>
         <ViewTransition view={view}>

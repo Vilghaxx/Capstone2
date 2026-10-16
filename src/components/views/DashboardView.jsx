@@ -5,7 +5,7 @@ import { LoadingSpinner } from "@/components/common/LoadingSpinner";
 import { EmptyState } from "@/components/common/EmptyState";
 import { RoleBadge } from "./dashboard/RoleBadge";
 import { DentistDashboard } from "./dashboard/DentistDashboard";
-import { CashierDashboard } from "./dashboard/CashierDashboard";
+import { AssistantDashboard } from "./dashboard/AssistantDashboard";
 import { PatientDashboard } from "./dashboard/PatientDashboard";
 /* ------------------------------------------------------------------ */
 /* Root dashboard — picks the right panel by role                      */
@@ -35,6 +35,6 @@ export default function DashboardView() {
       </header>
 
       {/* Body */}
-      {!user ? (<LoadingSpinner text="Loading dashboard…"/>) : user.role === "dentist" ? (<DentistDashboard />) : user.role === "cashier" ? (<CashierDashboard />) : user.role === "patient" ? (<PatientDashboard />) : (<EmptyState title="Unknown role" message="Your account role is not recognized. Please contact support."/>)}
+      {!user ? (<LoadingSpinner text="Loading dashboard…"/>) : user.role === "dentist" ? (<DentistDashboard />) : user.role === "assistant" ? (<AssistantDashboard />) : user.role === "patient" ? (<PatientDashboard />) : (<EmptyState title="Unknown role" message="Your account role is not recognized. Please contact support."/>)}
     </div>);
 }

@@ -1,6 +1,6 @@
 const ROLES = {
   DENTIST: 'dentist',
-  CASHIER: 'cashier',
+  ASSISTANT: 'assistant',
   PATIENT: 'patient',
 }
 

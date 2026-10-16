@@ -23,7 +23,7 @@ async function hasSlotConflict(date, time, excludeId) {
 const router = Router()
 
 // GET /api/appointments?status=&date=
-router.get('/', authenticate, requireRole(ROLES.DENTIST, ROLES.CASHIER, ROLES.PATIENT), withErrors(async (req, res) => {
+router.get('/', authenticate, requireRole(ROLES.DENTIST, ROLES.ASSISTANT, ROLES.PATIENT), withErrors(async (req, res) => {
   const status = (req.query.status || '').trim() || undefined
   const date = (req.query.date || '').trim() || undefined
 
@@ -61,7 +61,7 @@ const SCHEDULE_VISIBLE_STATUSES = new Set([
 ])
 
 // GET /api/schedule?date=YYYY-MM-DD — public time-slot view for patients
-router.get('/schedule', authenticate, requireRole(ROLES.DENTIST, ROLES.CASHIER, ROLES.PATIENT), withErrors(async (req, res) => {
+router.get('/schedule', authenticate, requireRole(ROLES.DENTIST, ROLES.ASSISTANT, ROLES.PATIENT), withErrors(async (req, res) => {
   const date = (req.query.date || '').trim()
   if (!date) return res.status(400).json({ error: 'date query parameter is required.' })
 
@@ -100,7 +100,7 @@ router.get('/schedule', authenticate, requireRole(ROLES.DENTIST, ROLES.CASHIER, 
 }))
 
 // POST /api/appointments
-router.post('/', authenticate, requireRole(ROLES.DENTIST, ROLES.CASHIER, ROLES.PATIENT), withErrors(async (req, res) => {
+router.post('/', authenticate, requireRole(ROLES.DENTIST, ROLES.ASSISTANT, ROLES.PATIENT), withErrors(async (req, res) => {
   const body = req.body
   if (!body || Object.keys(body).length === 0) {
     return res.status(400).json({ error: 'Invalid JSON body' })
@@ -189,7 +189,7 @@ router.post('/', authenticate, requireRole(ROLES.DENTIST, ROLES.CASHIER, ROLES.P
 }))
 
 // GET /api/appointments/:id
-router.get('/:id', authenticate, requireRole(ROLES.DENTIST, ROLES.CASHIER, ROLES.PATIENT), withErrors(async (req, res) => {
+router.get('/:id', authenticate, requireRole(ROLES.DENTIST, ROLES.ASSISTANT, ROLES.PATIENT), withErrors(async (req, res) => {
   const { id } = req.params
 
   const appointment = await db.appointment.findUnique({ where: { id } })
@@ -203,7 +203,7 @@ router.get('/:id', authenticate, requireRole(ROLES.DENTIST, ROLES.CASHIER, ROLES
 }))
 
 // PUT /api/appointments/:id
-router.put('/:id', authenticate, requireRole(ROLES.DENTIST, ROLES.CASHIER, ROLES.PATIENT), withErrors(async (req, res) => {
+router.put('/:id', authenticate, requireRole(ROLES.DENTIST, ROLES.ASSISTANT, ROLES.PATIENT), withErrors(async (req, res) => {
   const { id } = req.params
 
   const existing = await db.appointment.findUnique({ where: { id } })
@@ -265,7 +265,7 @@ router.put('/:id', authenticate, requireRole(ROLES.DENTIST, ROLES.CASHIER, ROLES
     return res.json(updated)
   }
 
-  // Staff branch (DENTIST / CASHIER)
+  // Staff branch (DENTIST / ASSISTANT)
   const parsed = appointmentUpdateSchema.safeParse(body)
   if (!parsed.success) return handleValidationError(res, parsed.error)
 
@@ -305,7 +305,7 @@ router.put('/:id', authenticate, requireRole(ROLES.DENTIST, ROLES.CASHIER, ROLES
 }))
 
 // DELETE /api/appointments — bulk delete (history)
-router.delete('/', authenticate, requireRole(ROLES.DENTIST, ROLES.CASHIER, ROLES.PATIENT), withErrors(async (req, res) => {
+router.delete('/', authenticate, requireRole(ROLES.DENTIST, ROLES.ASSISTANT, ROLES.PATIENT), withErrors(async (req, res) => {
   let patientId
 
   if (req.user.role === ROLES.PATIENT) {
@@ -333,7 +333,7 @@ router.delete('/', authenticate, requireRole(ROLES.DENTIST, ROLES.CASHIER, ROLES
 }))
 
 // DELETE /api/appointments/:id
-router.delete('/:id', authenticate, requireRole(ROLES.DENTIST, ROLES.CASHIER, ROLES.PATIENT), withErrors(async (req, res) => {
+router.delete('/:id', authenticate, requireRole(ROLES.DENTIST, ROLES.ASSISTANT, ROLES.PATIENT), withErrors(async (req, res) => {
   const { id } = req.params
 
   const existing = await db.appointment.findUnique({ where: { id } })

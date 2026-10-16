@@ -4,7 +4,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Lock, Plus } from "lucide-react";
 import { toast } from "sonner";
-import { useIsCashier, useIsDentist } from "@/lib/auth-store";
+import { useIsAssistant, useIsDentist } from "@/lib/auth-store";
 import { useCreateTreatment, useTeeth, useToothTreatments, useUpdateTooth, } from "@/hooks";
 import { treatmentFormSchema } from "@/lib/schemas/treatment-schema";
 import { formatCurrency, formatDate, TOOTH_STATUS_META, TOOTH_STATUSES, } from "@/lib/format";
@@ -23,7 +23,7 @@ import { LoadingSpinner } from "@/components/common/LoadingSpinner";
 const ALL_TOOTH_STATUSES = Object.values(TOOTH_STATUSES);
 /**
  * Per-tooth modal opened from the dental chart. Combines three sections:
- *   1. A read-only banner for cashiers (clinical edits are dentist-only).
+ *   1. A read-only banner for assistants (clinical edits are dentist-only).
  *   2. A status + notes editor (dentist only) backed by `useUpdateTooth`.
  *   3. The tooth's treatment timeline (everyone).
  *   4. An "Add Treatment" form (dentist only) backed by `useCreateTreatment`.
@@ -35,7 +35,7 @@ const ALL_TOOTH_STATUSES = Object.values(TOOTH_STATUSES);
 export function ToothModal({ patientId, toothNumber, open, onOpenChange, }) {
     var _a, _b, _c, _d, _e, _f, _g, _h;
     const isDentist = useIsDentist();
-    const isCashier = useIsCashier();
+    const isAssistant = useIsAssistant();
     const teethQuery = useTeeth(patientId);
     const toothTreatmentsQuery = useToothTreatments(patientId, toothNumber);
     const updateTooth = useUpdateTooth();
@@ -166,8 +166,8 @@ export function ToothModal({ patientId, toothNumber, open, onOpenChange, }) {
         </DialogHeader>
 
         <div className="space-y-5">
-          {/* Read-only banner — cashier only */}
-          {isCashier && (<div className="flex items-start gap-2.5 rounded-md border border-amber-200/70 bg-amber-50/70 px-3 py-2 text-xs text-amber-800 dark:border-amber-900/40 dark:bg-amber-950/20 dark:text-amber-300">
+          {/* Read-only banner — assistant only */}
+          {isAssistant && (<div className="flex items-start gap-2.5 rounded-md border border-amber-200/70 bg-amber-50/70 px-3 py-2 text-xs text-amber-800 dark:border-amber-900/40 dark:bg-amber-950/20 dark:text-amber-300">
               <Lock className="mt-0.5 h-3.5 w-3.5 shrink-0"/>
               <span>
                 Read-only — clinical edits restricted to dentists.

@@ -1,7 +1,7 @@
 // Shared constants for the dental practice management system
 export const ROLES = {
     DENTIST: "dentist",
-    CASHIER: "cashier",
+    ASSISTANT: "assistant",
     PATIENT: "patient",
 };
 export const TOOTH_STATUSES = {

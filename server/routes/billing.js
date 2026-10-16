@@ -7,7 +7,7 @@ const { ROLES } = require('../constants')
 const router = Router()
 
 // GET /api/billing?status=&patientId=
-router.get('/', authenticate, requireRole(ROLES.DENTIST, ROLES.CASHIER, ROLES.PATIENT), withErrors(async (req, res) => {
+router.get('/', authenticate, requireRole(ROLES.DENTIST, ROLES.ASSISTANT, ROLES.PATIENT), withErrors(async (req, res) => {
   const status = req.query.status
   const patientId = req.query.patientId
 
@@ -79,7 +79,7 @@ router.get('/:id', authenticate, withErrors(async (req, res) => {
 }))
 
 // PUT /api/billing/:id/pay
-router.put('/:id/pay', authenticate, requireRole(ROLES.DENTIST, ROLES.CASHIER), withErrors(async (req, res) => {
+router.put('/:id/pay', authenticate, requireRole(ROLES.DENTIST, ROLES.ASSISTANT), withErrors(async (req, res) => {
   const treatmentId = req.params.id
 
   const body = req.body

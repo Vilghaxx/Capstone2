@@ -45,9 +45,9 @@ const MotionTableRow = motion.create(TableRow);
 export default function BillingView() {
     var _a, _b, _c, _d, _e;
     const role = useAuth((state) => { var _a; return (_a = state.user) === null || _a === void 0 ? void 0 : _a.role; });
-    // Cashier and dentist both have full billing capabilities; the subtitle
+    // Assistant and dentist both have full billing capabilities; the subtitle
     // is tuned to each role's primary concern.
-    const subtitle = role === "cashier"
+    const subtitle = role === "assistant"
         ? "Record payments and track outstanding balances"
         : "Review treatment costs and payments";
     const [statusFilter, setStatusFilter] = useState("all");

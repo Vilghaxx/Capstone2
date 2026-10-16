@@ -34,9 +34,9 @@ export const useAuth = create((set) => ({
 }));
 // Convenience role-check selectors.
 export const useIsDentist = () => useAuth((state) => { var _a; return ((_a = state.user) === null || _a === void 0 ? void 0 : _a.role) === "dentist"; });
-export const useIsCashier = () => useAuth((state) => { var _a; return ((_a = state.user) === null || _a === void 0 ? void 0 : _a.role) === "cashier"; });
+export const useIsAssistant = () => useAuth((state) => { var _a; return ((_a = state.user) === null || _a === void 0 ? void 0 : _a.role) === "assistant"; });
 export const useIsPatient = () => useAuth((state) => { var _a; return ((_a = state.user) === null || _a === void 0 ? void 0 : _a.role) === "patient"; });
-export const useIsStaff = () => useAuth((state) => { var _a, _b; return ((_a = state.user) === null || _a === void 0 ? void 0 : _a.role) === "dentist" || ((_b = state.user) === null || _b === void 0 ? void 0 : _b.role) === "cashier"; });
+export const useIsStaff = () => useAuth((state) => { var _a, _b; return ((_a = state.user) === null || _a === void 0 ? void 0 : _a.role) === "dentist" || ((_b = state.user) === null || _b === void 0 ? void 0 : _b.role) === "assistant"; });
 export const useIsAuthenticated = () => useAuth((state) => !!state.user);
 /** Role helper usable outside React components. */
 export function roleOf(user) {

@@ -1,7 +1,7 @@
 "use client";
 import { useState } from "react";
 import { CalendarDays, ClipboardList, Plus } from "lucide-react";
-import { useIsCashier, useIsDentist } from "@/lib/auth-store";
+import { useIsAssistant, useIsDentist } from "@/lib/auth-store";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { AppointmentsListTab } from "./appointments/AppointmentsListTab";
@@ -15,12 +15,12 @@ import { NewAppointmentDialog } from "./appointments/NewAppointmentDialog";
  * (List / Schedule / Requests), and the shared New Appointment dialog. The
  * actual tab logic lives in `./appointments/*` so each concern is isolated.
  *
- * Dentist (blue pill) can delete appointments; cashier (amber pill)
+ * Dentist (blue pill) can delete appointments; assistant (amber pill)
  * cannot. No indigo/blue per project rule.
  */
 export default function AppointmentsView() {
     const isDentist = useIsDentist();
-    const isCashier = useIsCashier();
+    const isAssistant = useIsAssistant();
     const [dialogOpen, setDialogOpen] = useState(false);
     const [preset, setPreset] = useState({});
     const openDialog = (presetArg) => {
@@ -32,9 +32,9 @@ export default function AppointmentsView() {
             label: "Dentist",
             className: "bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-blue-300",
         }
-        : isCashier
+        : isAssistant
             ? {
-                label: "Cashier",
+                label: "Assistant",
                 className: "bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300",
             }
             : null;

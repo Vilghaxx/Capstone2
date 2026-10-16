@@ -13,7 +13,7 @@ const XRAY_DIR = path.join(__dirname, '..', '..', 'public', 'xrays')
 if (!fs.existsSync(XRAY_DIR)) fs.mkdirSync(XRAY_DIR, { recursive: true })
 
 // GET /api/teeth/:patientId
-router.get('/:patientId', authenticate, requireRole(ROLES.DENTIST, ROLES.CASHIER, ROLES.PATIENT), withErrors(async (req, res) => {
+router.get('/:patientId', authenticate, requireRole(ROLES.DENTIST, ROLES.ASSISTANT, ROLES.PATIENT), withErrors(async (req, res) => {
   const { patientId } = req.params
 
   const teeth = await db.tooth.findMany({
@@ -25,7 +25,7 @@ router.get('/:patientId', authenticate, requireRole(ROLES.DENTIST, ROLES.CASHIER
 }))
 
 // GET /api/teeth/:patientId/:toothNumber
-router.get('/:patientId/:toothNumber', authenticate, requireRole(ROLES.DENTIST, ROLES.CASHIER, ROLES.PATIENT), withErrors(async (req, res) => {
+router.get('/:patientId/:toothNumber', authenticate, requireRole(ROLES.DENTIST, ROLES.ASSISTANT, ROLES.PATIENT), withErrors(async (req, res) => {
   const { patientId, toothNumber } = req.params
   const toothNumberNum = Number(toothNumber)
   if (Number.isNaN(toothNumberNum)) {
