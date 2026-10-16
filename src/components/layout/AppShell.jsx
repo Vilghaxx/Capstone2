@@ -122,7 +122,7 @@ export function AppShell({ children }) {
         {/* Desktop sidebar */}
         <aside className="sticky top-0 self-start h-screen hidden w-64 shrink-0 flex-col border-r border-border bg-card lg:flex 2xl:w-72">
           <div className="flex items-center gap-2 border-b border-border px-4 py-3">
-            <img src="/firefly.png" alt="Sonido Dental Clinic" className="h-8 w-auto object-contain"/>
+            <img src="/sonido.png" alt="Sonido Dental Clinic" className="h-8 w-auto object-contain"/>
             <p className="text-sm font-semibold leading-tight">Sonido Dental Clinic</p>
           </div>
           <div className="flex-1 overflow-y-auto px-4 pb-2 pt-3">
@@ -145,7 +145,7 @@ export function AppShell({ children }) {
               </SheetTrigger>
               <SheetContent side="left" className="w-72 p-4">
                 <SheetTitle className="mb-4 flex items-center gap-2">
-                  <img src="/firefly.png" alt="Sonido Dental Clinic" className="h-5 w-auto object-contain"/> Sonido Dental Clinic
+                  <img src="/sonido.png" alt="Sonido Dental Clinic" className="h-5 w-auto object-contain"/> Sonido Dental Clinic
                 </SheetTitle>
                 <div className="flex flex-col gap-4">
                   <UserCard />
@@ -154,7 +154,7 @@ export function AppShell({ children }) {
               </SheetContent>
             </Sheet>
             <div className="flex flex-1 items-center gap-2">
-              <img src="/firefly.png" alt="Sonido Dental Clinic" className="h-7 w-auto object-contain"/>
+              <img src="/sonido.png" alt="Sonido Dental Clinic" className="h-7 w-auto object-contain"/>
               <span className="font-semibold">Sonido Dental Clinic</span>
             </div>
             <ThemeToggle className="h-8 w-8"/>

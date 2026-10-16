@@ -15,7 +15,7 @@ export const metadata = {
     keywords: ["dental", "practice management", "appointments", "billing", "dental chart", "Sonido Dental Clinic"],
     authors: [{ name: "Dental System" }],
     icons: {
-        icon: "/firefly.png",
+        icon: "/sonido.png",
     },
 };
 export default function RootLayout({ children, }) {

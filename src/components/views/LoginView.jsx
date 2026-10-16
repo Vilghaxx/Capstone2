@@ -32,7 +32,7 @@ export default function LoginView() {
             backgroundSize: "48px 48px",
         }}/>
         <motion.div initial={{ opacity: 0, y: -12 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }} className="relative flex items-center gap-3 text-white">
-          <img src="/firefly.png" alt="Sonido Dental Clinic" className="h-11 w-auto object-contain"/>
+          <img src="/sonido.png" alt="Sonido Dental Clinic" className="h-11 w-auto object-contain"/>
           <div>
             <p className="text-xl font-bold leading-tight">Dental System</p>
              <p className="text-sm text-white/70 leading-tight">Patient Portal</p>
@@ -55,7 +55,7 @@ export default function LoginView() {
       <div className="flex w-full items-center justify-center bg-gradient-to-br from-blue-50 via-background to-sky-50 p-4 dark:from-blue-950/20 dark:via-background dark:to-sky-950/20 lg:w-1/2">
         <motion.div initial={{ opacity: 0, y: 12, scale: 0.98 }} animate={{ opacity: 1, y: 0, scale: 1 }} transition={{ duration: 0.3, ease: "easeOut" }} className="w-full max-w-[90vw] sm:max-w-md">
           <div className="mb-6 flex items-center justify-center gap-2.5 lg:hidden">
-            <img src="/firefly.png" alt="Sonido Dental Clinic" className="h-10 w-auto object-contain"/>
+            <img src="/sonido.png" alt="Sonido Dental Clinic" className="h-10 w-auto object-contain"/>
             <div>
               <p className="text-lg font-bold leading-tight">Dental System</p>
               <p className="text-xs text-muted-foreground leading-tight">Patient Portal</p>
