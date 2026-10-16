@@ -78,7 +78,7 @@ export default function PatientProfileView() {
       </Button>
 
       {/* Patient info */}
-      <PatientInfoCard patient={patient} canManage={canManage} isDentist={isDentist} teeth={teeth} onNotes={() => setIsNotesDialogOpen(true)} onDelete={() => setIsDeleteDialogOpen(true)}/>
+      <PatientInfoCard patient={patient} canManage={canManage} isDentist={isDentist} onNotes={() => setIsNotesDialogOpen(true)} onDelete={() => setIsDeleteDialogOpen(true)}/>
 
       {/* Dental chart */}
       <Card>

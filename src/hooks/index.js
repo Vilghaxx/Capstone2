@@ -3,7 +3,7 @@
  *
  *   import { usePatients, usePatient, useAppointments } from "@/hooks";
  */
-export { usePatients, usePatient, useCreatePatient, useUpdatePatient, useDeletePatient, useMyProfile, useUpdateMyProfile, } from "@/hooks/use-patients";
+export { usePatients, usePatient, useCreatePatient, useUpdatePatient, useDeletePatient, useSavePatientXray, useMyProfile, useUpdateMyProfile, } from "@/hooks/use-patients";
 export { useTeeth, useUpdateTooth } from "@/hooks/use-teeth";
 export { useTreatments, useToothTreatments, useCreateTreatment, useUpdateTreatment, } from "@/hooks/use-treatments";
 export { useAppointments, useAppointment, useCreateAppointment, useUpdateAppointment, useDeleteAppointment, useDeleteAppointments, useSchedule, } from "@/hooks/use-appointments";

@@ -1,20 +1,14 @@
 "use client";
 import { useRef, useState } from "react";
 import { toast } from "sonner";
-import { Calendar, Mail, MapPin, Phone, StickyNote, Trash2, Upload, X } from "lucide-react";
+import { Calendar, ImageIcon, Mail, MapPin, Phone, StickyNote, Trash2, Upload, X } from "lucide-react";
 import { formatDate } from "@/lib/format";
-import { useUpdateTooth } from "@/hooks";
+import { useSavePatientXray } from "@/hooks";
 import { toastError } from "@/lib/api";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
-const TOOTH_OPTIONS = Array.from({ length: 32 }, (_, i) => ({
-    value: String(i + 1),
-    label: `Tooth #${i + 1}`,
-}));
 /** Build a 1-2 character initials string from a full name (e.g. "Juan Dela Cruz" → "JD"). */
 function getInitials(name) {
     return name
@@ -27,16 +21,14 @@ function getInitials(name) {
 }
 /**
  * Header card for the patient profile view. Shows the patient's avatar,
- * name, "patient since" date, contact details, demographics, notes, and
- * X-rays (attach/replace/remove is dentist-only; saved immediately).
+ * name, "patient since" date, contact details, demographics, notes, and a
+ * single patient-level X-ray. Attach/replace/remove X-ray is dentist-only
+ * and saved immediately.
  */
-export function PatientInfoCard({ patient, canManage, isDentist, teeth = [], onNotes, onDelete, }) {
-    const updateTooth = useUpdateTooth();
+export function PatientInfoCard({ patient, canManage, isDentist, onNotes, onDelete, }) {
+    const saveXray = useSavePatientXray();
     const fileInputRef = useRef(null);
-    const [xrayTooth, setXrayTooth] = useState("");
-    const [lightbox, setLightbox] = useState(null);
-    const withXray = teeth.filter((t) => t.xrayUrl);
-    const selectedToothHasXray = teeth.find((t) => String(t.toothNumber) === xrayTooth)?.xrayUrl;
+    const [lightboxOpen, setLightboxOpen] = useState(false);
     function handleFileChange(e) {
         const file = e.target.files?.[0];
         e.target.value = "";
@@ -48,20 +40,12 @@ export function PatientInfoCard({ patient, canManage, isDentist, teeth = [], onN
         }
         const reader = new FileReader();
         reader.onload = async () => {
-            const tooth = teeth.find((t) => String(t.toothNumber) === xrayTooth);
             try {
-                await updateTooth.mutateAsync({
-                    patientId: patient.id,
-                    toothNumber: Number(xrayTooth),
-                    data: {
-                        status: tooth?.status ?? "healthy",
-                        notes: tooth?.notes ?? null,
-                        treatmentPlan: tooth?.treatmentPlan ?? null,
-                        xrayData: reader.result,
-                        xrayFilename: file.name,
-                    },
+                await saveXray.mutateAsync({
+                    id: patient.id,
+                    data: { xrayData: reader.result, xrayFilename: file.name },
                 });
-                toast.success(`X-ray saved for Tooth #${xrayTooth}`);
+                toast.success("X-ray saved");
             }
             catch (err) {
                 toastError(err, "Failed to save X-ray");
@@ -69,19 +53,10 @@ export function PatientInfoCard({ patient, canManage, isDentist, teeth = [], onN
         };
         reader.readAsDataURL(file);
     }
-    async function handleRemoveXray(t) {
+    async function handleRemoveXray() {
         try {
-            await updateTooth.mutateAsync({
-                patientId: patient.id,
-                toothNumber: t.toothNumber,
-                data: {
-                    status: t.status,
-                    notes: t.notes ?? null,
-                    treatmentPlan: t.treatmentPlan ?? null,
-                    removeXray: true,
-                },
-            });
-            toast.success(`X-ray removed from Tooth #${t.toothNumber}`);
+            await saveXray.mutateAsync({ id: patient.id, data: { removeXray: true } });
+            toast.success("X-ray removed");
         }
         catch (err) {
             toastError(err, "Failed to remove X-ray");
@@ -102,10 +77,19 @@ export function PatientInfoCard({ patient, canManage, isDentist, teeth = [], onN
             </p>
           </div>
         </div>
-        {canManage && (<Button variant="outline" size="sm" onClick={onNotes}>
+        <div className="flex shrink-0 flex-wrap items-center justify-end gap-2">
+          {canManage && (<Button variant="outline" size="sm" onClick={onNotes}>
               <StickyNote className="h-4 w-4"/>
               Progress Notes
             </Button>)}
+          {isDentist && (<>
+              <input ref={fileInputRef} type="file" accept="image/*" onChange={handleFileChange} className="hidden"/>
+              <Button variant="outline" size="sm" onClick={() => fileInputRef.current?.click()} disabled={saveXray.isPending}>
+                <Upload className="h-4 w-4"/>
+                {patient.xrayUrl ? "Replace X-ray" : "Attach X-ray"}
+              </Button>
+            </>)}
+        </div>
       </CardHeader>
       <CardContent>
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
@@ -146,41 +130,19 @@ export function PatientInfoCard({ patient, canManage, isDentist, teeth = [], onN
             </div>) : null}
         </div>
 
-        {/* X-Rays */}
+        {/* X-Ray */}
         <div className="mt-4 space-y-2 border-t border-border pt-4">
           <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
-            X-Rays
+            X-Ray
           </p>
-          {withXray.length === 0 ? (<p className="text-sm text-muted-foreground">No X-rays attached.</p>) : (<div className="flex flex-wrap gap-3">
-              {withXray.map((t) => (<div key={t.toothNumber} className="relative">
-                  <button type="button" onClick={() => setLightbox({ url: t.xrayUrl, toothNumber: t.toothNumber })} className="block">
-                    <img src={t.xrayUrl} alt={`X-ray of tooth ${t.toothNumber}`} className="h-24 w-24 cursor-zoom-in rounded-lg border border-border object-cover transition-opacity hover:opacity-90"/>
-                  </button>
-                  <span className="mt-0.5 block text-center text-xs text-muted-foreground">#{t.toothNumber}</span>
-                  {isDentist && (<button type="button" onClick={() => handleRemoveXray(t)} disabled={updateTooth.isPending} className="absolute -right-1.5 -top-1.5 rounded-full bg-destructive p-1 text-destructive-foreground" aria-label={`Remove X-ray of tooth ${t.toothNumber}`}>
-                      <X className="h-3 w-3"/>
-                    </button>)}
-                </div>))}
-            </div>)}
-          {isDentist && (<div className="flex flex-col gap-3 pt-1 sm:flex-row sm:items-end">
-              <div className="w-full sm:w-48">
-                <Label htmlFor="xray-tooth">Tooth</Label>
-                <Select value={xrayTooth} onValueChange={setXrayTooth}>
-                  <SelectTrigger id="xray-tooth" className="mt-1.5 w-full">
-                    <SelectValue placeholder="Select a tooth"/>
-                  </SelectTrigger>
-                  <SelectContent>
-                    {TOOTH_OPTIONS.map((opt) => (<SelectItem key={opt.value} value={opt.value}>
-                        {opt.label}
-                      </SelectItem>))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <input ref={fileInputRef} type="file" accept="image/*" onChange={handleFileChange} className="hidden"/>
-              <Button variant="outline" size="sm" disabled={!xrayTooth || updateTooth.isPending} onClick={() => fileInputRef.current?.click()}>
-                <Upload className="h-4 w-4"/>
-                {selectedToothHasXray ? "Replace X-ray" : "Attach X-ray"}
-              </Button>
+          {patient.xrayUrl ? (<div className="relative inline-block">
+              <img src={patient.xrayUrl} alt={`X-ray of ${patient.name}`} onClick={() => setLightboxOpen(true)} className="max-h-48 cursor-zoom-in rounded-lg border border-border object-contain transition-opacity hover:opacity-90"/>
+              {isDentist && (<button type="button" onClick={handleRemoveXray} disabled={saveXray.isPending} className="absolute -right-2 -top-2 rounded-full bg-destructive p-1 text-destructive-foreground" aria-label="Remove X-ray">
+                  <X className="h-3 w-3"/>
+                </button>)}
+            </div>) : (<div className="flex items-center gap-2 text-sm text-muted-foreground">
+              <ImageIcon className="h-4 w-4" aria-hidden="true"/>
+              <span>No X-ray attached.</span>
             </div>)}
         </div>
 
@@ -191,13 +153,10 @@ export function PatientInfoCard({ patient, canManage, isDentist, teeth = [], onN
             </Button>
           </div>)}
       </CardContent>
-      <Dialog open={lightbox !== null} onOpenChange={(open) => {
-            if (!open)
-                setLightbox(null);
-        }}>
+      <Dialog open={lightboxOpen} onOpenChange={setLightboxOpen}>
         <DialogContent className="max-w-[90vw] sm:max-w-[700px]">
-          <DialogTitle>X-Ray — Tooth #{lightbox?.toothNumber}</DialogTitle>
-          {lightbox && (<img src={lightbox.url} alt={`X-ray of tooth ${lightbox.toothNumber}`} className="w-full rounded-lg object-contain"/>)}
+          <DialogTitle>X-Ray — {patient.name}</DialogTitle>
+          <img src={patient.xrayUrl} alt={`X-ray of ${patient.name}`} className="w-full rounded-lg object-contain"/>
         </DialogContent>
       </Dialog>
     </Card>);

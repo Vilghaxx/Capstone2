@@ -1,10 +1,16 @@
 const { Router } = require('express')
 const { db } = require('../db')
 const { authenticate, requireRole, withErrors } = require('../middleware')
-const { patientFormSchema, handleValidationError } = require('../validate').default
+const { patientFormSchema, patientXraySchema, handleValidationError } = require('../validate').default
 const { PAGINATION_DEFAULTS, ROLES, TOTAL_TEETH, TOOTH_STATUSES } = require('../constants')
+const fs = require('fs')
+const path = require('path')
+const crypto = require('crypto')
 
 const router = Router()
+
+const XRAY_DIR = path.join(__dirname, '..', '..', 'public', 'xrays')
+if (!fs.existsSync(XRAY_DIR)) fs.mkdirSync(XRAY_DIR, { recursive: true })
 
 // GET /api/patients?search=&page=&limit=
 router.get('/', authenticate, withErrors(async (req, res) => {
@@ -109,6 +115,43 @@ router.put('/:id', authenticate, requireRole(ROLES.DENTIST, ROLES.CASHIER), with
       dateOfBirth: parsed.data.dateOfBirth,
       address: parsed.data.address ?? '',
       notes: parsed.data.notes ?? '',
+      updatedAt: new Date(),
+    },
+  })
+
+  return res.json(updated)
+}))
+
+// PUT /api/patients/:id/xray
+router.put('/:id/xray', authenticate, requireRole(ROLES.DENTIST), withErrors(async (req, res) => {
+  const { id } = req.params
+
+  const existing = await db.patient.findUnique({ where: { id } })
+  if (!existing) return res.status(404).json({ error: 'Patient not found' })
+
+  const parsed = patientXraySchema.safeParse(req.body)
+  if (!parsed.success) return handleValidationError(res, parsed.error)
+
+  const { xrayData, xrayFilename, removeXray } = parsed.data
+
+  let xrayUrl
+  if (xrayData) {
+    const ext = (xrayFilename || '').match(/\.(png|jpe?g|webp)$/i)?.[0]?.toLowerCase() || '.png'
+    const fname = `patient_${id}_${crypto.randomBytes(6).toString('hex')}${ext}`
+    const base64 = xrayData.replace(/^data:image\/\w+;base64,/, '')
+    fs.writeFileSync(path.join(XRAY_DIR, fname), Buffer.from(base64, 'base64'))
+    xrayUrl = `/xrays/${fname}`
+  }
+
+  if (!xrayUrl && !removeXray) {
+    return res.status(400).json({ error: 'Nothing to update' })
+  }
+
+  const updated = await db.patient.update({
+    where: { id },
+    data: {
+      ...(removeXray && { xrayUrl: null }),
+      ...(xrayUrl && { xrayUrl }),
       updatedAt: new Date(),
     },
   })

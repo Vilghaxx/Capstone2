@@ -37,6 +37,17 @@ export function useUpdatePatient() {
         },
     });
 }
+export function useSavePatientXray() {
+    const queryClient = useQueryClient();
+    return useMutation({
+        mutationFn: ({ id, data }) => apiClient.put(`/api/patients/${id}/xray`, data),
+        onSuccess: (patient) => {
+            queryClient.invalidateQueries({
+                queryKey: queryKeys.patientDetail(patient.id),
+            });
+        },
+    });
+}
 export function useMyProfile() {
     return useQuery({
         queryKey: ["my-profile"],

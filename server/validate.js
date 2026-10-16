@@ -54,6 +54,12 @@ const toothUpdateSchema = z.object({
   removeXray: z.boolean().optional(),
 })
 
+const patientXraySchema = z.object({
+  xrayData: z.string().max(4_000_000, 'X-ray image too large').optional(),
+  xrayFilename: z.string().max(255).optional(),
+  removeXray: z.boolean().optional(),
+})
+
 const treatmentFormSchema = z.object({
   patientId: z.string().min(1, 'Patient is required'),
   toothNumber: z.coerce.number().int().min(1).max(32),
@@ -113,6 +119,7 @@ export default {
   appointmentUpdateSchema,
   paymentFormSchema,
   toothUpdateSchema,
+  patientXraySchema,
   treatmentFormSchema,
   treatmentUpdateSchema,
   patientAppointmentUpdateSchema,
