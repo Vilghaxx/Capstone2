@@ -7,7 +7,7 @@ A full-stack dental practice management application: patient records, an interac
 | Layer | Technology |
 |-------|------------|
 | Frontend | Next.js 16 (App Router, client-side hash routing) |
-| Backend API | Express.js (port 3001) |
+| Backend API | Express.js (port 4000) |
 | Database | Firebase Realtime Database (RTDB, via firebase-admin) |
 | Styling | Tailwind CSS 4 + shadcn/ui |
 | State | Zustand (auth, navigation), TanStack React Query (server state) |
@@ -46,7 +46,7 @@ npm run seed
 npm run dev:all
 ```
 
-The app runs on `http://localhost:3000`; the Express API on `http://localhost:3001`. Next.js rewrites `/api/*` to the API via `next.config.mjs`.
+The app runs on `http://localhost:3000`; the Express API on `http://localhost:4000`. Next.js rewrites `/api/*` to the API via `next.config.mjs`.
 
 ## Authentication
 
@@ -65,7 +65,7 @@ Patients are provisioned automatically on first sign-in: a `patient` record is c
 | Script | Description |
 |--------|-------------|
 | `dev` | Start Next.js dev server (port 3000) |
-| `dev:server` | Start Express API only (port 3001) |
+| `dev:server` | Start Express API only (port 4000) |
 | `dev:all` | Start Express API + Next.js dev server |
 | `build` | Production build (Next.js) |
 | `start` | Start production Next.js server (port 3000) |
@@ -137,7 +137,7 @@ scripts/
 bun install
 npm run build
 npm run start          # Next.js on port 3000
-npm run start:server   # Express API on port 3001
+npm run start:server   # Express API on port 4000
 ```
 
 `next.config.mjs` sets `output: "standalone"`, so the build produces a self-contained `.next/standalone` bundle that can be copied to a server with Node.js.
