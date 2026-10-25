@@ -65,10 +65,13 @@ function ToothButton({ code, toothRecord, selected, onSelect }) {
     const colors = TOOTH_STATUS_COLORS[status] ?? TOOTH_STATUS_COLORS.healthy;
     const meta = TOOTH_STATUS_META[status] ?? TOOTH_STATUS_META.healthy;
     const name = toothName(code);
+    // Solid fills keep the status colour true (the old translucent fill picked
+    // up the rose chart background and made healthy teeth look pink).
+    const darkText = status === "treated" || status === "needs-attention";
     return (<button type="button" onClick={() => onSelect(code)} title={`Tooth ${code} — ${name} · ${meta.label}`} aria-label={`Tooth ${code}, ${name}, ${meta.label}`} aria-pressed={selected} className={cn("flex h-10 items-center justify-center rounded-md border text-xs font-semibold tabular-nums transition-all hover:brightness-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1", selected && "ring-2 ring-black/70 ring-offset-1 dark:ring-white/80")} style={{
-            backgroundColor: `${colors.fill}33`,
+            backgroundColor: colors.stroke,
             borderColor: colors.stroke,
-            color: "var(--foreground)",
+            color: darkText ? "#0f172a" : "#ffffff",
         }}>
       {code}
     </button>);
