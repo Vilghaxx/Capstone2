@@ -2,15 +2,15 @@
 import { TOOTH_STATUS_COLORS, TOOTH_STATUS_META } from "@/lib/format";
 /**
  * Colour legend shared by the permanent and primary dental charts. Counts
- * only the teeth belonging to the chart that renders it.
+ * only the teeth belonging to the chart that renders it. A tooth with no
+ * record yet (primary records are created lazily) counts as healthy.
  */
 export function ToothStatusLegend({ teeth, codes }) {
-    const inChart = new Set(codes);
+    const teethByNumber = new Map(teeth.map((tooth) => [tooth.toothNumber, tooth]));
     const counts = new Map();
-    for (const tooth of teeth) {
-        if (inChart.has(tooth.toothNumber)) {
-            counts.set(tooth.status, (counts.get(tooth.status) ?? 0) + 1);
-        }
+    for (const code of codes) {
+        const status = teethByNumber.get(code)?.status ?? "healthy";
+        counts.set(status, (counts.get(status) ?? 0) + 1);
     }
     return (<div className="flex flex-wrap items-center justify-center gap-x-5 gap-y-2 rounded-lg border bg-muted/30 px-4 py-3">
       {Object.entries(TOOTH_STATUS_META).map(([status, meta]) => (<div key={status} className="flex items-center gap-2">

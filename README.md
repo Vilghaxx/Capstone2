@@ -145,3 +145,11 @@ npm run start:server   # Express API on port 4000
 ## License
 
 Private — all rights reserved.
+
+### Third-party assets
+
+The primary-teeth chart illustration is adapted from
+["Teeth Gum Child"](https://sciencefigures.org/figure/3074/teeth_gum_child)
+by Science Figures and remains subject to its original open license (free
+for commercial use, Open Design License). It is not covered by the project's
+all-rights-reserved notice.
