@@ -8,6 +8,7 @@ import { useIsAssistant, useIsDentist } from "@/lib/auth-store";
 import { useCreateTreatment, useTeeth, useToothTreatments, useUpdateTooth, } from "@/hooks";
 import { treatmentFormSchema } from "@/lib/schemas/treatment-schema";
 import { formatCurrency, formatDate, TOOTH_STATUS_META, TOOTH_STATUSES, } from "@/lib/format";
+import { toothName } from "@/lib/teeth";
 import { toastError } from "@/lib/api";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -79,7 +80,7 @@ export function ToothModal({ patientId, toothNumber, open, onOpenChange, }) {
         resolver: zodResolver(treatmentFormSchema),
         defaultValues: {
             patientId,
-            toothNumber: toothNumber !== null && toothNumber !== void 0 ? toothNumber : 1,
+            toothNumber: toothNumber !== null && toothNumber !== void 0 ? toothNumber : 11,
             procedure: "",
             notes: "",
             cost: 0,
@@ -90,7 +91,7 @@ export function ToothModal({ patientId, toothNumber, open, onOpenChange, }) {
         if (open) {
             addTreatmentForm.reset({
                 patientId,
-                toothNumber: toothNumber !== null && toothNumber !== void 0 ? toothNumber : 1,
+                toothNumber: toothNumber !== null && toothNumber !== void 0 ? toothNumber : 11,
                 procedure: "",
                 notes: "",
                 cost: 0,
@@ -110,7 +111,7 @@ export function ToothModal({ patientId, toothNumber, open, onOpenChange, }) {
                     notes: notesDraft.trim() ? notesDraft : null,
                 },
             });
-            toast.success(`Tooth #${toothNumber} updated`);
+            toast.success(`Tooth ${toothNumber} updated`);
         }
         catch (err) {
             toastError(err, "Failed to update tooth");
@@ -121,7 +122,7 @@ export function ToothModal({ patientId, toothNumber, open, onOpenChange, }) {
         try {
             await createTreatment.mutateAsync({
                 patientId,
-                toothNumber: toothNumber !== null && toothNumber !== void 0 ? toothNumber : 1,
+                toothNumber: toothNumber !== null && toothNumber !== void 0 ? toothNumber : 11,
                 procedure: values.procedure,
                 notes: (_a = values.notes) !== null && _a !== void 0 ? _a : "",
                 cost: values.cost,
@@ -130,7 +131,7 @@ export function ToothModal({ patientId, toothNumber, open, onOpenChange, }) {
             toast.success("Treatment recorded");
             addTreatmentForm.reset({
                 patientId,
-                toothNumber: toothNumber !== null && toothNumber !== void 0 ? toothNumber : 1,
+                toothNumber: toothNumber !== null && toothNumber !== void 0 ? toothNumber : 11,
                 procedure: "",
                 notes: "",
                 cost: 0,
@@ -148,7 +149,10 @@ export function ToothModal({ patientId, toothNumber, open, onOpenChange, }) {
       <DialogContent className="max-h-[90vh] max-w-[90vw] overflow-y-auto sm:max-w-[600px]">
         <DialogHeader>
           <DialogTitle className="flex flex-wrap items-center gap-2">
-            <span>Tooth #{toothNumber !== null && toothNumber !== void 0 ? toothNumber : "—"}</span>
+            <span>Tooth {toothNumber !== null && toothNumber !== void 0 ? toothNumber : "—"}</span>
+            {toothNumber != null && (<span className="text-sm font-normal text-muted-foreground">
+                {toothName(toothNumber)}
+              </span>)}
             <Badge className={cn("text-white", statusDisplayInfo.color)} variant="default">
               {statusDisplayInfo.label}
             </Badge>

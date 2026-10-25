@@ -1,7 +1,8 @@
 import { z } from "zod";
+import { isValidToothNumber } from "@/lib/teeth";
 export const treatmentFormSchema = z.object({
     patientId: z.string().min(1, "Patient is required"),
-    toothNumber: z.coerce.number().int().min(1).max(32),
+    toothNumber: z.coerce.number().int().refine(isValidToothNumber, "Invalid tooth number"),
     procedure: z.string().min(2, "Procedure is required"),
     notes: z.string().optional().default(""),
     cost: z.coerce.number().min(0, "Cost must be a positive number"),

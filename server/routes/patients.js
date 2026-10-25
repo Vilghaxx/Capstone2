@@ -2,7 +2,7 @@ const { Router } = require('express')
 const { db } = require('../db')
 const { authenticate, requireRole, withErrors } = require('../middleware')
 const { patientFormSchema, patientXraySchema, handleValidationError } = require('../validate').default
-const { PAGINATION_DEFAULTS, ROLES, TOTAL_TEETH, TOOTH_STATUSES } = require('../constants')
+const { PAGINATION_DEFAULTS, ROLES, PERMANENT_TEETH, TOOTH_STATUSES } = require('../constants')
 
 const router = Router()
 
@@ -67,9 +67,9 @@ router.post('/', authenticate, requireRole(ROLES.DENTIST, ROLES.ASSISTANT), with
   })
 
   await db.tooth.createMany({
-    data: Array.from({ length: TOTAL_TEETH }, (_, i) => ({
+    data: PERMANENT_TEETH.map((toothNumber) => ({
       patientId: created.id,
-      toothNumber: i + 1,
+      toothNumber,
       status: TOOTH_STATUSES.HEALTHY,
       notes: null,
     })),

@@ -1,28 +1,18 @@
 "use client";
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState, useEffect } from "react";
 import { TOOTH_PATHS } from "@/lib/tooth-paths";
-import { TOOTH_STATUS_META, TOOTH_STATUSES, } from "@/lib/format";
+import { TOOTH_STATUS_COLORS, TOOTH_STATUS_META, } from "@/lib/format";
+import { toothName } from "@/lib/teeth";
 import { MouthAnatomy } from "@/components/common/MouthAnatomy";
-/** All valid tooth statuses, derived from the shared {@link TOOTH_STATUSES} map. */
-const ALL_TOOTH_STATUSES = Object.values(TOOTH_STATUSES);
-/**
- * Hex colors used to fill + stroke each tooth path on the chart, keyed by
- * the tooth's clinical status. `fill` is the body color; `stroke` is the
- * slightly darker outline used for the path border and the selection glow.
- */
-const TOOTH_STATUS_COLORS = {
-    healthy: { fill: "#3b82f6", stroke: "#2563eb" },
-    treated: { fill: "#22c55e", stroke: "#16a34a" },
-    "needs-attention": { fill: "#f59e0b", stroke: "#d97706" },
-    missing: { fill: "#1f2937", stroke: "#111827" },
-};
+import { ToothStatusLegend } from "@/components/common/ToothStatusLegend";
 /**
  * Oral Cavity Dental Chart
  *
  * Renders a clinically-detailed illustration of the oral cavity (lips,
- * gums, palate, tongue) with all 32 FDI-numbered teeth overlaid as
- * interactive, color-coded SVG paths. Each tooth is clickable and tints
- * according to its clinical status.
+ * gums, palate, tongue) with all 32 permanent FDI-numbered teeth
+ * (codes 11-48) overlaid as interactive, color-coded SVG paths. Each tooth
+ * is clickable and tints according to its clinical status. Primary teeth
+ * are rendered separately by {@link PrimaryTeethChart}.
  *
  * The chart is composed of three SVG layers, back to front:
  *  1. **Base illustration** — fetched from `/charts/oral-cavity-base.svg`
@@ -90,7 +80,7 @@ export function OralCavityChart({ teeth, onSelectTooth, selectedTooth, }) {
       {/* The chart itself */}
       <div className="relative mx-auto w-full max-w-[520px]">
         <div className="relative aspect-square w-full overflow-hidden rounded-2xl border border-border bg-gradient-to-b from-rose-50/40 to-background p-2 shadow-inner dark:from-rose-950/10">
-          <svg viewBox="0 0 400 400" className="h-full w-full" role="img" aria-label="Interactive dental chart showing 32 teeth color-coded by status">
+          <svg viewBox="0 0 400 400" className="h-full w-full" role="img" aria-label="Interactive dental chart showing the 32 permanent teeth (FDI 11–48) color-coded by status">
             {/* Base oral cavity illustration (400 gradient-shaded paths) —
             injected as native SVG markup so CSS classes render correctly */}
             {baseSvg && (<g dangerouslySetInnerHTML={{ __html: baseSvg }}/>)}
@@ -121,8 +111,8 @@ export function OralCavityChart({ teeth, onSelectTooth, selectedTooth, }) {
                         e.preventDefault();
                         onSelectTooth(toothNumber);
                     }
-                }} onMouseEnter={() => setHoveredToothNumber(toothNumber)} onMouseLeave={() => setHoveredToothNumber(null)} role="button" tabIndex={0} aria-label={`Tooth ${toothNumber}, ${statusDisplayInfo.label}`}>
-                        <title>{`Tooth #${toothNumber} — ${statusDisplayInfo.label}`}</title>
+                }} onMouseEnter={() => setHoveredToothNumber(toothNumber)} onMouseLeave={() => setHoveredToothNumber(null)} role="button" tabIndex={0} aria-label={`Tooth ${toothNumber}, ${toothName(toothNumber)}, ${statusDisplayInfo.label}`}>
+                        <title>{`Tooth ${toothNumber} — ${toothName(toothNumber)} · ${statusDisplayInfo.label}`}</title>
                       </path>
                     </g>);
         })}
@@ -138,20 +128,7 @@ export function OralCavityChart({ teeth, onSelectTooth, selectedTooth, }) {
       </div>
 
       {/* Legend */}
-      <div className="flex flex-wrap items-center justify-center gap-x-5 gap-y-2 rounded-lg border bg-muted/30 px-4 py-3">
-        {ALL_TOOTH_STATUSES.map((status) => {
-            const statusColors = TOOTH_STATUS_COLORS[status];
-            const statusDisplayInfo = TOOTH_STATUS_META[status];
-            const count = teeth.filter((t) => t.status === status).length;
-            return (<div key={status} className="flex items-center gap-2">
-              <span className="h-3.5 w-3.5 rounded-full ring-1 ring-inset ring-black/10" style={{ backgroundColor: statusColors.fill }}/>
-              <span className="text-xs font-medium">
-                {statusDisplayInfo.label}
-              </span>
-              <span className="text-xs text-muted-foreground">({count})</span>
-            </div>);
-        })}
-      </div>
+      <ToothStatusLegend teeth={teeth} codes={Object.keys(TOOTH_PATHS).map(Number)}/>
     </div>);
 }
 /**
@@ -167,8 +144,9 @@ function ToothTooltip({ toothNumber, toothRecord }) {
     return (<div className="pointer-events-none absolute left-1/2 top-2 z-10 -translate-x-1/2 rounded-lg border border-border bg-popover/95 px-3 py-2 text-center shadow-lg backdrop-blur">
       <div className="flex items-center gap-2">
         <span className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: statusColors.fill }}/>
-        <span className="text-sm font-semibold">Tooth #{toothNumber}</span>
+        <span className="text-sm font-semibold">Tooth {toothNumber}</span>
       </div>
+      <p className="text-[11px] text-muted-foreground">{toothName(toothNumber)}</p>
       <p className="text-xs text-muted-foreground">
         {statusDisplayInfo.label}
       </p>

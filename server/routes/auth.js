@@ -2,7 +2,7 @@ const { Router } = require('express')
 const { db } = require('../db')
 const { signToken } = require('../auth')
 const { googleCredentialSchema, profileUpdateSchema, handleValidationError } = require('../validate').default
-const { ROLES, TOOTH_STATUSES, TOTAL_TEETH } = require('../constants')
+const { ROLES, TOOTH_STATUSES, PERMANENT_TEETH } = require('../constants')
 const { authenticate, withErrors } = require('../middleware')
 const { OAuth2Client } = require('google-auth-library')
 
@@ -142,9 +142,9 @@ router.post('/google', withErrors(async (req, res) => {
       data: { patientRef: newPatient.id },
     })
 
-    const teethData = Array.from({ length: TOTAL_TEETH }, (_, i) => ({
+    const teethData = PERMANENT_TEETH.map((toothNumber) => ({
       patientId: newPatient.id,
-      toothNumber: i + 1,
+      toothNumber,
       status: TOOTH_STATUSES.HEALTHY,
       notes: null,
     }))

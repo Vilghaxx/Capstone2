@@ -13,12 +13,14 @@ import { LoadingSpinner } from "@/components/common/LoadingSpinner";
 import { EmptyState } from "@/components/common/EmptyState";
 import { ConfirmDialog } from "@/components/common/ConfirmDialog";
 import { OralCavityChart } from "@/components/common/OralCavityChart";
+import { PrimaryTeethChart } from "@/components/common/PrimaryTeethChart";
 import { PatientInfoCard } from "@/components/views/patient-profile/PatientInfoCard";
 import { NotesDialog } from "@/components/views/patient-profile/EditPatientDialog";
 import { ToothModal } from "@/components/views/patient-profile/ToothModal";
 import { TreatmentHistoryTable } from "@/components/views/patient-profile/TreatmentHistoryTable";
 import { TreatmentPlan } from "@/components/views/patient-profile/TreatmentPlan";
 import { TOOTH_STATUS_META } from "@/lib/format";
+import { defaultDentition, toothName } from "@/lib/teeth";
 /** Patient profile view — composes the info card, dental chart, treatment history, and edit/delete/tooth dialogs. */
 export default function PatientProfileView() {
     var _a, _b, _c;
@@ -33,6 +35,7 @@ export default function PatientProfileView() {
     const [isNotesDialogOpen, setIsNotesDialogOpen] = useState(false);
     const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
     const [selectedToothNumber, setSelectedToothNumber] = useState(null);
+    const [dentitionOverride, setDentitionOverride] = useState(null);
     const deletePatient = useDeletePatient();
     if (!patientId) {
         return (<EmptyState title="No patient selected" message="Pick a patient from the list to view their profile and dental chart." action={<Button onClick={() => navigate("patients")}>
@@ -56,6 +59,7 @@ export default function PatientProfileView() {
     const patient = patientQuery.data;
     const teeth = (_b = teethQuery.data) !== null && _b !== void 0 ? _b : [];
     const treatments = (_c = treatmentsQuery.data) !== null && _c !== void 0 ? _c : [];
+    const dentition = dentitionOverride ?? defaultDentition(patient.dateOfBirth);
     async function onConfirmDelete() {
         if (!patientId)
             return;
@@ -85,7 +89,7 @@ export default function PatientProfileView() {
         <CardHeader>
           <CardTitle>Dental Chart</CardTitle>
           <p className="text-sm text-muted-foreground">
-            {isDentist
+            FDI notation. {isDentist
             ? "Click any tooth to view its timeline or update its status."
             : "Click any tooth to view its treatment timeline."}
           </p>
@@ -101,9 +105,24 @@ export default function PatientProfileView() {
                 <span><span className="font-semibold">Special Condition:</span> {patient.specialCondition}</span>
               </div>)}
             </div>)}
-          {teethQuery.isLoading ? (<LoadingSpinner text="Loading dental chart…"/>) : teethQuery.isError ? (<EmptyState title="Could not load dental chart" message="Please try again later."/>) : (<div className="mx-auto max-w-[400px] xs:max-w-[480px] sm:max-w-[520px]">
-              <OralCavityChart teeth={teeth} onSelectTooth={setSelectedToothNumber} selectedTooth={selectedToothNumber}/>
-            </div>)}
+          {teethQuery.isLoading ? (<LoadingSpinner text="Loading dental chart…"/>) : teethQuery.isError ? (<EmptyState title="Could not load dental chart" message="Please try again later."/>) : (<>
+              <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+                <div className="flex gap-1.5">
+                  <Button size="sm" variant={dentition === "permanent" ? "default" : "outline"} onClick={() => setDentitionOverride("permanent")} aria-pressed={dentition === "permanent"}>
+                    Permanent · 32
+                  </Button>
+                  <Button size="sm" variant={dentition === "primary" ? "default" : "outline"} onClick={() => setDentitionOverride("primary")} aria-pressed={dentition === "primary"}>
+                    Primary · 20
+                  </Button>
+                </div>
+                <span className="text-xs text-muted-foreground">
+                  {dentition === "primary" ? "FDI 51–85" : "FDI 11–48"}
+                </span>
+              </div>
+              <div className="mx-auto max-w-[400px] xs:max-w-[480px] sm:max-w-[520px]">
+                {dentition === "primary" ? (<PrimaryTeethChart teeth={teeth} onSelectTooth={setSelectedToothNumber} selectedTooth={selectedToothNumber}/>) : (<OralCavityChart teeth={teeth} onSelectTooth={setSelectedToothNumber} selectedTooth={selectedToothNumber}/>)}
+              </div>
+            </>)}
           {!teethQuery.isLoading && !teethQuery.isError && (() => {
             const groups = { treated: [], "needs-attention": [], missing: [] };
             for (const t of teeth)
@@ -122,7 +141,8 @@ export default function PatientProfileView() {
                     <span className="text-muted-foreground">{TOOTH_STATUS_META[status].label}</span>
                     <ul className="mt-0.5 list-none space-y-0.5">
                       {items.map((t) => (<li key={t.toothNumber} className="text-muted-foreground">
-                        <span className="font-medium text-foreground">#{t.toothNumber}</span>
+                        <span className="font-medium text-foreground">{t.toothNumber}</span>
+                        <span className="text-xs"> {toothName(t.toothNumber)}</span>
                         {t.notes && <span className="text-xs"> — {t.notes}</span>}
                       </li>))}
                     </ul>

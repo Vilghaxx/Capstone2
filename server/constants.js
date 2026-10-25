@@ -25,12 +25,27 @@ const PAGINATION_DEFAULTS = {
   MAX_LIMIT: 200,
 }
 
-const TOTAL_TEETH = 32
+const PERMANENT_TEETH = [1, 2, 3, 4].flatMap((quadrant) =>
+  Array.from({ length: 8 }, (_, i) => quadrant * 10 + i + 1)
+)
+
+const PRIMARY_TEETH = [5, 6, 7, 8].flatMap((quadrant) =>
+  Array.from({ length: 5 }, (_, i) => quadrant * 10 + i + 1)
+)
+
+const ALL_TOOTH_NUMBERS = [...PERMANENT_TEETH, ...PRIMARY_TEETH]
+
+function isToothNumber(toothNumber) {
+  return ALL_TOOTH_NUMBERS.includes(toothNumber)
+}
 
 module.exports = {
   ROLES,
   TOOTH_STATUSES,
   APPOINTMENT_STATUSES,
   PAGINATION_DEFAULTS,
-  TOTAL_TEETH,
+  PERMANENT_TEETH,
+  PRIMARY_TEETH,
+  ALL_TOOTH_NUMBERS,
+  isToothNumber,
 }

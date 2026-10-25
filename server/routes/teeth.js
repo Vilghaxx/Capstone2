@@ -2,7 +2,7 @@ const { Router } = require('express')
 const { db } = require('../db')
 const { authenticate, requireRole, withErrors } = require('../middleware')
 const { toothUpdateSchema, handleValidationError } = require('../validate').default
-const { ROLES } = require('../constants')
+const { ROLES, isToothNumber } = require('../constants')
 const fs = require('fs')
 const path = require('path')
 const crypto = require('crypto')
@@ -28,7 +28,7 @@ router.get('/:patientId', authenticate, requireRole(ROLES.DENTIST, ROLES.ASSISTA
 router.get('/:patientId/:toothNumber', authenticate, requireRole(ROLES.DENTIST, ROLES.ASSISTANT, ROLES.PATIENT), withErrors(async (req, res) => {
   const { patientId, toothNumber } = req.params
   const toothNumberNum = Number(toothNumber)
-  if (Number.isNaN(toothNumberNum)) {
+  if (!isToothNumber(toothNumberNum)) {
     return res.status(404).json({ error: 'Invalid tooth number' })
   }
 
@@ -44,7 +44,7 @@ router.get('/:patientId/:toothNumber', authenticate, requireRole(ROLES.DENTIST, 
 router.put('/:patientId/:toothNumber', authenticate, requireRole(ROLES.DENTIST), withErrors(async (req, res) => {
   const { patientId, toothNumber } = req.params
   const toothNumberNum = Number(toothNumber)
-  if (Number.isNaN(toothNumberNum)) {
+  if (!isToothNumber(toothNumberNum)) {
     return res.status(404).json({ error: 'Invalid tooth number' })
   }
 

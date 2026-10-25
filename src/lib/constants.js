@@ -40,9 +40,13 @@ export const PAGINATION_DEFAULTS = {
     LIMIT: 50,
     MAX_LIMIT: 200,
 };
-// FDI tooth numbering (1-32). Upper right 1-8, upper left 9-16,
-// lower left 17-24, lower right 25-32.
-export const TOTAL_TEETH = 32;
+/** Hex colours used by the dental charts and legends. */
+export const TOOTH_STATUS_COLORS = {
+    healthy: { fill: "#3b82f6", stroke: "#2563eb" },
+    treated: { fill: "#22c55e", stroke: "#16a34a" },
+    "needs-attention": { fill: "#f59e0b", stroke: "#d97706" },
+    missing: { fill: "#1f2937", stroke: "#111827" },
+};
 export const TOOTH_STATUS_META = {
     healthy: {
         label: "Healthy",

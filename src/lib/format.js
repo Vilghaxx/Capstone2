@@ -1,7 +1,7 @@
 // Frontend constants (mirrors backend, plus UI meta maps).
 // Re-export the meta maps from the shared constants module so there is a
 // single source of truth.
-export { ROLES, TOOTH_STATUSES, APPOINTMENT_TYPES, APPOINTMENT_STATUSES, PAYMENT_METHODS, PAGINATION_DEFAULTS, TOTAL_TEETH, TOOTH_STATUS_META, APPOINTMENT_TYPE_META, APPOINTMENT_STATUS_META, PAYMENT_METHOD_META, } from "@/lib/constants";
+export { ROLES, TOOTH_STATUSES, APPOINTMENT_TYPES, APPOINTMENT_STATUSES, PAYMENT_METHODS, PAGINATION_DEFAULTS, TOOTH_STATUS_COLORS, TOOTH_STATUS_META, APPOINTMENT_TYPE_META, APPOINTMENT_STATUS_META, PAYMENT_METHOD_META, } from "@/lib/constants";
 /** Currency formatting — Philippine Peso. */
 export function formatCurrency(amount) {
     return new Intl.NumberFormat("en-PH", {

@@ -8,11 +8,12 @@ import { toastError } from "@/lib/api";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-const TOOTH_OPTIONS = Array.from({ length: 32 }, (_, i) => ({
-    value: String(i + 1),
-    label: `Tooth #${i + 1}`,
-}));
+import { Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { PERMANENT_TEETH, PRIMARY_TEETH, toothOptionLabel } from "@/lib/teeth";
+const TOOTH_GROUPS = [
+    { label: "Permanent teeth (FDI 11–48)", teeth: PERMANENT_TEETH },
+    { label: "Primary teeth (FDI 51–85)", teeth: PRIMARY_TEETH },
+];
 export function TreatmentPlan({ patientId }) {
     const isDentist = useIsDentist();
     const { data: teeth } = useTeeth(patientId);
@@ -38,7 +39,7 @@ export function TreatmentPlan({ patientId }) {
                     treatmentPlan: planText || null,
                 },
             });
-            toast.success(`Treatment plan saved for Tooth #${selectedTooth}`);
+            toast.success(`Treatment plan saved for Tooth ${selectedTooth}`);
         }
         catch (err) {
             toastError(err, "Failed to save treatment plan");
@@ -61,9 +62,12 @@ export function TreatmentPlan({ patientId }) {
               <SelectValue placeholder="Select a tooth"/>
             </SelectTrigger>
             <SelectContent>
-              {TOOTH_OPTIONS.map((opt) => (<SelectItem key={opt.value} value={opt.value}>
-                  {opt.label}
-                </SelectItem>))}
+              {TOOTH_GROUPS.map((group) => (<SelectGroup key={group.label}>
+                  <SelectLabel>{group.label}</SelectLabel>
+                  {group.teeth.map((toothNumber) => (<SelectItem key={toothNumber} value={String(toothNumber)}>
+                      {toothOptionLabel(toothNumber)}
+                    </SelectItem>))}
+                </SelectGroup>))}
             </SelectContent>
           </Select>
         </div>
@@ -73,7 +77,7 @@ export function TreatmentPlan({ patientId }) {
           </Button>)}
       </div>
       {selectedTooth && (<div className="space-y-1.5">
-          <Label htmlFor="tp-plan">Treatment Plan — Tooth #{selectedTooth}</Label>
+          <Label htmlFor="tp-plan">Treatment Plan — Tooth {selectedTooth}</Label>
           <Textarea id="tp-plan" placeholder={isDentist
             ? "Describe the proposed treatment for this tooth…"
             : "No treatment plan written yet."} rows={5} value={planText} onChange={(e) => setPlanText(e.target.value)} readOnly={!isDentist}/>

@@ -8,6 +8,7 @@ import { useBilling, useBillingSummary, usePatients, useRecordPayment, } from "@
 import { paymentFormSchema, } from "@/lib/schemas/billing-schema";
 import { formatCurrency, formatDate, PAYMENT_METHODS, PAYMENT_METHOD_META, } from "@/lib/format";
 import { useAuth } from "@/lib/auth-store";
+import { toothName } from "@/lib/teeth";
 import { toastError } from "@/lib/api";
 import { motion } from "framer-motion";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, } from "@/components/ui/card";
@@ -244,7 +245,7 @@ export default function BillingView() {
                       <TableCell className="font-medium">
                         {(_b = (_a = r.patientName) !== null && _a !== void 0 ? _a : patientsMap.get(r.patientId)) !== null && _b !== void 0 ? _b : "—"}
                       </TableCell>
-                      <TableCell>{r.toothNumber}</TableCell>
+                      <TableCell title={toothName(r.toothNumber)}>{r.toothNumber}</TableCell>
                       <TableCell>{r.procedure}</TableCell>
                       <TableCell className="text-muted-foreground">
                         {formatDate(r.date)}
@@ -309,7 +310,7 @@ export default function BillingView() {
               </div>
               <div className="mt-1 flex items-center justify-between">
                 <span className="text-muted-foreground">Tooth</span>
-                <span className="font-medium">{selected.toothNumber}</span>
+                <span className="font-medium" title={toothName(selected.toothNumber)}>{selected.toothNumber}</span>
               </div>
               <div className="mt-1 flex items-center justify-between">
                 <span className="text-muted-foreground">Amount due</span>
