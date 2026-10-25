@@ -50,8 +50,10 @@ export const TOOTH_STATUS_COLORS = {
 export const TOOTH_STATUS_META = {
     healthy: {
         label: "Healthy",
-        color: "bg-blue-500",
-        ring: "ring-blue-500/40",
+        // Explicit hex: the theme remaps Tailwind's blue palette to magenta,
+        // but healthy teeth must stay blue (matches the chart fill #3b82f6).
+        color: "bg-[#3b82f6]",
+        ring: "ring-[#3b82f6]/40",
         description: "No issues detected",
     },
     treated: {
