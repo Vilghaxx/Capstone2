@@ -19,43 +19,72 @@ function getInitials(name) {
         .join("")
         .toUpperCase();
 }
+/** Read a file as a base64 data URL. */
+function readFileDataUrl(file) {
+    return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(reader.result);
+        reader.onerror = () => reject(reader.error ?? new Error("Could not read file"));
+        reader.readAsDataURL(file);
+    });
+}
+const XRAY_LIMIT = 10;
 /**
  * Header card for the patient profile view. Shows the patient's avatar,
- * name, "patient since" date, contact details, demographics, notes, and a
- * single patient-level X-ray. Attach/replace/remove X-ray is dentist-only
- * and saved immediately.
+ * name, "patient since" date, contact details, demographics, notes, and up
+ * to {@link XRAY_LIMIT} patient-level X-rays. Attach/remove X-ray is
+ * dentist-only and saved immediately.
  */
 export function PatientInfoCard({ patient, canManage, isDentist, onNotes, onDelete, }) {
     const saveXray = useSavePatientXray();
     const fileInputRef = useRef(null);
-    const [lightboxOpen, setLightboxOpen] = useState(false);
-    function handleFileChange(e) {
-        const file = e.target.files?.[0];
+    const [lightboxIndex, setLightboxIndex] = useState(null);
+    // Legacy patients hold a single image on `xrayUrl`; it shows as one attachment.
+    // (Object form is a guard for RTDB occasionally object-encoding arrays.)
+    const xrays = Array.isArray(patient.xrays)
+        ? patient.xrays.filter(Boolean)
+        : patient.xrays
+            ? Object.values(patient.xrays).filter(Boolean)
+            : patient.xrayUrl
+                ? [patient.xrayUrl]
+                : [];
+    async function handleFiles(e) {
+        const files = Array.from(e.target.files ?? []);
         e.target.value = "";
-        if (!file)
+        if (files.length === 0)
             return;
-        if (file.size > 3_000_000) {
-            toast.error("Image must be under 3MB.");
+        const slots = XRAY_LIMIT - xrays.length;
+        if (slots <= 0) {
+            toast.error(`X-ray attachments are limited to ${XRAY_LIMIT} images.`);
             return;
         }
-        const reader = new FileReader();
-        reader.onload = async () => {
+        let added = 0;
+        for (const file of files.slice(0, slots)) {
+            if (file.size > 3_000_000) {
+                toast.error(`${file.name} must be under 3MB.`);
+                continue;
+            }
             try {
+                const dataUrl = await readFileDataUrl(file);
                 await saveXray.mutateAsync({
                     id: patient.id,
-                    data: { xrayData: reader.result },
+                    data: { xrayData: dataUrl },
                 });
-                toast.success("X-ray saved");
+                added++;
             }
             catch (err) {
-                toastError(err, "Failed to save X-ray");
+                toastError(err, `Failed to save ${file.name}`);
             }
-        };
-        reader.readAsDataURL(file);
+        }
+        if (added > 0)
+            toast.success(added === 1 ? "X-ray saved" : `${added} X-rays saved`);
+        if (files.length > slots) {
+            toast.error(`Only ${slots} more X-ray image${slots === 1 ? "" : "s"} could be added.`);
+        }
     }
-    async function handleRemoveXray() {
+    async function handleRemoveXray(index) {
         try {
-            await saveXray.mutateAsync({ id: patient.id, data: { removeXray: true } });
+            await saveXray.mutateAsync({ id: patient.id, data: { removeXrayIndex: index } });
             toast.success("X-ray removed");
         }
         catch (err) {
@@ -83,10 +112,10 @@ export function PatientInfoCard({ patient, canManage, isDentist, onNotes, onDele
               Progress Notes
             </Button>)}
           {isDentist && (<>
-              <input ref={fileInputRef} type="file" accept="image/*" onChange={handleFileChange} className="hidden"/>
-              <Button variant="outline" size="sm" onClick={() => fileInputRef.current?.click()} disabled={saveXray.isPending}>
+              <input ref={fileInputRef} type="file" accept="image/*" multiple onChange={handleFiles} className="hidden"/>
+              <Button variant="outline" size="sm" onClick={() => fileInputRef.current?.click()} disabled={saveXray.isPending || xrays.length >= XRAY_LIMIT}>
                 <Upload className="h-4 w-4"/>
-                {patient.xrayUrl ? "Replace X-ray" : "Attach X-ray"}
+                Attach X-ray
               </Button>
             </>)}
         </div>
@@ -133,13 +162,15 @@ export function PatientInfoCard({ patient, canManage, isDentist, onNotes, onDele
         {/* X-Ray */}
         <div className="mt-4 space-y-2 border-t border-border pt-4">
           <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
-            X-Ray
+            X-Ray{xrays.length > 0 && ` (${xrays.length}/${XRAY_LIMIT})`}
           </p>
-          {patient.xrayUrl ? (<div className="relative inline-block">
-              <img src={patient.xrayUrl} alt={`X-ray of ${patient.name}`} onClick={() => setLightboxOpen(true)} className="max-h-48 cursor-zoom-in rounded-lg border border-border object-contain transition-opacity hover:opacity-90"/>
-              {isDentist && (<button type="button" onClick={handleRemoveXray} disabled={saveXray.isPending} className="absolute -right-2 -top-2 rounded-full bg-destructive p-1 text-destructive-foreground" aria-label="Remove X-ray">
-                  <X className="h-3 w-3"/>
-                </button>)}
+          {xrays.length > 0 ? (<div className="flex flex-wrap gap-3">
+              {xrays.map((url, index) => (<div key={index} className="relative inline-block">
+                  <img src={url} alt={`X-ray ${index + 1} of ${patient.name}`} onClick={() => setLightboxIndex(index)} className="max-h-48 cursor-zoom-in rounded-lg border border-border object-contain transition-opacity hover:opacity-90"/>
+                  {isDentist && (<button type="button" onClick={() => handleRemoveXray(index)} disabled={saveXray.isPending} className="absolute -right-2 -top-2 rounded-full bg-destructive p-1 text-destructive-foreground" aria-label={`Remove X-ray ${index + 1}`}>
+                      <X className="h-3 w-3"/>
+                    </button>)}
+                </div>))}
             </div>) : (<div className="flex items-center gap-2 text-sm text-muted-foreground">
               <ImageIcon className="h-4 w-4" aria-hidden="true"/>
               <span>No X-ray attached.</span>
@@ -153,11 +184,16 @@ export function PatientInfoCard({ patient, canManage, isDentist, onNotes, onDele
             </Button>
           </div>)}
       </CardContent>
-      <Dialog open={lightboxOpen} onOpenChange={setLightboxOpen}>
-        <DialogContent className="max-w-[90vw] sm:max-w-[700px]">
-          <DialogTitle>X-Ray — {patient.name}</DialogTitle>
-          <img src={patient.xrayUrl} alt={`X-ray of ${patient.name}`} className="w-full rounded-lg object-contain"/>
-        </DialogContent>
+      <Dialog open={lightboxIndex !== null} onOpenChange={(open) => {
+            if (!open)
+                setLightboxIndex(null);
+        }}>
+        {lightboxIndex !== null && (<DialogContent className="max-w-[90vw] sm:max-w-[700px]">
+            <DialogTitle>
+              X-Ray {lightboxIndex + 1} of {xrays.length} — {patient.name}
+            </DialogTitle>
+            <img src={xrays[lightboxIndex]} alt={`X-ray ${lightboxIndex + 1} of ${patient.name}`} className="w-full rounded-lg object-contain"/>
+          </DialogContent>)}
       </Dialog>
     </Card>);
 }

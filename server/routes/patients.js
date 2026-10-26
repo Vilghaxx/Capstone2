@@ -26,7 +26,7 @@ router.get('/', authenticate, withErrors(async (req, res) => {
     where.name = { contains: searchParam }
   }
 
-  const [total, patients] = await Promise.all([
+  const [total, raw] = await Promise.all([
     db.patient.count({ where }),
     db.patient.findMany({
       where,
@@ -35,6 +35,10 @@ router.get('/', authenticate, withErrors(async (req, res) => {
       take: limit,
     }),
   ])
+
+  // X-ray image payloads are stripped from list responses; the profile page
+  // fetches the full record with GET /:id.
+  const patients = raw.map(({ xrayUrl, xrays, ...patient }) => patient)
 
   return res.json({
     data: patients,
@@ -117,6 +121,41 @@ router.put('/:id', authenticate, requireRole(ROLES.DENTIST, ROLES.ASSISTANT), wi
 }))
 
 // PUT /api/patients/:id/xray
+// Patient X-rays are an array of data URLs on `xrays` (max XRAY_LIMIT).
+// `xrayData` appends, `removeXrayIndex` removes one, `removeXray` clears all.
+// Legacy single-image `xrayUrl` patients are migrated to the array on first
+// edit; the legacy key is then replaced.
+const XRAY_LIMIT = 10
+
+// Mutate the X-ray list for one patient per the parsed body. Returns
+// { next } on success or { error } when the edit is invalid.
+function applyXrayEdit(existing, { xrayData, removeXray, removeXrayIndex }) {
+  // Guard against RTDB occasionally object-encoding stored arrays.
+  const xrays = Array.isArray(existing.xrays)
+    ? existing.xrays.filter(Boolean)
+    : existing.xrays && typeof existing.xrays === 'object'
+      ? Object.values(existing.xrays).filter(Boolean)
+      : existing.xrayUrl
+        ? [existing.xrayUrl]
+        : []
+
+  let next = [...xrays]
+  if (removeXray) next = []
+  if (removeXrayIndex !== undefined) {
+    if (removeXrayIndex >= next.length) {
+      return { error: 'Invalid X-ray index' }
+    }
+    next.splice(removeXrayIndex, 1)
+  }
+  if (xrayData) {
+    if (next.length >= XRAY_LIMIT) {
+      return { error: `X-ray attachments are limited to ${XRAY_LIMIT} images` }
+    }
+    next.push(xrayData)
+  }
+  return { next }
+}
+
 router.put('/:id/xray', authenticate, requireRole(ROLES.DENTIST), withErrors(async (req, res) => {
   const { id } = req.params
 
@@ -126,17 +165,21 @@ router.put('/:id/xray', authenticate, requireRole(ROLES.DENTIST), withErrors(asy
   const parsed = patientXraySchema.safeParse(req.body)
   if (!parsed.success) return handleValidationError(res, parsed.error)
 
-  const { xrayData, removeXray } = parsed.data
+  const { xrayData, removeXray, removeXrayIndex } = parsed.data
 
-  if (!xrayData && !removeXray) {
+  if (!xrayData && removeXrayIndex === undefined && !removeXray) {
     return res.status(400).json({ error: 'Nothing to update' })
   }
+
+  const edit = applyXrayEdit(existing, { xrayData, removeXray, removeXrayIndex })
+  if (edit.error) return res.status(400).json({ error: edit.error })
 
   const updated = await db.patient.update({
     where: { id },
     data: {
-      ...(removeXray && { xrayUrl: null }),
-      ...(xrayData && { xrayUrl: xrayData }),
+      xrays: edit.next.length ? edit.next : null,
+      // The single-image field remains only for legacy records; the array now owns the data.
+      xrayUrl: null,
       updatedAt: new Date(),
     },
   })
@@ -160,3 +203,5 @@ router.delete('/:id', authenticate, requireRole(ROLES.DENTIST, ROLES.ASSISTANT),
 }))
 
 module.exports = router
+module.exports.applyXrayEdit = applyXrayEdit
+module.exports.XRAY_LIMIT = XRAY_LIMIT

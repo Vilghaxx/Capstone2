@@ -63,6 +63,7 @@ const patientXraySchema = z.object({
     .max(4_200_000, 'X-ray image too large')
     .refine((s) => s.startsWith('data:image/'), 'Invalid image data')
     .optional(),
+  removeXrayIndex: z.number().int().min(0).optional(),
   removeXray: z.boolean().optional(),
 })
 
