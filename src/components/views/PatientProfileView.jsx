@@ -20,7 +20,7 @@ import { ToothModal } from "@/components/views/patient-profile/ToothModal";
 import { TreatmentHistoryTable } from "@/components/views/patient-profile/TreatmentHistoryTable";
 import { TreatmentPlan } from "@/components/views/patient-profile/TreatmentPlan";
 import { TOOTH_STATUS_META } from "@/lib/format";
-import { defaultDentition, toothName } from "@/lib/teeth";
+import { toothName } from "@/lib/teeth";
 /** Patient profile view — composes the info card, dental chart, treatment history, and edit/delete/tooth dialogs. */
 export default function PatientProfileView() {
     var _a, _b, _c;
@@ -35,7 +35,6 @@ export default function PatientProfileView() {
     const [isNotesDialogOpen, setIsNotesDialogOpen] = useState(false);
     const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
     const [selectedToothNumber, setSelectedToothNumber] = useState(null);
-    const [dentitionOverride, setDentitionOverride] = useState(null);
     const deletePatient = useDeletePatient();
     if (!patientId) {
         return (<EmptyState title="No patient selected" message="Pick a patient from the list to view their profile and dental chart." action={<Button onClick={() => navigate("patients")}>
@@ -59,7 +58,6 @@ export default function PatientProfileView() {
     const patient = patientQuery.data;
     const teeth = (_b = teethQuery.data) !== null && _b !== void 0 ? _b : [];
     const treatments = (_c = treatmentsQuery.data) !== null && _c !== void 0 ? _c : [];
-    const dentition = dentitionOverride ?? defaultDentition(patient.dateOfBirth);
     async function onConfirmDelete() {
         if (!patientId)
             return;
@@ -106,22 +104,20 @@ export default function PatientProfileView() {
               </div>)}
             </div>)}
           {teethQuery.isLoading ? (<LoadingSpinner text="Loading dental chart…"/>) : teethQuery.isError ? (<EmptyState title="Could not load dental chart" message="Please try again later."/>) : (<>
-              <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
-                <div className="flex gap-1.5">
-                  <Button size="sm" variant={dentition === "permanent" ? "default" : "outline"} onClick={() => setDentitionOverride("permanent")} aria-pressed={dentition === "permanent"}>
-                    Permanent · 32
-                  </Button>
-                  <Button size="sm" variant={dentition === "primary" ? "default" : "outline"} onClick={() => setDentitionOverride("primary")} aria-pressed={dentition === "primary"}>
-                    Primary · 20
-                  </Button>
-                </div>
-                <span className="text-xs text-muted-foreground">
-                  {dentition === "primary" ? "FDI 51–85" : "FDI 11–48"}
-                </span>
-              </div>
-              <div className="mx-auto max-w-[400px] xs:max-w-[480px] sm:max-w-[520px]">
-                {dentition === "primary" ? (<PrimaryTeethChart teeth={teeth} onSelectTooth={setSelectedToothNumber} selectedTooth={selectedToothNumber}/>) : (<OralCavityChart teeth={teeth} onSelectTooth={setSelectedToothNumber} selectedTooth={selectedToothNumber}/>)}
-              </div>
+            <div className="grid grid-cols-1 gap-8 lg:grid-cols-2">
+              <section aria-label="Permanent dentition chart">
+                <p className="mb-2 text-center text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+                  Permanent · 32 teeth · FDI 11–48
+                </p>
+                <OralCavityChart teeth={teeth} onSelectTooth={setSelectedToothNumber} selectedTooth={selectedToothNumber}/>
+              </section>
+              <section aria-label="Primary dentition chart">
+                <p className="mb-2 text-center text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+                  Primary · 20 teeth · FDI 51–85
+                </p>
+                <PrimaryTeethChart teeth={teeth} onSelectTooth={setSelectedToothNumber} selectedTooth={selectedToothNumber}/>
+              </section>
+            </div>
             </>)}
           {!teethQuery.isLoading && !teethQuery.isError && (() => {
             const groups = { treated: [], "needs-attention": [], missing: [] };

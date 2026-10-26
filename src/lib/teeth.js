@@ -63,16 +63,3 @@ export function toothName(toothNumber) {
 export function toothOptionLabel(toothNumber) {
     return `${toothNumber} — ${toothName(toothNumber)}`;
 }
-
-/**
- * Rough age-based default for which chart to show: under 13 defaults to the
- * primary chart, everyone else to the permanent chart. The user can override
- * it with the chart toggle at any time (mixed dentition is transitional).
- */
-export function defaultDentition(dateOfBirth) {
-    if (!dateOfBirth) return "permanent";
-    const born = new Date(dateOfBirth).getTime();
-    if (Number.isNaN(born)) return "permanent";
-    const age = (Date.now() - born) / (365.25 * 24 * 60 * 60 * 1000);
-    return age < 13 ? "primary" : "permanent";
-}
