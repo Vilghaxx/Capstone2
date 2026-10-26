@@ -1,5 +1,5 @@
 'use client';
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import { CalendarCheck2, CalendarClock, CalendarPlus, CalendarX2, Clock, Loader2, Pencil, StickyNote, Trash2, XCircle, } from "lucide-react";
 import { useAppointments, useDeleteAppointment, useDeleteAppointments, useUpdateAppointment, } from "@/hooks";
@@ -59,14 +59,42 @@ function toDateInputValue(date) {
     const day = String(d.getDate()).padStart(2, "0");
     return `${y}-${m}-${day}`;
 }
+/** Patients can cancel up to 2 hours before the appointment start (clinic time, UTC+8). */
+const CANCELLATION_CUTOFF_MS = 2 * 60 * 60 * 1000;
+/** Absolute start time of an appointment. The stored date is UTC midnight. */
+function appointmentStart(appointment) {
+    const date = new Date(appointment.date);
+    if (isNaN(date.getTime()))
+        return new Date(NaN);
+    return new Date(`${date.toISOString().slice(0, 10)}T${appointment.time}:00+08:00`);
+}
+/** Format a duration in ms as "5d 3h", "3h 05m" or "12m" (minutes rounded up). */
+function formatCountdown(ms) {
+    const totalMinutes = Math.max(0, Math.ceil(ms / 60_000));
+    const days = Math.floor(totalMinutes / 1440);
+    const hours = Math.floor((totalMinutes % 1440) / 60);
+    const minutes = totalMinutes % 60;
+    if (days > 0)
+        return `${days}d ${hours}h`;
+    return hours > 0 ? `${hours}h ${String(minutes).padStart(2, "0")}m` : `${minutes}m`;
+}
 function AppointmentCard({ appointment }) {
     var _a, _b;
     const updateAppt = useUpdateAppointment();
     const deleteAppt = useDeleteAppointment();
     const upcoming = isUpcoming(appointment);
+    const [now, setNow] = useState(() => Date.now());
+    useEffect(() => {
+        if (!upcoming)
+            return;
+        const id = setInterval(() => setNow(Date.now()), 30_000);
+        return () => clearInterval(id);
+    }, [upcoming]);
+    const cancelDeadline = appointmentStart(appointment).getTime() - CANCELLATION_CUTOFF_MS;
+    const cancellationClosed = now >= cancelDeadline;
     const canEdit = appointment.status === "pending";
-    const canCancel = appointment.status === "pending" || appointment.status === "scheduled";
-    const canDelete = !canEdit && !canCancel;
+    const canCancel = upcoming && !cancellationClosed && (appointment.status === "pending" || appointment.status === "scheduled");
+    const canDelete = !upcoming && !canEdit;
     // Edit dialog state
     const [editOpen, setEditOpen] = useState(false);
     const [editDate, setEditDate] = useState(toDateInputValue(appointment.date));
@@ -153,6 +181,13 @@ function AppointmentCard({ appointment }) {
               <span>{appointment.time || "—"}</span>
             </span>
           </div>
+
+          {upcoming && (appointment.status === "pending" || appointment.status === "scheduled") && (<p className={cn("flex items-center gap-1.5 text-xs", cancellationClosed ? "text-muted-foreground" : "text-amber-600")}>
+              <Clock className="h-3.5 w-3.5" aria-hidden="true"/>
+              {cancellationClosed
+            ? "Cancellation closed — within 2 hours of the appointment."
+            : `Cancellation closes in ${formatCountdown(cancelDeadline - now)}.`}
+            </p>)}
 
           {appointment.notes && (<div className="flex items-start gap-1.5 rounded-md bg-muted/50 px-3 py-2 text-sm">
               <StickyNote className="mt-0.5 h-4 w-4 shrink-0 text-amber-600" aria-hidden="true"/>

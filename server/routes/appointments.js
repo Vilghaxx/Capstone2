@@ -20,6 +20,19 @@ async function hasSlotConflict(date, time, excludeId) {
     : appts.length > 0
 }
 
+// Patient cancellations close 2 hours before the appointment start.
+// Stored dates are UTC midnight while times are clinic wall-clock (UTC+8).
+const CANCELLATION_CUTOFF_MS = 2 * 60 * 60 * 1000
+const CLINIC_UTC_OFFSET = '+08:00'
+
+function isCancellationClosed(appointment, now = Date.now()) {
+  const date = appointment.date instanceof Date ? appointment.date : new Date(appointment.date)
+  if (Number.isNaN(date.getTime()) || !appointment.time) return false
+  const start = new Date(`${date.toISOString().slice(0, 10)}T${appointment.time}:00${CLINIC_UTC_OFFSET}`)
+  if (Number.isNaN(start.getTime())) return false
+  return now >= start.getTime() - CANCELLATION_CUTOFF_MS
+}
+
 const router = Router()
 
 // GET /api/appointments?status=&date=
@@ -235,6 +248,10 @@ router.put('/:id', authenticate, requireRole(ROLES.DENTIST, ROLES.ASSISTANT, ROL
     if (cancelling && ![APPOINTMENT_STATUSES.PENDING, APPOINTMENT_STATUSES.SCHEDULED].includes(existing.status)) {
       return res.status(403).json({ error: 'This appointment cannot be cancelled at this stage' })
     }
+    // Cancelling closes 2 hours before the appointment start
+    if (cancelling && isCancellationClosed(existing)) {
+      return res.status(403).json({ error: 'Appointments can no longer be cancelled within 2 hours of the scheduled time' })
+    }
 
     const data = {}
     if (notes !== undefined) data.notes = notes
@@ -354,3 +371,4 @@ router.delete('/:id', authenticate, requireRole(ROLES.DENTIST, ROLES.ASSISTANT, 
 }))
 
 module.exports = router
+module.exports.isCancellationClosed = isCancellationClosed
