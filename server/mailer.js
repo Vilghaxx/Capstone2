@@ -24,8 +24,9 @@ function getTransporter() {
   if (transporterLoaded) return cachedTransporter
   transporterLoaded = true
 
-  const user = process.env.GMAIL_USER
-  const pass = process.env.GMAIL_APP_PASSWORD
+  const user = (process.env.GMAIL_USER || '').trim()
+  // Google displays app passwords with spaces; SMTP expects them without.
+  const pass = (process.env.GMAIL_APP_PASSWORD || '').replace(/\s+/g, '')
   if (!user || !pass) {
     cachedTransporter = null
     return null
