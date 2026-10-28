@@ -3,7 +3,7 @@ const { getDatabase } = require('firebase-admin/database')
 const { readFileSync, accessSync } = require('fs')
 const path = require('path')
 
-const DB_FILE = 'capstone-f6c32-firebase-adminsdk-fbsvc-9540650b6a.json'
+const DB_FILE = 'sonidodentalsystem-firebase-adminsdk-fbsvc-5784825144.json'
 
 function loadServiceAccount() {
   // Option 1: base64-encoded JSON in env var (Render-safe, no file needed)
@@ -33,7 +33,7 @@ function loadServiceAccount() {
 
 const DATABASE_URL =
   process.env.FIREBASE_DATABASE_URL ??
-  'https://capstone-f6c32-default-rtdb.firebaseio.com'
+  'https://sonidodentalsystem-default-rtdb.asia-southeast1.firebasedatabase.app'
 
 if (!getApps().length) {
   try {

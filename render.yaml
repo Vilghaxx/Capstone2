@@ -12,9 +12,9 @@ services:
     healthCheckPath: /api
     envVars:
       - key: FIREBASE_KEY_PATH
-        value: capstone-f6c32-firebase-adminsdk-fbsvc-9540650b6a.json
+        value: sonidodentalsystem-firebase-adminsdk-fbsvc-5784825144.json
       - key: FIREBASE_DATABASE_URL
-        value: https://capstone-f6c32-default-rtdb.firebaseio.com
+        value: https://sonidodentalsystem-default-rtdb.asia-southeast1.firebasedatabase.app
       - key: JWT_SECRET
         generateValue: true
       - key: GOOGLE_CLIENT_ID
@@ -31,4 +31,4 @@ services:
 #     command: bun run seed
 #     envVars:
 #       - key: FIREBASE_KEY_PATH
-#         value: capstone-f6c32-firebase-adminsdk-fbsvc-9540650b6a.json
+#         value: sonidodentalsystem-firebase-adminsdk-fbsvc-5784825144.json

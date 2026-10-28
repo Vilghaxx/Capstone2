@@ -27,8 +27,8 @@ cp .env .env.example  # backup the default first, or create manually:
 ```
 
 ```env
-FIREBASE_KEY_PATH="capstone-f6c32-firebase-adminsdk-fbsvc-9540650b6a.json"
-FIREBASE_DATABASE_URL="https://capstone-f6c32-default-rtdb.firebaseio.com"
+FIREBASE_KEY_PATH="sonidodentalsystem-firebase-adminsdk-fbsvc-5784825144.json"
+FIREBASE_DATABASE_URL="https://sonidodentalsystem-default-rtdb.asia-southeast1.firebasedatabase.app"
 JWT_SECRET="your-long-random-secret-here"
 GOOGLE_CLIENT_ID="your-google-oauth-client-id"
 GMAIL_USER="your-clinic-address@gmail.com"
@@ -37,8 +37,8 @@ GMAIL_CLIENT_SECRET="your-gmail-oauth-client-secret"
 GMAIL_REFRESH_TOKEN="your-gmail-refresh-token"
 ```
 
-- `FIREBASE_KEY_PATH` — path to a Firebase service-account JSON. Defaults to `capstone-f6c32-firebase-adminsdk-fbsvc-9540650b6a.json` in the project root.
-- `FIREBASE_DATABASE_URL` — RTDB URL. Defaults to `https://capstone-f6c32-default-rtdb.firebaseio.com`.
+- `FIREBASE_KEY_PATH` — path to a Firebase service-account JSON. Defaults to `sonidodentalsystem-firebase-adminsdk-fbsvc-5784825144.json` in the project root.
+- `FIREBASE_DATABASE_URL` — RTDB URL. Defaults to `https://sonidodentalsystem-default-rtdb.asia-southeast1.firebasedatabase.app`.
 - `JWT_SECRET` — token signing secret. Defaults to a dev secret; change in production.
 - `GOOGLE_CLIENT_ID` — OAuth 2.0 client ID used to verify Google sign-in credentials.
 - `GMAIL_USER` — clinic Gmail address used as the email sender.

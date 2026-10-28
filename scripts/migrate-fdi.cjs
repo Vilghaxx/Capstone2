@@ -23,12 +23,12 @@ function loadServiceAccount() {
   if (process.env.FIREBASE_SERVICE_ACCOUNT) {
     return JSON.parse(Buffer.from(process.env.FIREBASE_SERVICE_ACCOUNT, 'base64').toString('utf8'))
   }
-  return JSON.parse(readFileSync(path.join(process.cwd(), 'capstone-f6c32-firebase-adminsdk-fbsvc-9540650b6a.json'), 'utf8'))
+  return JSON.parse(readFileSync(path.join(process.cwd(), 'sonidodentalsystem-firebase-adminsdk-fbsvc-5784825144.json'), 'utf8'))
 }
 
 initializeApp({
   credential: cert(loadServiceAccount()),
-  databaseURL: process.env.FIREBASE_DATABASE_URL ?? 'https://capstone-f6c32-default-rtdb.firebaseio.com',
+  databaseURL: process.env.FIREBASE_DATABASE_URL ?? 'https://sonidodentalsystem-default-rtdb.asia-southeast1.firebasedatabase.app',
 })
 const rtdb = getDatabase()
 

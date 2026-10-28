@@ -5,8 +5,8 @@ import * as path from 'path'
 import { faker } from '@faker-js/faker'
 import { PERMANENT_TEETH } from '../src/lib/teeth'
 
-const KEY_PATH = path.join(process.cwd(), 'capstone-f6c32-firebase-adminsdk-fbsvc-9540650b6a.json')
-const DATABASE_URL = process.env.FIREBASE_DATABASE_URL ?? 'https://capstone-f6c32-default-rtdb.firebaseio.com'
+const KEY_PATH = path.join(process.cwd(), 'sonidodentalsystem-firebase-adminsdk-fbsvc-5784825144.json')
+const DATABASE_URL = process.env.FIREBASE_DATABASE_URL ?? 'https://sonidodentalsystem-default-rtdb.asia-southeast1.firebasedatabase.app'
 
 if (!getApps().length) {
   const sa = JSON.parse(readFileSync(KEY_PATH, 'utf-8'))
