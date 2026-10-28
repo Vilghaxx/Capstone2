@@ -24,11 +24,12 @@ const appointmentFormSchema = z.object({
   status: z.string().optional().default('scheduled'),
   paymentMethod: z.enum(['pay', 'hmo']).optional().default('pay'),
   hmoCompany: z.string().max(200).optional().default(''),
+  hmoProvider: z.string().max(200).optional().default(''),
   hmoInsuranceNo: z.string().max(100).optional().default(''),
   hmoAccountNo: z.string().max(100).optional().default(''),
   hmoBirthDate: z.string().optional().default(''),
 }).refine(
-  (d) => d.paymentMethod !== 'hmo' || (d.hmoCompany && d.hmoInsuranceNo && d.hmoAccountNo && d.hmoBirthDate),
+  (d) => d.paymentMethod !== 'hmo' || (d.hmoCompany && d.hmoProvider && d.hmoInsuranceNo && d.hmoAccountNo && d.hmoBirthDate),
   { message: 'All HMO fields are required', path: ['hmoCompany'] }
 )
 

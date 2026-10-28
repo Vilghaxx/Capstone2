@@ -191,6 +191,7 @@ router.post('/', authenticate, requireRole(ROLES.DENTIST, ROLES.ASSISTANT, ROLES
       notes: data.notes ?? '',
       paymentMethod: data.paymentMethod ?? 'pay',
       hmoCompany: data.hmoCompany ?? '',
+      hmoProvider: data.hmoProvider ?? '',
       hmoInsuranceNo: data.hmoInsuranceNo ?? '',
       hmoAccountNo: data.hmoAccountNo ?? '',
       hmoBirthDate: data.hmoBirthDate ?? '',

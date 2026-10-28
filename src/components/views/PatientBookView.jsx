@@ -20,7 +20,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { LoadingSpinner } from "@/components/common/LoadingSpinner";
 import { EmptyState } from "@/components/common/EmptyState";
 import { AppointmentStatusBadge } from "@/components/common/StatusBadge";
-/** HMO partners accepted for patient bookings. */
+/** Insurance companies accepted for patient bookings. */
 const INSURANCE_COMPANIES = [
     "Health Partners",
     "Filipino Doctors",
@@ -30,6 +30,19 @@ const INSURANCE_COMPANIES = [
     "Hive Health",
     "Reliant Health",
     "Value Care",
+];
+/** HMO partners accepted for patient bookings. */
+const HMO_COMPANIES = [
+    "iCare",
+    "Intellicare",
+    "Avega",
+    "Etiqa",
+    "Kaiser",
+    "PhilCare",
+    "Maxicare",
+    "Medicare Plus",
+    "HMI Members",
+    "Responsive Brokers Inc.",
 ];
 /** Today's date as a YYYY-MM-DD string. */
 function todayStr() {
@@ -66,6 +79,7 @@ export default function PatientBookView() {
     const [bookNotes, setBookNotes] = useState("");
     const [bookPayMethod, setBookPayMethod] = useState("pay");
     const [hmoCompany, setHmoCompany] = useState("");
+    const [hmoProvider, setHmoProvider] = useState("");
     const [hmoInsuranceNo, setHmoInsuranceNo] = useState("");
     const [hmoAccountNo, setHmoAccountNo] = useState("");
     const [hmoBirthDate, setHmoBirthDate] = useState("");
@@ -99,6 +113,7 @@ export default function PatientBookView() {
         setBookNotes("");
         setBookPayMethod("pay");
         setHmoCompany("");
+        setHmoProvider("");
         setHmoInsuranceNo("");
         setHmoAccountNo("");
         setHmoBirthDate("");
@@ -109,7 +124,7 @@ export default function PatientBookView() {
             toast.error("Please select an appointment type.");
             return;
         }
-        if (bookPayMethod === "hmo" && (!hmoCompany || !hmoInsuranceNo || !hmoAccountNo || !hmoBirthDate)) {
+        if (bookPayMethod === "hmo" && (!hmoCompany || !hmoProvider || !hmoInsuranceNo || !hmoAccountNo || !hmoBirthDate)) {
             toast.error("Please fill in all HMO details.");
             return;
         }
@@ -127,6 +142,7 @@ export default function PatientBookView() {
                 notes: bookNotes || "",
                 paymentMethod: bookPayMethod,
                 hmoCompany: bookPayMethod === "hmo" ? hmoCompany : "",
+                hmoProvider: bookPayMethod === "hmo" ? hmoProvider : "",
                 hmoInsuranceNo: bookPayMethod === "hmo" ? hmoInsuranceNo : "",
                 hmoAccountNo: bookPayMethod === "hmo" ? hmoAccountNo : "",
                 hmoBirthDate: bookPayMethod === "hmo" ? hmoBirthDate : "",
@@ -306,6 +322,19 @@ export default function PatientBookView() {
                   </SelectTrigger>
                   <SelectContent>
                     {INSURANCE_COMPANIES.map((company) => (<SelectItem key={company} value={company}>
+                        {company}
+                      </SelectItem>))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="hmo-provider">HMO Company</Label>
+                <Select value={hmoProvider} onValueChange={setHmoProvider}>
+                  <SelectTrigger id="hmo-provider" className="w-full">
+                    <SelectValue placeholder="Select HMO company"/>
+                  </SelectTrigger>
+                  <SelectContent>
+                    {HMO_COMPANIES.map((company) => (<SelectItem key={company} value={company}>
                         {company}
                       </SelectItem>))}
                   </SelectContent>
