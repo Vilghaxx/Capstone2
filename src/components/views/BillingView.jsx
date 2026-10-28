@@ -245,7 +245,7 @@ export default function BillingView() {
                       <TableCell className="font-medium">
                         {(_b = (_a = r.patientName) !== null && _a !== void 0 ? _a : patientsMap.get(r.patientId)) !== null && _b !== void 0 ? _b : "—"}
                       </TableCell>
-                      <TableCell title={toothName(r.toothNumber)}>{r.toothNumber}</TableCell>
+                      <TableCell title={r.toothNumber ? toothName(r.toothNumber) : "All teeth"}>{r.toothNumber ?? "Full mouth"}</TableCell>
                       <TableCell>{r.procedure}</TableCell>
                       <TableCell className="text-muted-foreground">
                         {formatDate(r.date)}
@@ -310,7 +310,7 @@ export default function BillingView() {
               </div>
               <div className="mt-1 flex items-center justify-between">
                 <span className="text-muted-foreground">Tooth</span>
-                <span className="font-medium" title={toothName(selected.toothNumber)}>{selected.toothNumber}</span>
+                <span className="font-medium" title={selected.toothNumber ? toothName(selected.toothNumber) : "All teeth"}>{selected.toothNumber ?? "Full mouth"}</span>
               </div>
               <div className="mt-1 flex items-center justify-between">
                 <span className="text-muted-foreground">Amount due</span>

@@ -33,7 +33,9 @@ export function TreatmentHistoryTable({ treatments, isLoading, }) {
         <tbody>
           {sortedTreatments.map((treatment) => (<tr key={treatment.id} className="border-b last:border-0 hover:bg-muted/40">
               <td className="py-2 pr-3">
-                <Badge variant="outline" title={toothName(treatment.toothNumber)}>{treatment.toothNumber}</Badge>
+                <Badge variant="outline" title={treatment.toothNumber ? toothName(treatment.toothNumber) : "All teeth"}>
+                  {treatment.toothNumber ?? "Full mouth"}
+                </Badge>
               </td>
               <td className="py-2 pr-3 font-medium">{treatment.procedure}</td>
               <td className="py-2 pr-3 text-muted-foreground">

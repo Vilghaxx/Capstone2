@@ -39,21 +39,24 @@ router.post('/', authenticate, requireRole(ROLES.DENTIST), withErrors(async (req
       },
     })
 
-    await tx.tooth.upsert({
-      where: { patientId_toothNumber: { patientId, toothNumber } },
-      update: {
-        status: TOOTH_STATUSES.TREATED,
-        lastTreatment: procedure,
-        lastTreatmentDate: new Date(),
-      },
-      create: {
-        patientId,
-        toothNumber,
-        status: TOOTH_STATUSES.TREATED,
-        lastTreatment: procedure,
-        lastTreatmentDate: new Date(),
-      },
-    })
+    // Full-mouth procedures (toothNumber null) do not touch the tooth chart.
+    if (toothNumber != null) {
+      await tx.tooth.upsert({
+        where: { patientId_toothNumber: { patientId, toothNumber } },
+        update: {
+          status: TOOTH_STATUSES.TREATED,
+          lastTreatment: procedure,
+          lastTreatmentDate: new Date(),
+        },
+        create: {
+          patientId,
+          toothNumber,
+          status: TOOTH_STATUSES.TREATED,
+          lastTreatment: procedure,
+          lastTreatmentDate: new Date(),
+        },
+      })
+    }
 
     return created
   })

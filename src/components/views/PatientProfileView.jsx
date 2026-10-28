@@ -1,6 +1,6 @@
 "use client";
 import { useState } from "react";
-import { ArrowLeft, AlertTriangle, HeartPulse } from "lucide-react";
+import { ArrowLeft, AlertTriangle, HeartPulse, Plus } from "lucide-react";
 import { toast } from "sonner";
 import { useIsDentist, useIsStaff } from "@/lib/auth-store";
 import { useNav } from "@/lib/nav";
@@ -19,6 +19,7 @@ import { NotesDialog } from "@/components/views/patient-profile/EditPatientDialo
 import { ToothModal } from "@/components/views/patient-profile/ToothModal";
 import { TreatmentHistoryTable } from "@/components/views/patient-profile/TreatmentHistoryTable";
 import { TreatmentPlan } from "@/components/views/patient-profile/TreatmentPlan";
+import { AddTreatmentDialog } from "@/components/views/patient-profile/AddTreatmentDialog";
 import { TOOTH_STATUS_META } from "@/lib/format";
 import { toothName } from "@/lib/teeth";
 /** Patient profile view — composes the info card, dental chart, treatment history, and edit/delete/tooth dialogs. */
@@ -35,6 +36,7 @@ export default function PatientProfileView() {
     const [isNotesDialogOpen, setIsNotesDialogOpen] = useState(false);
     const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
     const [selectedToothNumber, setSelectedToothNumber] = useState(null);
+    const [isAddTreatmentOpen, setIsAddTreatmentOpen] = useState(false);
     const deletePatient = useDeletePatient();
     if (!patientId) {
         return (<EmptyState title="No patient selected" message="Pick a patient from the list to view their profile and dental chart." action={<Button onClick={() => navigate("patients")}>
@@ -162,11 +164,17 @@ export default function PatientProfileView() {
 
       {/* Treatment history */}
       <Card>
-        <CardHeader>
-          <CardTitle>Treatment History</CardTitle>
-          <p className="text-sm text-muted-foreground">
-            All procedures for this patient, newest first.
-          </p>
+        <CardHeader className="flex flex-row items-start justify-between gap-3 space-y-0">
+          <div>
+            <CardTitle>Treatment History</CardTitle>
+            <p className="text-sm text-muted-foreground">
+              All procedures for this patient, newest first.
+            </p>
+          </div>
+          {isDentist && (<Button size="sm" onClick={() => setIsAddTreatmentOpen(true)}>
+              <Plus className="h-4 w-4"/>
+              Record treatment
+            </Button>)}
         </CardHeader>
         <CardContent>
           <TreatmentHistoryTable treatments={treatments} isLoading={treatmentsQuery.isLoading}/>
@@ -175,6 +183,7 @@ export default function PatientProfileView() {
 
       {/* Dialogs */}
       <NotesDialog patient={patient} open={isNotesDialogOpen} onOpenChange={setIsNotesDialogOpen}/>
+      <AddTreatmentDialog patientId={patientId} open={isAddTreatmentOpen} onOpenChange={setIsAddTreatmentOpen}/>
       <ConfirmDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen} title="Delete patient?" message={`This will permanently remove ${patient.name} and all related teeth, treatments, and appointments. This cannot be undone.`} confirmLabel="Delete patient" destructive onConfirm={onConfirmDelete}/>
       <ToothModal patientId={patientId} toothNumber={selectedToothNumber} open={selectedToothNumber !== null} onOpenChange={(open) => {
             if (!open)
