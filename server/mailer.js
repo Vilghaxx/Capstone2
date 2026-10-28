@@ -2,6 +2,8 @@ const nodemailer = require('nodemailer')
 
 const CLINIC_NAME = 'Sonido Dental Clinic'
 const CLINIC_TIME_ZONE = 'Asia/Manila'
+const GOOGLE_TOKEN_URL = 'https://oauth2.googleapis.com/token'
+const GMAIL_SEND_URL = 'https://gmail.googleapis.com/gmail/v1/users/me/messages/send'
 
 const APPOINTMENT_TYPE_LABELS = {
   checkup: 'Checkup',
@@ -18,8 +20,9 @@ const APPOINTMENT_TYPE_LABELS = {
 
 let cachedTransporter
 let transporterLoaded = false
+let cachedToken = { key: '', token: '', expiresAt: 0 }
 
-/** Gmail SMTP transport, or null when credentials are not configured. */
+/** Gmail SMTP transport (used off Render), or null when not configured. */
 function getTransporter() {
   if (transporterLoaded) return cachedTransporter
   transporterLoaded = true
@@ -39,6 +42,16 @@ function getTransporter() {
     auth: { user, pass },
   })
   return cachedTransporter
+}
+
+/** Gmail API config from env, or null when incomplete. */
+function getGmailApiConfig() {
+  const clientId = (process.env.GMAIL_CLIENT_ID || '').trim()
+  const clientSecret = (process.env.GMAIL_CLIENT_SECRET || '').trim()
+  const refreshToken = (process.env.GMAIL_REFRESH_TOKEN || '').trim()
+  const user = (process.env.GMAIL_USER || '').trim()
+  if (!clientId || !clientSecret || !refreshToken || !user) return null
+  return { clientId, clientSecret, refreshToken, user }
 }
 
 function escapeHtml(value) {
@@ -68,6 +81,10 @@ function formatAppointmentTime(value) {
   if (!Number.isFinite(hours) || !Number.isFinite(minutes)) return String(value ?? '')
   const suffix = hours >= 12 ? 'PM' : 'AM'
   return `${hours % 12 || 12}:${String(minutes).padStart(2, '0')} ${suffix}`
+}
+
+function mailFrom(user) {
+  return `"${CLINIC_NAME}" <${user || 'no-reply@sonidodentalclinic.local'}>`
 }
 
 function buildScheduledEmail(patient, appointment) {
@@ -110,23 +127,81 @@ function buildScheduledEmail(patient, appointment) {
   return { to, subject, text, html }
 }
 
+async function getGmailAccessToken(config, fetchImpl = fetch) {
+  if (cachedToken.key === config.refreshToken && Date.now() < cachedToken.expiresAt) {
+    return cachedToken.token
+  }
+
+  const res = await fetchImpl(GOOGLE_TOKEN_URL, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    body: new URLSearchParams({
+      client_id: config.clientId,
+      client_secret: config.clientSecret,
+      refresh_token: config.refreshToken,
+      grant_type: 'refresh_token',
+    }),
+  })
+  const body = await res.json().catch(() => ({}))
+  if (!res.ok || !body.access_token) {
+    const detail = [body.error, body.error_description].filter(Boolean).join(' — ')
+    throw new Error(`Gmail token request failed: ${res.status}${detail ? ` ${detail}` : ''}`)
+  }
+
+  cachedToken = {
+    key: config.refreshToken,
+    token: body.access_token,
+    expiresAt: Date.now() + Math.max(0, (body.expires_in || 3600) - 60) * 1000,
+  }
+  return body.access_token
+}
+
+/**
+ * Send over HTTPS so it works on Render Free, which blocks SMTP ports.
+ * The raw MIME message is built by nodemailer's stream transport.
+ */
+async function sendViaGmailApi(mail, config = getGmailApiConfig(), fetchImpl = fetch) {
+  if (!config) return { skipped: 'no-credentials' }
+
+  const accessToken = await getGmailAccessToken(config, fetchImpl)
+  const generator = nodemailer.createTransport({ streamTransport: true, buffer: true, newline: 'unix' })
+  const { message } = await generator.sendMail({ from: mailFrom(config.user), ...mail })
+  const raw = Buffer.from(message).toString('base64url')
+
+  const res = await fetchImpl(GMAIL_SEND_URL, {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${accessToken}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ raw }),
+  })
+  const body = await res.json().catch(() => ({}))
+  if (!res.ok) {
+    throw new Error(`Gmail API send failed: ${res.status}${body.error?.message ? ` ${body.error.message}` : ''}`)
+  }
+  return { messageId: body.id }
+}
+
 /**
  * Email the patient that an approved request is now scheduled.
- * Returns { skipped } when there is no address or SMTP is not configured.
+ * Prefers the Gmail API when configured; falls back to Gmail SMTP locally.
+ * Returns { skipped } when there is no address or no mail transport.
  */
-async function sendAppointmentScheduledEmail(patient, appointment, transporter = getTransporter()) {
+async function sendAppointmentScheduledEmail(patient, appointment, smtpTransport) {
   const mail = buildScheduledEmail(patient, appointment)
   if (!mail.to) return { skipped: 'no-email' }
 
+  const gmailApi = getGmailApiConfig()
+  if (gmailApi) return sendViaGmailApi(mail, gmailApi)
+
+  const transporter = smtpTransport === undefined ? getTransporter() : smtpTransport
   if (!transporter) {
-    console.warn('[mail] GMAIL_USER / GMAIL_APP_PASSWORD not set — appointment email skipped')
+    console.warn('[mail] No Gmail API or SMTP credentials configured — appointment email skipped')
     return { skipped: 'no-credentials' }
   }
 
-  const info = await transporter.sendMail({
-    from: `"${CLINIC_NAME}" <${process.env.GMAIL_USER || 'no-reply@sonidodentalclinic.local'}>`,
-    ...mail,
-  })
+  const info = await transporter.sendMail({ from: mailFrom(process.env.GMAIL_USER), ...mail })
   return { messageId: info.messageId }
 }
 
@@ -134,4 +209,6 @@ module.exports = {
   buildScheduledEmail,
   sendAppointmentScheduledEmail,
   formatAppointmentTime,
+  getGmailApiConfig,
+  sendViaGmailApi,
 }

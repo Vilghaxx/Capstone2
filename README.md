@@ -32,14 +32,28 @@ FIREBASE_DATABASE_URL="https://capstone-f6c32-default-rtdb.firebaseio.com"
 JWT_SECRET="your-long-random-secret-here"
 GOOGLE_CLIENT_ID="your-google-oauth-client-id"
 GMAIL_USER="your-clinic-address@gmail.com"
-GMAIL_APP_PASSWORD="your-16-char-google-app-password"
+GMAIL_CLIENT_ID="your-gmail-oauth-client-id"
+GMAIL_CLIENT_SECRET="your-gmail-oauth-client-secret"
+GMAIL_REFRESH_TOKEN="your-gmail-refresh-token"
 ```
 
 - `FIREBASE_KEY_PATH` — path to a Firebase service-account JSON. Defaults to `capstone-f6c32-firebase-adminsdk-fbsvc-9540650b6a.json` in the project root.
 - `FIREBASE_DATABASE_URL` — RTDB URL. Defaults to `https://capstone-f6c32-default-rtdb.firebaseio.com`.
 - `JWT_SECRET` — token signing secret. Defaults to a dev secret; change in production.
 - `GOOGLE_CLIENT_ID` — OAuth 2.0 client ID used to verify Google sign-in credentials.
-- `GMAIL_USER` / `GMAIL_APP_PASSWORD` — clinic Gmail sender for appointment emails. Create an app password with 2-step verification enabled. If unset, approval still works but no email is sent.
+- `GMAIL_USER` — clinic Gmail address used as the email sender.
+- `GMAIL_CLIENT_ID` / `GMAIL_CLIENT_SECRET` / `GMAIL_REFRESH_TOKEN` — Gmail API credentials for appointment emails. The API sends over HTTPS, which is required on Render Free because it blocks SMTP ports. If unset, the mailer falls back to Gmail SMTP via `GMAIL_USER` + `GMAIL_APP_PASSWORD` (local dev only on such hosts).
+
+### Appointment email setup (Gmail API)
+
+1. In Google Cloud Console, enable **Gmail API** for the project.
+2. OAuth consent screen: add scope `https://www.googleapis.com/auth/gmail.send`, add the clinic Gmail as a test user, and publish the app (Testing-mode refresh tokens expire after 7 days).
+3. Credentials → Create credentials → OAuth client ID → **Desktop app**.
+4. Run the helper and sign in as the clinic Gmail:
+   ```bash
+   GMAIL_CLIENT_ID=... GMAIL_CLIENT_SECRET=... GMAIL_USER=clinic@gmail.com node scripts/gmail-auth.cjs
+   ```
+5. Copy the printed `GMAIL_*` values into `.env` and Render, then redeploy.
 
 ```bash
 # 3. Seed the database (optional but recommended)
