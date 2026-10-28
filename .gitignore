@@ -68,3 +68,5 @@ server.log
 
 # Personal worklog
 worklog.md
+# Google OAuth client secrets
+client_secret_*.json

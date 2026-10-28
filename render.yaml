@@ -18,9 +18,9 @@ services:
       - key: JWT_SECRET
         generateValue: true
       - key: GOOGLE_CLIENT_ID
-        value: 397113028490-mceosup2ro2mm7utkl2il1cpo21pk2v6
+        value: 933171086472-ajmje2ohi7tieracdqa3l6muk9mpkblf.apps.googleusercontent.com # full client ID; audience must match the ID token
       - key: NEXT_PUBLIC_API_URL
-        value: https://dental-system.onrender.com # update with your service URL
+        value: https://dental-system-go24.onrender.com # update with your service URL
       - key: NODE_OPTIONS
         value: --max-old-space-size=4096
 

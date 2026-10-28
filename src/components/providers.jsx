@@ -32,7 +32,7 @@ export function Providers({ children }) {
     useEffect(() => {
         void restore();
     }, [restore]);
-    return (<GoogleOAuthProvider clientId="397113028490-mceosup2ro2mm7utkl2il1cpo21pk2v6.apps.googleusercontent.com">
+    return (<GoogleOAuthProvider clientId="933171086472-ajmje2ohi7tieracdqa3l6muk9mpkblf.apps.googleusercontent.com">
       <QueryClientProvider client={queryClient}>
         <ErrorBoundary>{children}</ErrorBoundary>
         <Toaster richColors position="top-right"/>

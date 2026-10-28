@@ -34,7 +34,7 @@ echo "Environment Variables:"
 echo "  FIREBASE_KEY_PATH=sonidodentalsystem-firebase-adminsdk-fbsvc-5784825144.json"
 echo "  FIREBASE_DATABASE_URL=https://sonidodentalsystem-default-rtdb.asia-southeast1.firebasedatabase.app"
 echo "  JWT_SECRET=your-secure-random-secret-change-from-dev"
-echo "  GOOGLE_CLIENT_ID=397113028490-mceosup2ro2mm7utkl2il1cpo21pk2v6"
+echo "  GOOGLE_CLIENT_ID=933171086472-ajmje2ohi7tieracdqa3l6muk9mpkblf.apps.googleusercontent.com"
 echo "  NODE_OPTIONS=--max-old-space-size=4096 (optional)"
 echo ""
 
