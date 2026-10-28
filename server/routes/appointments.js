@@ -326,6 +326,10 @@ router.put('/:id', authenticate, requireRole(ROLES.DENTIST, ROLES.ASSISTANT, ROL
     db.patient
       .findUnique({ where: { id: updated.patientId } })
       .then((patient) => sendAppointmentScheduledEmail(patient, updated))
+      .then((result) => {
+        if (result?.messageId) console.log(`[mail] appointment scheduled email sent (${result.messageId})`)
+        else if (result?.skipped) console.warn(`[mail] appointment scheduled email skipped: ${result.skipped}`)
+      })
       .catch((err) => console.error('[mail] appointment scheduled email failed:', err.message))
   }
 
