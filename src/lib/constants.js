@@ -32,6 +32,7 @@ export const APPOINTMENT_STATUSES = {
 export const PAYMENT_METHODS = {
     CASH: "cash",
     CARD: "card",
+    GCASH: "gcash",
     INSURANCE: "insurance",
     BANK_TRANSFER: "bank-transfer",
 };
@@ -112,6 +113,7 @@ export const APPOINTMENT_STATUS_META = {
 export const PAYMENT_METHOD_META = {
     cash: "Cash",
     card: "Card",
+    gcash: "GCash",
     insurance: "Insurance",
     "bank-transfer": "Bank Transfer",
 };
