@@ -3,6 +3,7 @@ const { db } = require('../db')
 const { authenticate, requireRole, withErrors } = require('../middleware')
 const { appointmentFormSchema, appointmentUpdateSchema, patientAppointmentUpdateSchema, handleValidationError } = require('../validate').default
 const { APPOINTMENT_STATUSES, ROLES } = require('../constants')
+const { sendAppointmentScheduledEmail } = require('../mailer')
 
 async function hasSlotConflict(date, time, excludeId) {
   const start = new Date(date)
@@ -318,6 +319,15 @@ router.put('/:id', authenticate, requireRole(ROLES.DENTIST, ROLES.ASSISTANT, ROL
     where: { id },
     data,
   })
+
+  // Notify the patient when a pending request is approved. Email failures
+  // must not fail the approval itself.
+  if (status === APPOINTMENT_STATUSES.SCHEDULED && existing.status !== APPOINTMENT_STATUSES.SCHEDULED) {
+    db.patient
+      .findUnique({ where: { id: updated.patientId } })
+      .then((patient) => sendAppointmentScheduledEmail(patient, updated))
+      .catch((err) => console.error('[mail] appointment scheduled email failed:', err.message))
+  }
 
   return res.json(updated)
 }))

@@ -31,12 +31,15 @@ FIREBASE_KEY_PATH="capstone-f6c32-firebase-adminsdk-fbsvc-9540650b6a.json"
 FIREBASE_DATABASE_URL="https://capstone-f6c32-default-rtdb.firebaseio.com"
 JWT_SECRET="your-long-random-secret-here"
 GOOGLE_CLIENT_ID="your-google-oauth-client-id"
+GMAIL_USER="your-clinic-address@gmail.com"
+GMAIL_APP_PASSWORD="your-16-char-google-app-password"
 ```
 
 - `FIREBASE_KEY_PATH` — path to a Firebase service-account JSON. Defaults to `capstone-f6c32-firebase-adminsdk-fbsvc-9540650b6a.json` in the project root.
 - `FIREBASE_DATABASE_URL` — RTDB URL. Defaults to `https://capstone-f6c32-default-rtdb.firebaseio.com`.
 - `JWT_SECRET` — token signing secret. Defaults to a dev secret; change in production.
 - `GOOGLE_CLIENT_ID` — OAuth 2.0 client ID used to verify Google sign-in credentials.
+- `GMAIL_USER` / `GMAIL_APP_PASSWORD` — clinic Gmail sender for appointment emails. Create an app password with 2-step verification enabled. If unset, approval still works but no email is sent.
 
 ```bash
 # 3. Seed the database (optional but recommended)
