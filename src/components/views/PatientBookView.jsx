@@ -20,6 +20,17 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { LoadingSpinner } from "@/components/common/LoadingSpinner";
 import { EmptyState } from "@/components/common/EmptyState";
 import { AppointmentStatusBadge } from "@/components/common/StatusBadge";
+/** HMO partners accepted for patient bookings. */
+const INSURANCE_COMPANIES = [
+    "Health Partners",
+    "Filipino Doctors",
+    "Intellicare",
+    "Avega",
+    "(DNC) Dental Network Company",
+    "Hive Health",
+    "Reliant Health",
+    "Value Care",
+];
 /** Today's date as a YYYY-MM-DD string. */
 function todayStr() {
     const d = new Date();
@@ -288,8 +299,17 @@ export default function PatientBookView() {
             {bookPayMethod === "hmo" && (<div className="space-y-3 rounded-md border border-border bg-muted/30 p-3">
               <p className="text-sm font-medium">HMO Details</p>
               <div className="space-y-2">
-                <Label htmlFor="hmo-company">Company</Label>
-                <Input id="hmo-company" placeholder="HMO company name" value={hmoCompany} onChange={(e) => setHmoCompany(e.target.value)}/>
+                <Label htmlFor="hmo-company">Insurance Company</Label>
+                <Select value={hmoCompany} onValueChange={setHmoCompany}>
+                  <SelectTrigger id="hmo-company" className="w-full">
+                    <SelectValue placeholder="Select insurance company"/>
+                  </SelectTrigger>
+                  <SelectContent>
+                    {INSURANCE_COMPANIES.map((company) => (<SelectItem key={company} value={company}>
+                        {company}
+                      </SelectItem>))}
+                  </SelectContent>
+                </Select>
               </div>
               <div className="space-y-2">
                 <Label htmlFor="hmo-insurance">Insurance No.</Label>
