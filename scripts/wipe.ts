@@ -3,12 +3,20 @@ import { getDatabase } from 'firebase-admin/database'
 import { readFileSync } from 'fs'
 import * as path from 'path'
 
-const KEY_PATH = path.join(process.cwd(), 'sonidodentalsystem-firebase-adminsdk-fbsvc-5784825144.json')
 const DATABASE_URL = process.env.FIREBASE_DATABASE_URL ?? 'https://sonidodentalsystem-default-rtdb.asia-southeast1.firebasedatabase.app'
 
+function loadServiceAccount() {
+  if (process.env.FIREBASE_SERVICE_ACCOUNT) {
+    return JSON.parse(Buffer.from(process.env.FIREBASE_SERVICE_ACCOUNT, 'base64').toString('utf8'))
+  }
+  const keyPath = process.env.FIREBASE_KEY_PATH
+    ? path.resolve(process.env.FIREBASE_KEY_PATH)
+    : path.join(process.cwd(), 'sonidodentalsystem-firebase-adminsdk-fbsvc-5784825144.json')
+  return JSON.parse(readFileSync(keyPath, 'utf-8'))
+}
+
 if (!getApps().length) {
-  const sa = JSON.parse(readFileSync(KEY_PATH, 'utf-8'))
-  initializeApp({ credential: cert(sa), databaseURL: DATABASE_URL })
+  initializeApp({ credential: cert(loadServiceAccount()), databaseURL: DATABASE_URL })
 }
 
 const db = getDatabase()

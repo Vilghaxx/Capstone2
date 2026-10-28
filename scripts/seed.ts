@@ -5,12 +5,20 @@ import * as path from 'path'
 import { faker } from '@faker-js/faker'
 import { PERMANENT_TEETH } from '../src/lib/teeth'
 
-const KEY_PATH = path.join(process.cwd(), 'sonidodentalsystem-firebase-adminsdk-fbsvc-5784825144.json')
 const DATABASE_URL = process.env.FIREBASE_DATABASE_URL ?? 'https://sonidodentalsystem-default-rtdb.asia-southeast1.firebasedatabase.app'
 
+function loadServiceAccount() {
+  if (process.env.FIREBASE_SERVICE_ACCOUNT) {
+    return JSON.parse(Buffer.from(process.env.FIREBASE_SERVICE_ACCOUNT, 'base64').toString('utf8'))
+  }
+  const keyPath = process.env.FIREBASE_KEY_PATH
+    ? path.resolve(process.env.FIREBASE_KEY_PATH)
+    : path.join(process.cwd(), 'sonidodentalsystem-firebase-adminsdk-fbsvc-5784825144.json')
+  return JSON.parse(readFileSync(keyPath, 'utf-8'))
+}
+
 if (!getApps().length) {
-  const sa = JSON.parse(readFileSync(KEY_PATH, 'utf-8'))
-  initializeApp({ credential: cert(sa), databaseURL: DATABASE_URL })
+  initializeApp({ credential: cert(loadServiceAccount()), databaseURL: DATABASE_URL })
 }
 
 const db = getDatabase()
@@ -312,7 +320,7 @@ async function phaseTreatments(patients: Array<{ patientId: string; name: string
       paid: isPaid,
       paidAt,
       paidBy: isPaid ? (Math.random() < 0.5 ? 'Marco Dela Cruz' : null) : null,
-      paymentMethod: isPaid ? pick(['cash', 'card', 'insurance', 'bank-transfer']) : null,
+      paymentMethod: isPaid ? pick(['cash', 'card', 'gcash', 'insurance', 'bank-transfer']) : null,
       paidAmount: isPaid ? proc.cost : null,
     }
     treatments.push(txn)
