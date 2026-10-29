@@ -122,7 +122,7 @@ export default function PatientProfileView() {
             </div>
             </>)}
           {!teethQuery.isLoading && !teethQuery.isError && (() => {
-            const groups = { treated: [], "needs-attention": [], missing: [] };
+            const groups = { treated: [], "needs-attention": [], missing: [], extracted: [] };
             for (const t of teeth)
                 if (t.status in groups)
                     groups[t.status].push(t);

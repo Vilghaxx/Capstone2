@@ -9,6 +9,7 @@ const TOOTH_STATUSES = {
   TREATED: 'treated',
   NEEDS_ATTENTION: 'needs-attention',
   MISSING: 'missing',
+  EXTRACTED: 'extracted',
 }
 
 const APPOINTMENT_STATUSES = {

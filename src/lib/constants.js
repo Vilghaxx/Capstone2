@@ -9,6 +9,7 @@ export const TOOTH_STATUSES = {
     TREATED: "treated",
     NEEDS_ATTENTION: "needs-attention",
     MISSING: "missing",
+    EXTRACTED: "extracted",
 };
 export const APPOINTMENT_TYPES = {
     CHECKUP: "checkup",
@@ -47,6 +48,7 @@ export const TOOTH_STATUS_COLORS = {
     treated: { fill: "#22c55e", stroke: "#16a34a" },
     "needs-attention": { fill: "#f59e0b", stroke: "#d97706" },
     missing: { fill: "#1f2937", stroke: "#111827" },
+    extracted: { fill: "#ef4444", stroke: "#dc2626" },
 };
 export const TOOTH_STATUS_META = {
     healthy: {
@@ -74,6 +76,13 @@ export const TOOTH_STATUS_META = {
         color: "bg-gray-900",
         ring: "ring-gray-900/40",
         description: "Tooth is missing",
+    },
+    extracted: {
+        label: "Extracted",
+        // Explicit hex: the theme remaps Tailwind's red palette.
+        color: "bg-[#ef4444]",
+        ring: "ring-[#ef4444]/40",
+        description: "Tooth has been extracted",
     },
 };
 export const APPOINTMENT_TYPE_META = {
